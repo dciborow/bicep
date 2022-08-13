@@ -24,5 +24,19 @@
             }
         }
     },
-    "resources": []
+    "resources": [],
+    "outputs": {
+        "location": {
+            "type": "string",
+            "value": "[parameters('location')]"
+        },
+        "_artifactsLocation": {
+            "type": "string",
+            "value": "[parameters('_artifactsLocation')]"
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "value": "[parameters('_artifactsLocationSasToken')]"
+        }
+    }
 }
