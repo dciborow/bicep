@@ -70,7 +70,6 @@ namespace Bicep.LanguageServer
                     .WithHandler<BicepSemanticTokensHandler>()
                     .WithHandler<BicepFoldingHandler>()
 
-
                     .WithHandler<BicepParamsDefinitionHandler>()
 
                     .WithHandler<BicepTelemetryHandler>()
