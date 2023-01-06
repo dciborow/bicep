@@ -72,6 +72,7 @@ namespace Bicep.LanguageServer
                     .WithHandler<BicepGetRecommendedConfigLocationHandler>()
                     .WithHandler<BicepSignatureHelpHandler>()
                     .WithHandler<BicepSemanticTokensHandler>()
+                    .WithHandler<BicepFoldingHandler>()
                     .WithHandler<BicepTelemetryHandler>()
                     .WithHandler<BicepBuildCommandHandler>()
                     .WithHandler<BicepGenerateParamsCommandHandler>()
