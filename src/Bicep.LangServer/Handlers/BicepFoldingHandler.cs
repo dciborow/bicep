@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bicep.LanguageServer.CompilationManager;
@@ -13,6 +14,42 @@ namespace Bicep.LanguageServer.Handlers
 {
     public class BicepFoldingHandler : FoldingRangeHandlerBase
     {
-        private readonly ILogger<BicepFoldingHandler> logger;       
+        readonly TextDocumentManager _documentManager;
+
+        public BicepFoldingHandler(TextDocumentManager textDocManager)
+        {
+            _documentManager = textDocManager;
+        }
+
+        public override Task<Container<FoldingRange>?> Handle(FoldingRangeRequestParam request, CancellationToken cancellationToken)
+        {
+            var foldingRanges = new List<FoldingRange>();
+
+            var doc = _documentManager.GetDocument(request.TextDocument.Uri.ToString());
+            if (doc != null)
+            {
+
+                foreach (var region in doc.Proc.Regions)
+                {
+                    foldingRanges.Add(new FoldingRange
+                    {
+                        StartLine = region.StartLineNo - 1,
+                        StartCharacter = region.StartCharPos,
+                        EndLine = region.EndLineNo - 1,
+                        EndCharacter = region.EndCharPos,
+                        Kind = FoldingRangeKind.Region
+                    }); ;
+                }
+            }
+            return Task.FromResult<Container<FoldingRange>?>(new Container<FoldingRange>(foldingRanges.ToArray()));
+        }
+
+        protected override FoldingRangeRegistrationOptions CreateRegistrationOptions(FoldingRangeCapability capability, ClientCapabilities clientCapabilities)
+        {
+            return new FoldingRangeRegistrationOptions
+            {
+                DocumentSelector = DocumentSelector.ForPattern(@"**/*.bicep")
+            };
+        }
     }
 }
