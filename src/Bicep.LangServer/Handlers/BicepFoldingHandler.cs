@@ -30,7 +30,7 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult(new FoldingDocument(this.legend));
         }
 
-        protected override Task Tokenize(FoldingBuilder builder, ITextDocumentIdentifierParams identifier, CancellationToken cancellationToken)
+        protected override Task Fold(FoldingBuilder builder, ITextDocumentIdentifierParams identifier, CancellationToken cancellationToken)
         {
             var compilationContext = this.compilationManager.GetCompilation(identifier.TextDocument.Uri);
 
