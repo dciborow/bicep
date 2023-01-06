@@ -64,54 +64,52 @@ namespace Bicep.LangServer.IntegrationTests
         [TestMethod]
         public async Task Hovers_are_displayed_on_discription_decorator_objects_across_bicep_modules()
         {
-            var modFile = @"
+            var inputFile = @"
 @description('this is param1')
 param param1 string
 
-@sys.description('this is out1')
+@description('this is param2')
+@allowed([ 'new', 'existing', 'none' ])
+param param2 string
+
+var var2 = param2
+
+@description('this is out1')
 output out1 string = '${param1}-out1'
-
-@description('''this
-is
-out2''')
-output out2 string = '${param1}-out2'
-";
-            var (file, cursors) = ParserHelper.GetFileWithCursors(@"
-@description('''this is mod1''')
-module mod|1 './mod.bicep' = {
-  name: 'myMod'
-  params: {
-    para|m1: 's'
-  }
-}
-
-@description('''this is var1''')
-var var1 = mod1.outputs.ou|t1
-
-output moduleOutput string = '${var|1}-${mod1.outputs.o|ut2}'
 ",
                 '|');
 
-            var moduleFile = SourceFileFactory.CreateBicepFile(new Uri("file:///path/to/mod.bicep"), modFile);
+            var folded = @"
+@... param param1 string
+@... param param2 string
+
+var var2 = param2
+
+@... output out1 string = '${param1}-out1'
+",
+                '|');
+
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri("file:///path/to/main.bicep"), file);
+            var foldedFile = SourceFileFactory.CreateBicepFile(new Uri("file:///path/to/main.bicep"), folded);
 
             var files = new Dictionary<Uri, string>
             {
                 [bicepFile.FileUri] = file,
-                [moduleFile.FileUri] = modFile
+                [foldedFile.FileUri] = folded
             };
 
             using var helper = await LanguageServerHelper.StartServerWithText(this.TestContext, files, bicepFile.FileUri, services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
             var client = helper.Client;
 
-            var hovers = await RequestHovers(client, bicepFile, cursors);
+            var hovers = await RequestFolding(client, bicepFile, cursors);
 
             hovers.Should().SatisfyRespectively(
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nthis is mod1\n"),
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nthis is param1\n"),
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nthis is out1\n"),
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nthis is var1\n"),
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nthis  \nis  \nout2\n"));
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... param param1 stringn"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... param param2 string\n"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n\n"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nvar var2 = param2\n"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n\n"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... output out1 string = '${param1}-out1'\n"));
         }
     }
 }
