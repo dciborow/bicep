@@ -28,8 +28,8 @@ namespace Bicep.LanguageServer.Handlers
             var doc = _documentManager.GetDocument(request.TextDocument.Uri.ToString());
             if (doc != null)
             {
-
-                foreach (var region in doc.Proc.Regions)
+                var regions = GetRegions(doc);
+                foreach (var region in regions)
                 {
                     foldingRanges.Add(new FoldingRange
                     {
@@ -44,6 +44,14 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult<Container<FoldingRange>?>(new Container<FoldingRange>(foldingRanges.ToArray()));
         }
 
+        private static Object GetRegions(Object doc)
+        {
+            //TODO: Implement custom Regions for Bicep
+            var regions = doc.Proc.Regions;
+
+            return regions;
+        }
+
         protected override FoldingRangeRegistrationOptions CreateRegistrationOptions(FoldingRangeCapability capability, ClientCapabilities clientCapabilities)
         {
             return new FoldingRangeRegistrationOptions
@@ -51,5 +59,6 @@ namespace Bicep.LanguageServer.Handlers
                 DocumentSelector = DocumentSelector.ForPattern(@"**/*.bicep")
             };
         }
+
     }
 }
