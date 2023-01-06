@@ -64,7 +64,7 @@ namespace Bicep.LangServer.IntegrationTests
         [TestMethod]
         public async Task Hovers_are_displayed_on_discription_decorator_objects_across_bicep_modules()
         {
-            var inputFile = @"
+            var file = @"
 @description('this is param1')
 param param1 string
 
@@ -77,7 +77,7 @@ var var2 = param2
 @description('this is out1')
 output out1 string = '${param1}-out1'
 ",
-                '|');
+            '|');
 
             var folded = @"
 @... param param1 string
@@ -87,7 +87,7 @@ var var2 = param2
 
 @... output out1 string = '${param1}-out1'
 ",
-                '|');
+'|');
 
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri("file:///path/to/main.bicep"), file);
             var foldedFile = SourceFileFactory.CreateBicepFile(new Uri("file:///path/to/main.bicep"), folded);
