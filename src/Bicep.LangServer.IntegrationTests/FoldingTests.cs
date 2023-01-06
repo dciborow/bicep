@@ -104,7 +104,7 @@ var var2 = param2
             var hovers = await RequestFolding(client, bicepFile, cursors);
 
             hovers.Should().SatisfyRespectively(
-                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... param param1 stringn"),
+                h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... param param1 string\n"),
                 h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n@... param param2 string\n"),
                 h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\n\n"),
                 h => h!.Contents.MarkupContent!.Value.Should().EndWith("```\nvar var2 = param2\n"),
