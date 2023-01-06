@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 using System;
+using Azure.Deployments.Core.Definitions.Identifiers;
 using Bicep.Core.UnitTests.Assertions;
 using Bicep.Core.UnitTests.Utils;
 using FluentAssertions;
@@ -85,6 +86,11 @@ output multiline string = multiline
         [TestMethod]
         public void ResourceId_expressions_are_evaluated_successfully()
         {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param parentName = 'myParent'
+param childName = 'myChild'
+");
+
             var (template, _, _) = CompilationHelper.Compile(@"
 param parentName string
 param childName string
@@ -146,15 +152,10 @@ output resource1Type string = existing1.type
             {
                 var testSubscriptionId = "87d64d6d-6d17-4ad7-b507-16d9bc498781";
                 var testRgName = "testRg";
-                var evaluated = TemplateEvaluator.Evaluate(template, config => config with
+                var evaluated = TemplateEvaluator.Evaluate(template, parameters, config => config with
                 {
                     SubscriptionId = testSubscriptionId,
                     ResourceGroup = testRgName,
-                    Parameters = new()
-                    {
-                        ["parentName"] = "myParent",
-                        ["childName"] = "myChild",
-                    }
                 });
 
                 evaluated.Should().HaveValueAtPath("$.outputs['resource1Id'].value", $"/subscriptions/{testSubscriptionId}/resourceGroups/{testRgName}/providers/My.Rp/parent/myParent/child/myChild");
@@ -206,6 +207,10 @@ output coalesce int = null ?? 123
         [TestMethod]
         public void Resource_property_access_works()
         {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param abcVal = 'test!!!'
+");
+
             var (template, _, _) = CompilationHelper.Compile(@"
 param abcVal string
 
@@ -221,13 +226,7 @@ output abcVal string = testRes.properties.abc
 
             using (new AssertionScope())
             {
-                var evaluated = TemplateEvaluator.Evaluate(template, config => config with
-                {
-                    Parameters = new()
-                    {
-                        ["abcVal"] = "test!!!",
-                    },
-                });
+                var evaluated = TemplateEvaluator.Evaluate(template, parameters);
 
                 evaluated.Should().HaveValueAtPath("$.outputs['abcVal'].value", "test!!!");
             }
@@ -246,7 +245,7 @@ output abcVal string = testRes.properties.abc
 
             using (new AssertionScope())
             {
-                var evaluated = TemplateEvaluator.Evaluate(template, config => config with
+                var evaluated = TemplateEvaluator.Evaluate(template, configBuilder: config => config with
                 {
                     OnReferenceFunc = (resourceId, apiVersion, fullBody) =>
                     {
@@ -269,6 +268,18 @@ output abcVal string = testRes.properties.abc
         [TestMethod]
         public void Items_function_evaluation_works()
         {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param inputObj = {
+  'ghiKey': 'ghiValue'
+  'defKey': 'defValue'
+  'abcKey': 'abcValue'
+  '123Key': '123Value'
+  'GHIKey': 'GHIValue'
+  'DEFKey': 'DEFValue'
+  'ABCKey': 'ABCValue'
+  '456Key': '456Value'
+}
+");
             var result = CompilationHelper.Compile(@"
 param inputObj object
 
@@ -276,23 +287,7 @@ output inputObjKeys array = [for item in items(inputObj): item.key]
 output inputObjValues array = [for item in items(inputObj): item.value]
 ");
 
-            var evaluated = TemplateEvaluator.Evaluate(result.Template, config => config with
-            {
-                Parameters = new()
-                {
-                    ["inputObj"] = new JObject
-                    {
-                        ["ghiKey"] = "ghiValue",
-                        ["defKey"] = "defValue",
-                        ["abcKey"] = "abcValue",
-                        ["123Key"] = "123Value",
-                        ["GHIKey"] = "GHIValue",
-                        ["DEFKey"] = "DEFValue",
-                        ["ABCKey"] = "ABCValue",
-                        ["456Key"] = "456Value",
-                    }
-                }
-            });
+            var evaluated = TemplateEvaluator.Evaluate(result.Template, parameters);
 
             evaluated.Should().HaveValueAtPath("$.outputs['inputObjKeys'].value", new JArray
             {
@@ -349,6 +344,14 @@ output joined3 string = join([
         [TestMethod]
         public void indexof_contains_function_evaluation_works()
         {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param inputString = 'FOOBAR'
+param inputArray = [
+  'FOO'
+  'BAR'
+]
+");
+
             var (template, _, _) = CompilationHelper.Compile(@"
 param inputString string
 param inputArray array
@@ -378,18 +381,7 @@ output containsArr123 bool = contains(inputArray, 123)
 
             using (new AssertionScope())
             {
-                var evaluated = TemplateEvaluator.Evaluate(template, config => config with
-                {
-                    Parameters = new()
-                    {
-                        ["inputString"] = "FOOBAR",
-                        ["inputArray"] = new JArray
-                        {
-                            "FOO",
-                            "BAR"
-                        }
-                    }
-                });
+                var evaluated = TemplateEvaluator.Evaluate(template, parameters);
 
                 evaluated.Should().HaveValueAtPath("$.outputs['strIdxFooLC'].value", new JValue(0));
                 evaluated.Should().HaveValueAtPath("$.outputs['strIdxFooUC'].value", new JValue(0));
@@ -420,15 +412,19 @@ output containsArr123 bool = contains(inputArray, 123)
         [TestMethod]
         public void List_comprehension_function_evaluation_works()
         {
-            var (template, _, _) = CompilationHelper.Compile(@"
-var doggos = [
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param doggos = [
   'Evie'
   'Casper'
   'Indy'
   'Kira'
 ]
+param numbers = [0, 1, 2, 3]
+");
 
-var numbers = range(0, 4)
+            var (template, _, _) = CompilationHelper.Compile(@"
+param doggos array
+param numbers array
 
 var sayHello = map(doggos, i => 'Hello ${i}!')
 
@@ -475,11 +471,18 @@ var reduceObjectUnion = reduce([
   { baz: 789 }
 ], {}, (cur, next) => union(cur, next))
 var reduceEmpty = reduce([], 0, (cur, next) => cur)
+
+var objectMap = toObject([123, 456, 789], i => '${i / 100}')
+var objectMap2 = toObject(numbers, i => '${i}', i => {
+  isEven: (i % 2) == 0
+  isGreaterThan2: (i > 2)
+})
+var objectMap3 = toObject(sortByObjectKey, x => x.name)
 ");
 
             using (new AssertionScope())
             {
-                var evaluated = TemplateEvaluator.Evaluate(template);
+                var evaluated = TemplateEvaluator.Evaluate(template, parameters);
 
                 evaluated.Should().HaveValueAtPath("$.variables['sayHello']", new JArray
                 {
@@ -603,7 +606,293 @@ var reduceEmpty = reduce([], 0, (cur, next) => cur)
                     ["baz"] = 789
                 });
                 evaluated.Should().HaveValueAtPath("$.variables['reduceEmpty']", 0);
+                evaluated.Should().HaveValueAtPath("$.variables['objectMap']", JToken.Parse(@"{
+  ""1"": 123,
+  ""4"": 456,
+  ""7"": 789
+}"));
+                evaluated.Should().HaveValueAtPath("$.variables['objectMap2']", JToken.Parse(@"{
+  ""0"": {
+    ""isEven"": true,
+    ""isGreaterThan2"": false
+  },
+  ""1"": {
+    ""isEven"": false,
+    ""isGreaterThan2"": false
+  },
+  ""2"": {
+    ""isEven"": true,
+    ""isGreaterThan2"": false
+  },
+  ""3"": {
+    ""isEven"": false,
+    ""isGreaterThan2"": true
+  }
+}"));
+                evaluated.Should().HaveValueAtPath("$.variables['objectMap3']", JToken.Parse(@"{
+  ""First"": {
+    ""key"": 24,
+    ""name"": ""First""
+  },
+  ""Second"": {
+    ""key"": 124,
+    ""name"": ""Second""
+  },
+  ""Third"": {
+    ""key"": 298,
+    ""name"": ""Third""
+  },
+  ""Fourth"": {
+    ""key"": 1232,
+    ""name"": ""Fourth""
+  }
+}"));
             }
+        }
+
+        /// <summary>
+        /// https://github.com/Azure/bicep/issues/8782
+        /// </summary>
+        [TestMethod]
+        public void Issue8782()
+        {
+            var result = CompilationHelper.Compile(@"
+var testArray = [
+  {
+    property1: 'test'
+    property2: 1
+  }
+  {
+    property1: 'dev'
+    property2: 2
+  }
+  {
+    property1: 'test'
+    property2: 0
+  }
+  {
+    property1: 'prod'
+    property2: 1
+  }
+  {
+    property1: 'prod'
+    property2: 0
+  }
+  {
+    property1: 'dev'
+    property2: 0
+  }
+  {
+    property1: 'test'
+    property2: 0
+  }
+]
+
+output testMap array = map(testArray, record => {
+  result: record.property2 > 0 ? record.property1 : record.property1 =~ 'test' ? 'test!' : 'notTest!'
+})
+
+output testFor array = [for record in testArray: {
+  result: record.property2 > 0 ? record.property1 : record.property1 =~ 'test' ? 'test!' : 'notTest!'
+}]
+");
+
+            var evaluated = TemplateEvaluator.Evaluate(result.Template);
+            evaluated.Should().HaveValueAtPath("$.outputs['testMap'].value", JToken.Parse(@"
+[
+  {
+    ""result"": ""test""
+  },
+  {
+    ""result"": ""dev""
+  },
+  {
+    ""result"": ""test!""
+  },
+  {
+    ""result"": ""prod""
+  },
+  {
+    ""result"": ""notTest!""
+  },
+  {
+    ""result"": ""notTest!""
+  },
+  {
+    ""result"": ""test!""
+  }
+]
+"));
+        }
+
+        /// <summary>
+        /// https://github.com/Azure/bicep/issues/8782
+        /// </summary>
+        [TestMethod]
+        public void Issue8782_2()
+        {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param testObject = {
+  a: true
+  b: false
+}
+");
+            var result = CompilationHelper.Compile(@"
+param testObject object
+output output1 array = map(
+  items(testObject),
+  subObject => 1 == 2 ? [ 'yes' ] : [ 'no' ]
+)
+output output2 array = map(
+  items(testObject),
+  subObject => subObject.key == 'a' ? [ 'yes' ] : [ 'no' ]
+)");
+
+            var evaluated = TemplateEvaluator.Evaluate(result.Template, parameters);
+            evaluated.Should().HaveValueAtPath("$.outputs['output1'].value", JToken.Parse(@"[
+  [
+    ""no""
+  ],
+  [
+    ""no""
+  ]
+]"));
+            evaluated.Should().HaveValueAtPath("$.outputs['output2'].value", JToken.Parse(@"[
+  [
+    ""yes""
+  ],
+  [
+    ""no""
+  ]
+]"));
+        }
+
+        /// <summary>
+        /// https://github.com/Azure/bicep/issues/8798
+        /// </summary>
+        [TestMethod]
+        public void Issue8798()
+        {
+            var result = CompilationHelper.Compile(@"
+var dogs = [
+  {
+    name: 'Evie'
+    age: 5
+    interests: ['Ball', 'Frisbee']
+  }
+  {
+    name: 'Casper'
+    age: 3
+    interests: ['Other dogs']
+  }
+  {
+    name: 'Indy'
+    age: 2
+    interests: ['Butter']
+  }
+  {
+    name: 'Kira'
+    age: 8
+    interests: ['Rubs']
+  }
+]
+
+output iDogs array = filter(dogs, dog =>  (contains(dog.name, 'C') || contains(dog.name, 'i')))
+");
+
+            var evaluated = TemplateEvaluator.Evaluate(result.Template);
+            evaluated.Should().HaveValueAtPath("$.outputs['iDogs'].value", JToken.Parse(@"
+[
+  {
+    ""name"": ""Evie"",
+    ""age"": 5,
+    ""interests"": [
+      ""Ball"",
+      ""Frisbee""
+    ]
+  },
+  {
+    ""name"": ""Casper"",
+    ""age"": 3,
+    ""interests"": [
+      ""Other dogs""
+    ]
+  },
+  {
+    ""name"": ""Kira"",
+    ""age"": 8,
+    ""interests"": [
+      ""Rubs""
+    ]
+  }
+]
+"));
+        }
+
+        [TestMethod]
+        public void Module_with_unknown_resourcetype_as_parameter_and_output_has_diagnostics()
+        {
+            var (parameters, _, _) = CompilationHelper.CompileParams(@"
+param useMod1 = true
+");
+
+            var result = CompilationHelper.Compile(
+("main.bicep", @"
+param useMod1 bool
+
+module mod1 'module.bicep' = {
+  name: 'test'
+  params: {
+    bar: 'abc'
+  }
+}
+
+module mod2 'module.bicep' = {
+  name: 'test2'
+  params: {
+    bar: 'def'
+  }
+}
+
+var selectedMod = useMod1 ? mod1 : mod2
+var selectedMod2 = true ? (useMod1 ? mod1 : mod2) : mod2
+
+output test1 string = mod1.outputs.foo.bar
+output test2 string = mod2.outputs.foo.bar
+output test3 string = (useMod1 ? mod1 : mod2).outputs.foo.bar
+output test4 string = selectedMod.outputs.foo.bar
+output test5 string = selectedMod2.outputs.foo.bar
+"),
+("module.bicep", @"
+param bar string
+
+output foo object = {
+  bar: bar
+}
+"));
+
+            var evaluated = TemplateEvaluator.Evaluate(result.Template, parameters, config => config with {
+                OnReferenceFunc = (resourceId, apiVersion, fullBody) =>
+                {
+                  var id = ResourceGroupLevelResourceId.Parse(resourceId);
+                  var barVal = id.FormatName() == "test" ? "abc" : "def";
+                  return JToken.Parse(@"{
+  ""outputs"": {
+    ""foo"": {
+      ""value"": {
+        ""bar"": """ + barVal + @"""
+      }
+    }
+  }
+}");
+                },
+            });
+
+            evaluated.Should().HaveValueAtPath("$.outputs['test1'].value", "abc");
+            evaluated.Should().HaveValueAtPath("$.outputs['test2'].value", "def");
+            evaluated.Should().HaveValueAtPath("$.outputs['test3'].value", "abc");
+            evaluated.Should().HaveValueAtPath("$.outputs['test4'].value", "abc");
+            evaluated.Should().HaveValueAtPath("$.outputs['test5'].value", "abc");
         }
     }
 }

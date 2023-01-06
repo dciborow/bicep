@@ -4,7 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Numerics;
+using Azure.Deployments.Expression.Extensions;
+using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
+using Bicep.Core.Parsing;
+using Bicep.Core.Text;
+using Newtonsoft.Json.Linq;
 
 namespace Bicep.Core.TypeSystem
 {
@@ -30,6 +36,20 @@ namespace Bicep.Core.TypeSystem
                     return unionType.Members.Any(x => x == LanguageConstants.String) ?
                         LanguageConstants.String :
                         unionType;
+                }
+
+                if (unionType.Members.All(x => TypeValidator.AreTypesAssignable(x.Type, LanguageConstants.Bool)))
+                {
+                    return unionType.Members.Any(x => x == LanguageConstants.Bool)
+                        ? LanguageConstants.Bool
+                        : unionType;
+                }
+
+                if (unionType.Members.All(x => TypeValidator.AreTypesAssignable(x.Type, LanguageConstants.Int)))
+                {
+                    return unionType.Members.Any(x => x == LanguageConstants.Int)
+                        ? LanguageConstants.Bool
+                        : unionType;
                 }
 
                 // We have a mix of item types that cannot be collapsed
@@ -66,6 +86,253 @@ namespace Bicep.Core.TypeSystem
         public static TypeSymbol CreateTypeUnion(params ITypeReference[] members)
             => CreateTypeUnion((IEnumerable<ITypeReference>)members);
 
+        public static bool IsLiteralType(TypeSymbol type) => type switch
+        {
+            StringLiteralType => true,
+            IntegerLiteralType => true,
+            BooleanLiteralType => true,
+
+            // A tuple can be a literal only if each item contained therein is also a literal
+            TupleType tupleType => tupleType.Items.All(t => IsLiteralType(t.Type)),
+
+            // An object type can be a literal iff:
+            //   - All properties are themselves of a literal type
+            //   - No properties are optional
+            //   - Only explicitly defined properties are accepted (i.e., no additional properties are permitted)
+            //
+            // The lattermost condition is identified by the object type either not defining an AdditionalPropertiesType
+            // or explicitly flagging the AdditionalPropertiesType as a fallback (the default for non-sealed user-defined types)
+            ObjectType objectType => (objectType.AdditionalPropertiesType is null || objectType.AdditionalPropertiesFlags.HasFlag(TypePropertyFlags.FallbackProperty)) &&
+                objectType.Properties.All(kvp => kvp.Value.Flags.HasFlag(TypePropertyFlags.Required) && IsLiteralType(kvp.Value.TypeReference.Type)),
+
+            _ => false,
+        };
+
+        /// <summary>
+        /// Attempt to create a type symbol for a literal value.
+        /// </summary>
+        /// <param name="token">The literal value (expressed as a Newtonsoft JToken)</param>
+        /// <returns></returns>
+        public static TypeSymbol? TryCreateTypeLiteral(JToken token) => token switch
+        {
+            JObject jObject => TryCreateTypeLiteral(jObject),
+            JArray jArray => TryCreateTypeLiteral(jArray),
+            _ when token.Type == JTokenType.Boolean => new BooleanLiteralType(token.ToObject<bool>()),
+            _ when token.IsTextBasedJTokenType() => new StringLiteralType(token.ToString()),
+            _ when token.Type == JTokenType.Integer && token.ToObject<BigInteger>() is BigInteger intVal && long.MinValue <= intVal && intVal <= long.MaxValue => new IntegerLiteralType((long)intVal),
+            _ => null,
+        };
+
+        private static TypeSymbol? TryCreateTypeLiteral(JObject jObject)
+        {
+            List<TypeProperty> convertedProperties = new();
+            ObjectTypeNameBuilder nameBuilder = new();
+            foreach (var prop in jObject.Properties())
+            {
+                if (TryCreateTypeLiteral(prop.Value) is TypeSymbol propType)
+                {
+                    convertedProperties.Add(new(prop.Name, propType, TypePropertyFlags.Required | TypePropertyFlags.DisallowAny));
+                    nameBuilder.AppendProperty(prop.Name, propType.Name, isOptional: false);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return new ObjectType(nameBuilder.ToString(), TypeSymbolValidationFlags.Default, convertedProperties, additionalPropertiesType: default);
+        }
+
+        private static TypeSymbol? TryCreateTypeLiteral(JArray jArray)
+        {
+            List<ITypeReference> convertedItems = new();
+            TupleTypeNameBuilder nameBuilder = new();
+            foreach (var item in jArray)
+            {
+                if (TryCreateTypeLiteral(item) is TypeSymbol itemType)
+                {
+                    convertedItems.Add(itemType);
+                    nameBuilder.AppendItem(itemType.Name);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return new TupleType(nameBuilder.ToString(), convertedItems.ToImmutableArray(), TypeSymbolValidationFlags.Default);
+        }
+
+        /// <summary>
+        /// Gets the type of the property whose name we can obtain at compile-time.
+        /// </summary>
+        /// <param name="baseType">The base object type</param>
+        /// <param name="propertyExpressionPositionable">The position of the property name expression</param>
+        /// <param name="propertyName">The resolved property name</param>
+        /// <param name="shouldWarn">Whether diagnostics with a configurable level should be issued as warnings</param>
+        /// <param name="diagnostics">Sink for diagnostics are not included in the return type symbol</param>
+        public static TypeSymbol GetNamedPropertyType(ObjectType baseType, IPositionable propertyExpressionPositionable, string propertyName, bool shouldWarn, IDiagnosticWriter diagnostics)
+        {
+            if (baseType.TypeKind == TypeKind.Any)
+            {
+                // all properties of "any" type are of type "any"
+                return LanguageConstants.Any;
+            }
+
+            ErrorType? GenerateAccessError(TypePropertyFlags flags)
+            {
+                if (flags.HasFlag(TypePropertyFlags.WriteOnly))
+                {
+                    var writeOnlyDiagnostic = DiagnosticBuilder.ForPosition(propertyExpressionPositionable).WriteOnlyProperty(shouldWarn, baseType, propertyName);
+                    diagnostics.Write(writeOnlyDiagnostic);
+
+                    if (writeOnlyDiagnostic.Level == DiagnosticLevel.Error)
+                    {
+                        return ErrorType.Create(Enumerable.Empty<ErrorDiagnostic>());
+                    }
+                }
+
+                if (flags.HasFlag(TypePropertyFlags.FallbackProperty))
+                {
+                    diagnostics.Write(DiagnosticBuilder.ForPosition(propertyExpressionPositionable).FallbackPropertyUsed(propertyName));
+                }
+
+                return null;
+            };
+
+            // is there a declared property with this name
+            var declaredProperty = baseType.Properties.TryGetValue(propertyName);
+            if (declaredProperty != null)
+            {
+                // there is - return its type or any error raised by its use
+                return GenerateAccessError(declaredProperty.Flags) ?? declaredProperty.TypeReference.Type;
+            }
+
+            // the property is not declared
+            // check additional properties
+            if (baseType.AdditionalPropertiesType != null)
+            {
+                // yes - return the additional property type or any error raised by its use
+                return GenerateAccessError(baseType.AdditionalPropertiesFlags) ?? baseType.AdditionalPropertiesType.Type;
+            }
+
+            var availableProperties = baseType.Properties.Values
+                .Where(p => !p.Flags.HasFlag(TypePropertyFlags.WriteOnly))
+                .Select(p => p.Name)
+                .OrderBy(x => x);
+
+            var diagnosticBuilder = DiagnosticBuilder.ForPosition(propertyExpressionPositionable);
+
+            var unknownPropertyDiagnostic = availableProperties.Any() switch
+            {
+                true => SpellChecker.GetSpellingSuggestion(propertyName, availableProperties) switch
+                {
+                    string suggestedPropertyName when suggestedPropertyName != null =>
+                        diagnosticBuilder.UnknownPropertyWithSuggestion(shouldWarn, baseType, propertyName, suggestedPropertyName),
+                    _ => diagnosticBuilder.UnknownPropertyWithAvailableProperties(shouldWarn, baseType, propertyName, availableProperties),
+                },
+                _ => diagnosticBuilder.UnknownProperty(shouldWarn, baseType, propertyName)
+            };
+
+            diagnostics.Write(unknownPropertyDiagnostic);
+
+            return (unknownPropertyDiagnostic.Level == DiagnosticLevel.Error) ? ErrorType.Create(Enumerable.Empty<ErrorDiagnostic>()) : LanguageConstants.Any;
+        }
+
+        public static TypeSymbol FlattenType(TypeSymbol typeToFlatten, IPositionable argumentPosition)
+        {
+            static TypeSymbol FlattenTuple(TypeSymbol flattenInputType, TupleType tupleType, IPositionable argumentPosition)
+            {
+                List<ITypeReference> flattenedItems = new();
+                TupleTypeNameBuilder nameBuilder = new();
+                TypeSymbolValidationFlags flags = TypeSymbolValidationFlags.Default;
+
+                foreach (var item in tupleType.Items)
+                {
+                    if (item is TupleType itemTuple)
+                    {
+                        foreach (var subItem in itemTuple.Items)
+                        {
+                            nameBuilder.AppendItem(subItem.Type.Name);
+                            flattenedItems.Add(subItem);
+                        }
+                        flags |= itemTuple.ValidationFlags;
+                        continue;
+                    }
+
+                    // If we're not dealing with a tuple of tuples, just flatten `type` as if it were a normal array
+                    return FlattenArray(flattenInputType, tupleType, argumentPosition);
+                }
+
+                return new TupleType(nameBuilder.ToString(), flattenedItems.ToImmutableArray(), flags);
+            }
+
+            static TypeSymbol FlattenUnionOfArrays(TypeSymbol flattenInputType, UnionType unionType, IPositionable argumentPosition) => UnionOfFlattened(
+                flattenInputType,
+                unionType.Members.Select(typeRef => CalculateFlattenedType(unionType, typeRef.Type, argumentPosition)),
+                argumentPosition);
+
+            static TypeSymbol FlattenArrayOfUnion(TypeSymbol flattenInputType, UnionType itemUnion, IPositionable argumentPosition)
+                => UnionOfFlattened(flattenInputType, itemUnion.Members, argumentPosition);
+
+            static TypeSymbol UnionOfFlattened(TypeSymbol flattenInputType, IEnumerable<ITypeReference> toFlatten, IPositionable argumentPosition)
+            {
+                List<ITypeReference> flattenedMembers = new();
+                TypeSymbolValidationFlags flattenedFlags = TypeSymbolValidationFlags.Default;
+                List<ErrorType> errors = new();
+
+                foreach (var member in toFlatten)
+                {
+                    switch (member.Type)
+                    {
+                        case AnyType:
+                            return LanguageConstants.Array;
+                        case ErrorType errorType:
+                            errors.Add(errorType);
+                            break;
+                        case ArrayType arrayType:
+                            flattenedMembers.Add(arrayType.Item);
+                            if (arrayType is TypedArrayType typedArrayType)
+                            {
+                                flattenedFlags |= typedArrayType.ValidationFlags;
+                            }
+                            break;
+                        default:
+                            errors.Add(ErrorType.Create(DiagnosticBuilder.ForPosition(argumentPosition).ValueCannotBeFlattened(flattenInputType, member.Type)));
+                            break;
+                    }
+                }
+
+                if (errors.Any())
+                {
+                    return ErrorType.Create(errors.SelectMany(e => e.GetDiagnostics()));
+                }
+
+                return new TypedArrayType(TypeHelper.CreateTypeUnion(flattenedMembers), flattenedFlags);
+            }
+
+            static TypeSymbol FlattenArray(TypeSymbol flattenInputType, ArrayType arrayType, IPositionable argumentPosition) => arrayType.Item.Type switch
+            {
+                ErrorType et => et,
+                AnyType => LanguageConstants.Array,
+                UnionType itemUnion => FlattenArrayOfUnion(flattenInputType, itemUnion, argumentPosition),
+                TupleType itemTuple => new TypedArrayType(itemTuple.Item, itemTuple.ValidationFlags),
+                ArrayType itemArray => itemArray,
+                var otherwise => ErrorType.Create(DiagnosticBuilder.ForPosition(argumentPosition).ValueCannotBeFlattened(flattenInputType, otherwise)),
+            };
+
+            static TypeSymbol CalculateFlattenedType(TypeSymbol flattenInputType, TypeSymbol typeToFlatten, IPositionable argumentPosition) => typeToFlatten switch
+            {
+                AnyType => LanguageConstants.Array,
+                TupleType tupleType => FlattenTuple(flattenInputType, tupleType, argumentPosition),
+                UnionType unionType => FlattenUnionOfArrays(flattenInputType, unionType, argumentPosition),
+                ArrayType arrayType => FlattenArray(flattenInputType, arrayType, argumentPosition),
+                _ => ErrorType.Create(DiagnosticBuilder.ForPosition(argumentPosition).ValueCannotBeFlattened(flattenInputType, typeToFlatten)),
+            };
+
+            return CalculateFlattenedType(typeToFlatten, typeToFlatten, argumentPosition);
+        }
+
         private static ImmutableArray<ITypeReference> NormalizeTypeList(IEnumerable<ITypeReference> unionMembers)
         {
             // flatten and then de-duplicate members
@@ -98,5 +365,11 @@ namespace Bicep.Core.TypeSystem
 
         private static string FormatName(IEnumerable<ITypeReference> unionMembers) =>
             unionMembers.Select(m => m.Type.FormatNameForCompoundTypes()).ConcatString(" | ");
+
+        public static bool SatisfiesCondition(TypeSymbol typeSymbol, Func<TypeSymbol, bool> conditionFunc)
+            => typeSymbol switch {
+                UnionType unionType => unionType.Members.All(t => conditionFunc(t.Type)),
+                _ => conditionFunc(typeSymbol),
+            };
     }
 }

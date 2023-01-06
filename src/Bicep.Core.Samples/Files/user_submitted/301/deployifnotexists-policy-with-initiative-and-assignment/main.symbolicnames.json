@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "15441689459701917678"
+      "templateHash": "12757951902521494572"
     }
   },
   "parameters": {
@@ -150,11 +150,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7523823652853157466"
+              "templateHash": "11116191754843948367"
             }
           },
           "parameters": {
@@ -199,11 +199,11 @@
           "outputs": {
             "actionGroupId": {
               "type": "string",
-              "value": "[resourceInfo('actionGroup').id]"
+              "value": "[resourceId('microsoft.insights/actionGroups', parameters('actionGroupName'))]"
             },
             "actionGroupName": {
               "type": "string",
-              "value": "[resourceInfo('actionGroup').name]"
+              "value": "[parameters('actionGroupName')]"
             }
           }
         }
@@ -283,11 +283,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3124856912890673547"
+              "templateHash": "18148507846623358518"
             }
           },
           "parameters": {
@@ -565,7 +565,7 @@
                 "parameters": {},
                 "policyDefinitions": [
                   {
-                    "policyDefinitionId": "[resourceInfo('bicepExampleDINEpolicy').id]",
+                    "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', 'bicepExampleDINEpolicy')]",
                     "parameters": {}
                   }
                 ]
@@ -578,7 +578,7 @@
           "outputs": {
             "bicepExampleInitiativeId": {
               "type": "string",
-              "value": "[resourceInfo('bicepExampleInitiative').id]"
+              "value": "[subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', 'bicepExampleInitiative')]"
             }
           }
         }
@@ -613,11 +613,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "4504663721558284015"
+              "templateHash": "15295644524409115888"
             }
           },
           "parameters": {
@@ -659,7 +659,7 @@
             "roleAssignment": {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
-              "name": "[guid(resourceInfo('bicepExampleAssignment').name, resourceInfo('bicepExampleAssignment').type, subscription().subscriptionId)]",
+              "name": "[guid('bicepExampleAssignment', 'Microsoft.Authorization/policyAssignments', subscription().subscriptionId)]",
               "properties": {
                 "principalId": "[reference('bicepExampleAssignment', '2020-09-01', 'full').identity.principalId]",
                 "roleDefinitionId": "/providers/microsoft.authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"

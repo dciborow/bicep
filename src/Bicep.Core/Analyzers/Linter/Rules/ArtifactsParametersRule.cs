@@ -22,7 +22,6 @@ namespace Bicep.Core.Analyzers.Linter.Rules
         // publish scripts use ARM, so the rule needs to use case-insensitive checks
         private readonly StringComparison ArmParameterComparison = StringComparison.InvariantCultureIgnoreCase;
 
-        private const string ArtifactsLocationParamNameCommon = "artifactsLocation"; // ArtifactsLocationName and ArtifactsLocationSasTokenName both contain this string
         private const string ArtifactsLocationName = $"_artifactsLocation";
         private const string ArtifactsLocationSasTokenName = $"_artifactsLocationSasToken";
 
@@ -31,60 +30,43 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             description: "Follow best practices when including the _artifactsLocation and _artifactsLocationSasToken parameters.",
             docUri: new Uri($"https://aka.ms/bicep/linter/{Code}"))
         {
-            Debug.Assert(ArtifactsLocationName.Contains(ArtifactsLocationParamNameCommon, ArmParameterComparison));
-            Debug.Assert(ArtifactsLocationSasTokenName.Contains(ArtifactsLocationParamNameCommon, ArmParameterComparison));
-            Debug.Assert(ArtifactsLocationSasTokenName.ToLowerInvariant().Contains(ArtifactsLocationParamNameCommon.ToUpperInvariant(), ArmParameterComparison));
             Debug.Assert(ArtifactsLocationName.StartsWith("_"));
             Debug.Assert(ArtifactsLocationSasTokenName.StartsWith("_"));
-            Debug.Assert(!ArtifactsLocationParamNameCommon.StartsWith("_"));
         }
 
         public override string FormatMessage(params object[] values)
             => string.Format((string)values[0]);
 
-        override public IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model)
+        override public IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model, DiagnosticLevel diagnosticLevel)
         {
             var diagnostics = new List<IDiagnostic>();
 
-            diagnostics.AddRange(VerifyTopLevelParameters(model));
-            diagnostics.AddRange(VerifyModuleParameters(model));
+            diagnostics.AddRange(VerifyTopLevelParameters(model, diagnosticLevel));
+            diagnostics.AddRange(VerifyModuleParameters(model, diagnosticLevel));
 
             return diagnostics.ToArray();
         }
 
-        private IEnumerable<IDiagnostic> VerifyTopLevelParameters(SemanticModel model)
+        private IEnumerable<IDiagnostic> VerifyTopLevelParameters(SemanticModel model, DiagnosticLevel diagnosticLevel)
         {
-            var paramsOfInterest = model.Root.ParameterDeclarations.Where(p => p.Name.Contains(ArtifactsLocationParamNameCommon, ArmParameterComparison)).ToArray();
-            if (paramsOfInterest.Length == 0)
-            {
-                // Neither parameter exists, nothing to test
-                yield break;
-            }
-
             // Find artifacts parameters
-            var (artifactsLocationParam, artifactsLocationParamDiagnostic) = FindArtifactsParameter(paramsOfInterest, ArtifactsLocationName);
-            if (artifactsLocationParamDiagnostic is not null)
-            {
-                yield return artifactsLocationParamDiagnostic;
-            }
-            var (artifactsSasParam, artifactsSasParamDiagnostic) = FindArtifactsParameter(paramsOfInterest, ArtifactsLocationSasTokenName);
-            if (artifactsSasParamDiagnostic is not null)
-            {
-                yield return artifactsSasParamDiagnostic;
-            }
+            var artifactsLocationParam = model.Root.ParameterDeclarations.Where(p => p.Name.Equals(ArtifactsLocationName, ArmParameterComparison)).FirstOrDefault();
+            var artifactsSasParam = model.Root.ParameterDeclarations.Where(p => p.Name.Equals(ArtifactsLocationSasTokenName, ArmParameterComparison)).FirstOrDefault();
 
             // RULE: If you provide one parameter (either _artifactsLocation or _artifactsLocationSasToken), you must provide the other.
             if (artifactsLocationParam is not null && artifactsSasParam is null)
             {
                 yield return CreateDiagnosticForSpan(
-                    artifactsLocationParam.NameSyntax.Span,
+                    diagnosticLevel,
+                    artifactsLocationParam.NameSource.Span,
                     string.Format(CoreResources.ArtifactsLocationRule_Error_ParamMissing, ArtifactsLocationName, ArtifactsLocationSasTokenName));
             }
             else if (artifactsSasParam is not null && artifactsLocationParam is null)
             {
                 yield return CreateDiagnosticForSpan(
-                     artifactsSasParam.NameSyntax.Span,
-                     string.Format(CoreResources.ArtifactsLocationRule_Error_ParamMissing, ArtifactsLocationSasTokenName, ArtifactsLocationName));
+                    diagnosticLevel,
+                    artifactsSasParam.NameSource.Span,
+                    string.Format(CoreResources.ArtifactsLocationRule_Error_ParamMissing, ArtifactsLocationSasTokenName, ArtifactsLocationName));
             }
             if (artifactsLocationParam is null || artifactsSasParam is null)
             {
@@ -96,29 +78,29 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             Debug.Assert(artifactsSasParam is not null);
 
             // RULE: _artifactsLocation must be a string.
-            if (VerifyParameterType(artifactsLocationParam, LanguageConstants.TypeNameString) is IDiagnostic diagnosticLocType)
+            if (VerifyParameterType(diagnosticLevel, artifactsLocationParam, LanguageConstants.TypeNameString) is IDiagnostic diagnosticLocType)
             {
                 yield return diagnosticLocType;
             }
 
             // RULE: _artifactsLocationSasToken must be a secure string.
-            if (VerifyParameterType(artifactsSasParam, LanguageConstants.TypeNameString) is IDiagnostic diagnosticSasType)
+            if (VerifyParameterType(diagnosticLevel, artifactsSasParam, LanguageConstants.TypeNameString) is IDiagnostic diagnosticSasType)
             {
                 yield return diagnosticSasType;
             }
-            if (VerifyParameterIsSecure(artifactsSasParam) is IDiagnostic diagnosticSecure)
+            if (VerifyParameterIsSecure(diagnosticLevel, artifactsSasParam) is IDiagnostic diagnosticSecure)
             {
                 yield return diagnosticSecure;
             }
 
             // Verify default values
-            foreach (var diag in VerifyDefaultValues(artifactsLocationParam, artifactsSasParam))
+            foreach (var diag in VerifyDefaultValues(diagnosticLevel, artifactsLocationParam, artifactsSasParam))
             {
                 yield return diag;
             }
         }
 
-        private IEnumerable<IDiagnostic> VerifyModuleParameters(SemanticModel model)
+        private IEnumerable<IDiagnostic> VerifyModuleParameters(SemanticModel model, DiagnosticLevel diagnosticLevel)
         {
             // RULE: When referencing a module, if that module has an _artifactsLocation or _artifactsLocationSasToken parameter, a value must be
             //     passed in for those parameters, even if they have default values in the module.
@@ -127,8 +109,9 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             {
                 if (module.TryGetSemanticModel(out ISemanticModel? moduleModel, out _))
                 {
-                    foreach (var formalParam in moduleModel.Parameters)
+                    foreach (var formalParam in moduleModel.Parameters.Values)
                     {
+                        // we cannot use the Parameters dictionary because we need to do a case-insensitive match in this rule
                         if (formalParam.Name.Equals(ArtifactsLocationName, ArmParameterComparison) ||
                             formalParam.Name.Equals(ArtifactsLocationSasTokenName, ArmParameterComparison))
                         {
@@ -136,7 +119,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                             if (module.DeclaringSyntax is ModuleDeclarationSyntax moduleSyntax)
                             {
                                 var moduleParamsPropertyObject = moduleSyntax.TryGetBody()?
-                                    .TryGetPropertyByName(LanguageConstants.ModuleParamsPropertyName) as ObjectPropertySyntax;
+                                    .TryGetPropertyByName(LanguageConstants.ModuleParamsPropertyName);
 
                                 // Look for a parameter value being passed in for the formal parameter that we found
                                 // Be sure the param value we're looking for matches exactly the name/casing for the formal parameter (ordinal)
@@ -148,7 +131,8 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                                 if (passedInParameter == null)
                                 {
                                     yield return CreateDiagnosticForSpan(
-                                        module.NameSyntax.Span,
+                                        diagnosticLevel,
+                                        module.NameSource.Span,
                                         string.Format(
                                             "Parameter '{0}' of module '{1}' should be assigned an explicit value.",
                                             formalParam.Name,
@@ -162,6 +146,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
         }
 
         private IEnumerable<IDiagnostic> VerifyDefaultValues(
+            DiagnosticLevel diagnosticLevel,
             ParameterSymbol artifactsLocationParam,
             ParameterSymbol artifactsSasParam)
         {
@@ -179,8 +164,8 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             //   If _artifactsLocationSasToken has a default value, it must be an empty string (no rule about
             //     whether it should or shouldn't have a default value, instead checking module references)
 
-            var artifactsLocationDefaultValue = GetParameterDefaultValue(artifactsLocationParam);
-            var artifactsSasDefaultValue = GetParameterDefaultValue(artifactsSasParam);
+            var artifactsLocationDefaultValue = SyntaxHelper.TryGetDefaultValue(artifactsLocationParam);
+            var artifactsSasDefaultValue = SyntaxHelper.TryGetDefaultValue(artifactsSasParam);
 
             // ... RULE: If _artifactsLocation has a default value, it must be either "[deployment().properties.templateLink.uri]" or a raw URL
             if (artifactsLocationDefaultValue != null) // pass if no default value
@@ -203,6 +188,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                 if (!pass)
                 {
                     yield return CreateDiagnosticForSpan(
+                        diagnosticLevel,
                         artifactsLocationDefaultValue.Span,
                         $"If the '{ArtifactsLocationName}' parameter has a default value, it must be a raw URL or an expression like '{"deployment().properties.templateLink.uri"}'.");
                 }
@@ -215,24 +201,14 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                 if (literal != string.Empty)
                 {
                     yield return CreateDiagnosticForSpan(
+                        diagnosticLevel,
                         artifactsSasDefaultValue.Span,
                         $"If the '{ArtifactsLocationSasTokenName}' parameter has a default value, it must be an empty string.");
                 }
             }
         }
 
-        private SyntaxBase? GetParameterDefaultValue(ParameterSymbol parameterSymbol)
-        {
-            if (parameterSymbol.DeclaringSyntax is ParameterDeclarationSyntax syntax)
-            {
-                return SyntaxHelper.TryGetDefaultValue(syntax);
-            }
-
-            return null;
-        }
-
-
-        private string? TryGetStringLiteral(SyntaxBase syntax)
+        private static string? TryGetStringLiteral(SyntaxBase syntax)
         {
             if (syntax is StringSyntax @string)
             {
@@ -242,28 +218,29 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             return null;
         }
 
-        private string? GetParameterType(ParameterSymbol parameterSymbol)
+        private static string? GetParameterType(ParameterSymbol parameterSymbol)
         {
             if (parameterSymbol.DeclaringSyntax is ParameterDeclarationSyntax parameterDeclaration
-               && parameterDeclaration.ParameterType is SimpleTypeSyntax typeSyntax)
+               && parameterDeclaration.Type is VariableAccessSyntax typeSyntax)
             {
                 if (typeSyntax.HasParseErrors())
                 {
                     return null;
                 }
 
-                return typeSyntax.TypeName;
+                return typeSyntax.Name.IdentifierName;
             }
 
             return null;
         }
 
-        private IDiagnostic? VerifyParameterType(ParameterSymbol parameter, string expectedTypeName)
+        private IDiagnostic? VerifyParameterType(DiagnosticLevel diagnosticLevel, ParameterSymbol parameter, string expectedTypeName)
         {
             if (GetParameterType(parameter) is string paramType
                && paramType != expectedTypeName)
             {
                 return CreateFixableDiagnosticForSpan(
+                    diagnosticLevel,
                     parameter.DeclaringParameter.Type.Span,
                     new CodeFix(
                         String.Format(CoreResources.ArtifactsLocationRule_FixTitle_ChangeType, parameter.Name, expectedTypeName),
@@ -278,41 +255,18 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             return null;
         }
 
-        private IDiagnostic? VerifyParameterIsSecure(ParameterSymbol parameter)
+        private IDiagnostic? VerifyParameterIsSecure(DiagnosticLevel diagnosticLevel, ParameterSymbol parameter)
         {
             if (!parameter.IsSecure())
             {
                 return CreateDiagnosticForSpan(
+                    diagnosticLevel,
                     parameter.DeclaringParameter.Type.Span,
                     string.Format(CoreResources.ArtifactsLocationRule_Error_ParamMustBeSecure, parameter.Name)
                 );
             }
 
             return null;
-        }
-
-        private (ParameterSymbol?, IDiagnostic? diagnostic) FindArtifactsParameter(ParameterSymbol[] parameters, string parameterName)
-        {
-            Debug.Assert(parameterName[0] == '_');
-            var nameWithoutUnderscore = parameterName.Substring(1);
-
-            var paramNoUnderscore = parameters.Where(p => p.Name.Equals(nameWithoutUnderscore, ArmParameterComparison)).FirstOrDefault();
-            if (paramNoUnderscore is not null)
-            {
-                return (
-                     paramNoUnderscore,
-                     CreateDiagnosticForSpan(
-                       paramNoUnderscore.NameSyntax.Span,
-                       string.Format(CoreResources.ArtifactsLocationRule_Error_MissingUnderscore, nameWithoutUnderscore)));
-            }
-
-            var param = parameters.Where(p => p.Name.Equals(parameterName, ArmParameterComparison)).FirstOrDefault();
-            if (param is not null)
-            {
-                return (param, null);
-            }
-
-            return (null, null);
         }
     }
 }

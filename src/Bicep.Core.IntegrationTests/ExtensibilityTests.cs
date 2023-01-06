@@ -18,28 +18,17 @@ namespace Bicep.Core.IntegrationTests
         [NotNull]
         public TestContext? TestContext { get; set; }
 
-        private CompilationHelper.CompilationHelperContext GetCompilationContextWithTestExtensibilityProvider()
-        {
-            var features = BicepTestConstants.CreateFeaturesProvider(TestContext, importsEnabled: true);
-            var resourceTypeLoader = BicepTestConstants.AzResourceTypeLoader;
-            var namespaceProvider = new TestExtensibilityNamespaceProvider(resourceTypeLoader, features);
-
-            return new(
-                AzResourceTypeLoader: resourceTypeLoader,
-                Features: features,
-                NamespaceProvider: namespaceProvider);
-        }
-
-        private CompilationHelper.CompilationHelperContext GetCompilationContext() =>
-            new(Features: BicepTestConstants.CreateFeaturesProvider(TestContext, importsEnabled: true));
+        private ServiceBuilder Services => new ServiceBuilder()
+            .WithFeatureOverrides(new(ExtensibilityEnabled: true))
+            .WithNamespaceProvider(new TestExtensibilityNamespaceProvider(BicepTestConstants.AzResourceTypeLoader));
 
         [TestMethod]
         public void Storage_import_bad_config_is_blocked()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   madeUpProperty: 'asdf'
-}
+} as stg
 ");
             result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new[] {
                 ("BCP035", DiagnosticLevel.Error, "The specified \"object\" declaration is missing the following required properties: \"connectionString\"."),
@@ -50,14 +39,14 @@ import storage as stg {
         [TestMethod]
         public void Storage_import_can_be_duplicated()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg1 {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'connectionString1'
-}
+} as stg
 
-import storage as stg2 {
+import 'storage@1.0.0' with {
   connectionString: 'connectionString2'
-}
+} as stg2
 ");
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
         }
@@ -65,10 +54,10 @@ import storage as stg2 {
         [TestMethod]
         public void Storage_import_basic_test()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'asdf'
-}
+} as stg
 
 resource container 'container' = {
   name: 'myblob'
@@ -84,12 +73,48 @@ resource blob 'blob' = {
         }
 
         [TestMethod]
+        public void Ambiguous_type_references_return_errors()
+        {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
+  connectionString: 'asdf'
+} as stg
+
+import 'storage@1.0.0' with {
+  connectionString: 'asdf'
+} as stg2
+
+resource container 'container' = {
+  name: 'myblob'
+}
+");
+            result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new[] {
+                ("BCP264", DiagnosticLevel.Error, "Resource type \"container\" is declared in multiple imported namespaces (\"stg\", \"stg2\"), and must be fully-qualified."),
+            });
+
+            result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
+  connectionString: 'asdf'
+} as stg
+
+import 'storage@1.0.0' with {
+  connectionString: 'asdf'
+} as stg2
+
+resource container 'stg2:container' = {
+  name: 'myblob'
+}
+");
+            result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
+        }
+
+        [TestMethod]
         public void Storage_import_basic_test_loops_and_referencing()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'asdf'
-}
+} as stg
 
 resource container 'container' = {
   name: 'myblob'
@@ -126,8 +151,8 @@ output base64Content string = blobs[3]['base64Content']
         [TestMethod]
         public void Aad_import_basic_test_loops_and_referencing()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import aad as aad
+            var result = CompilationHelper.Compile(Services, @"
+import 'aad@1.0.0' as aad
 param numApps int
 
 resource myApp 'application' = {
@@ -156,8 +181,8 @@ output myAppsLoopId2 string = myAppsLoop[3]['appId']
         public void Aad_import_existing_requires_uniqueName()
         {
             // we've accidentally used 'name' even though this resource type doesn't support it
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import aad as aad
+            var result = CompilationHelper.Compile(Services, @"
+import 'aad@1.0.0'
 
 resource myApp 'application' existing = {
   name: 'foo'
@@ -172,8 +197,8 @@ resource myApp 'application' existing = {
             });
 
             // oops! let's change it to 'uniqueName'
-            result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import aad as aad
+            result = CompilationHelper.Compile(Services, @"
+import 'aad@1.0.0' as aad
 
 resource myApp 'application' existing = {
   uniqueName: 'foo'
@@ -189,8 +214,8 @@ resource myApp 'application' existing = {
         [TestMethod]
         public void Kubernetes_import_existing_warns_with_readonly_fields()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import kubernetes as kubernetes {
+            var result = CompilationHelper.Compile(Services, @"
+import 'kubernetes@1.0.0' with {
   namespace: 'default'
   kubeConfig: ''
 }
@@ -219,13 +244,13 @@ resource service 'core/Service@v1' existing = {
         [TestMethod]
         public void Kubernetes_competing_imports_are_blocked()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import kubernetes as k8s1 {
+            var result = CompilationHelper.Compile(Services, @"
+import 'kubernetes@1.0.0' with {
   namespace: 'default'
   kubeConfig: ''
 }
 
-import kubernetes as k8s2 {
+import 'kubernetes@1.0.0' with {
   namespace: 'default'
   kubeConfig: ''
 }
@@ -233,7 +258,9 @@ import kubernetes as k8s2 {
 
             result.Should().NotGenerateATemplate();
             result.Should().HaveDiagnostics(new[] {
+                ("BCP028", DiagnosticLevel.Error, "Identifier \"kubernetes\" is declared multiple times. Remove or rename the duplicates."),
                 ("BCP207", DiagnosticLevel.Error, "Namespace \"kubernetes\" is imported multiple times. Remove the duplicates."),
+                ("BCP028", DiagnosticLevel.Error, "Identifier \"kubernetes\" is declared multiple times. Remove or rename the duplicates."),
                 ("BCP207", DiagnosticLevel.Error, "Namespace \"kubernetes\" is imported multiple times. Remove the duplicates."),
             });
         }
@@ -241,8 +268,8 @@ import kubernetes as k8s2 {
         [TestMethod]
         public void Kubernetes_import_existing_resources()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import kubernetes as kubernetes {
+            var result = CompilationHelper.Compile(Services, @"
+import 'kubernetes@1.0.0' with {
   namespace: 'default'
   kubeConfig: ''
 }
@@ -277,8 +304,8 @@ resource configmap 'core/ConfigMap@v1' existing = {
         [TestMethod]
         public void Kubernetes_import_existing_connectionstring_test()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import kubernetes as kubernetes {
+            var result = CompilationHelper.Compile(Services, @"
+import 'kubernetes@1.0.0' with {
   namespace: 'default'
   kubeConfig: ''
 }
@@ -316,10 +343,10 @@ resource secret 'core/Secret@v1' = {
         [TestMethod]
         public void Storage_import_basic_test_with_qualified_type()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'asdf'
-}
+} as stg
 
 resource container 'stg:container' = {
   name: 'myblob'
@@ -337,10 +364,10 @@ resource blob 'stg:blob' = {
         [TestMethod]
         public void Invalid_namespace_qualifier_returns_error()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'asdf'
-}
+} as stg
 
 resource container 'foo:container' = {
   name: 'myblob'
@@ -362,10 +389,10 @@ resource blob 'bar:blob' = {
         [TestMethod]
         public void Child_resource_with_parent_namespace_mismatch_returns_error()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(), @"
-import storage as stg {
+            var result = CompilationHelper.Compile(Services, @"
+import 'storage@1.0.0' with {
   connectionString: 'asdf'
-}
+} as stg
 
 resource parent 'az:Microsoft.Storage/storageAccounts@2020-01-01' existing = {
   name: 'stgParent'
@@ -385,7 +412,7 @@ resource parent 'az:Microsoft.Storage/storageAccounts@2020-01-01' existing = {
         [TestMethod]
         public void Storage_import_end_to_end_test()
         {
-            var result = CompilationHelper.Compile(GetCompilationContextWithTestExtensibilityProvider(),
+            var result = CompilationHelper.Compile(Services,
                 ("main.bicep", @"
 param accountName string
 
@@ -411,9 +438,9 @@ module website './website.bicep' = {
 @secure()
 param connectionString string
 
-import storage as stg {
+import 'storage@1.0.0' with {
   connectionString: connectionString
-}
+} as stg
 
 resource container 'container' = {
   name: 'bicep'
@@ -434,11 +461,11 @@ Hello from Bicep!"));
   ""languageVersion"": ""1.9-experimental"",
   ""contentVersion"": ""1.0.0.0"",
   ""metadata"": {
-    ""EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
+    ""_EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
     ""_generator"": {
       ""name"": ""bicep"",
       ""version"": ""dev"",
-      ""templateHash"": ""102018899127935696""
+      ""templateHash"": ""8036895127623403713""
     }
   },
   ""parameters"": {
@@ -468,7 +495,7 @@ Hello from Bicep!"));
         ""mode"": ""Incremental"",
         ""parameters"": {
           ""connectionString"": {
-            ""value"": ""[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', resourceInfo('stgAccount').name, environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', toLower(parameters('accountName'))), '2019-06-01').keys[0].value)]""
+            ""value"": ""[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', toLower(parameters('accountName')), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', toLower(parameters('accountName'))), '2019-06-01').keys[0].value)]""
           }
         },
         ""template"": {
@@ -476,16 +503,16 @@ Hello from Bicep!"));
           ""languageVersion"": ""1.9-experimental"",
           ""contentVersion"": ""1.0.0.0"",
           ""metadata"": {
-            ""EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
+            ""_EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
             ""_generator"": {
               ""name"": ""bicep"",
               ""version"": ""dev"",
-              ""templateHash"": ""16652946131126277045""
+              ""templateHash"": ""5609881366445430907""
             }
           },
           ""parameters"": {
             ""connectionString"": {
-              ""type"": ""secureString""
+              ""type"": ""securestring""
             }
           },
           ""variables"": {
@@ -494,7 +521,7 @@ Hello from Bicep!"));
           ""imports"": {
             ""stg"": {
               ""provider"": ""AzureStorage"",
-              ""version"": ""1.0"",
+              ""version"": ""1.0.0"",
               ""config"": {
                 ""connectionString"": ""[parameters('connectionString')]""
               }
@@ -534,8 +561,8 @@ Hello from Bicep!"));
         [TestMethod]
         public void Az_namespace_can_be_used_without_configuration()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import az as az
+            var result = CompilationHelper.Compile(Services, @"
+import 'az@1.0.0'
 ");
 
             result.Should().GenerateATemplate();
@@ -545,8 +572,8 @@ import az as az
         [TestMethod]
         public void Az_namespace_errors_with_configuration()
         {
-            var result = CompilationHelper.Compile(GetCompilationContext(), @"
-import az as az {}
+            var result = CompilationHelper.Compile(Services, @"
+import 'az@1.0.0' with {}
 ");
 
             result.Should().NotGenerateATemplate();

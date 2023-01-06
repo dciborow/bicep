@@ -14,11 +14,11 @@ using Bicep.Core.Extensions;
 using Bicep.Core.FileSystem;
 using Bicep.Core.Parsing;
 using Bicep.Core.Samples;
-using Bicep.Core.Semantics;
 using Bicep.Core.Semantics.Namespaces;
 using Bicep.Core.Text;
 using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
+using Bicep.Core.UnitTests.FileSystem;
 using Bicep.Core.UnitTests.Utils;
 using Bicep.Core.Workspaces;
 using Bicep.LangServer.IntegrationTests.Completions;
@@ -40,7 +40,7 @@ namespace Bicep.LangServer.IntegrationTests
     [TestClass]
     public class CompletionTests
     {
-        public static readonly INamespaceProvider NamespaceProvider = BicepTestConstants.NamespaceProvider;
+        private static ServiceBuilder Services => new ServiceBuilder();
 
         private static readonly SharedLanguageHelperManager ServerWithNamespaceProvider = new();
 
@@ -48,7 +48,9 @@ namespace Bicep.LangServer.IntegrationTests
 
         private static readonly SharedLanguageHelperManager DefaultServer = new();
 
-        private static readonly SharedLanguageHelperManager ServerWithImportsEnabled = new();
+        private static readonly SharedLanguageHelperManager ServerWithExtensibilityEnabled = new();
+
+        private static readonly SharedLanguageHelperManager ServerWithTypesEnabled = new();
 
         private static readonly SharedLanguageHelperManager ServerWithBuiltInTypes = new();
 
@@ -68,27 +70,26 @@ namespace Bicep.LangServer.IntegrationTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
-            ServerWithNamespaceProvider.Initialize(
-                async () => await MultiFileLanguageServerHelper.StartLanguageServer(
-                    testContext,
-                    creationOptions: new LanguageServer.Server.CreationOptions(NamespaceProvider: NamespaceProvider)));
+            ServerWithNamespaceProvider.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
 
-            ServerWithNamespaceAndTestResolver.Initialize(
-                async () => await MultiFileLanguageServerHelper.StartLanguageServer(
-                    testContext,
-                    creationOptions: new LanguageServer.Server.CreationOptions(NamespaceProvider: NamespaceProvider, FileResolver: BicepTestConstants.FileResolver)));
+            ServerWithNamespaceAndTestResolver.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
 
             DefaultServer.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
 
-            ServerWithImportsEnabled.Initialize(
+            ServerWithExtensibilityEnabled.Initialize(
                 async () => await MultiFileLanguageServerHelper.StartLanguageServer(
                     testContext,
-                    new LanguageServer.Server.CreationOptions(Features: BicepTestConstants.CreateFeaturesProvider(testContext, importsEnabled: true))));
+                    services => services.WithFeatureOverrides(new(testContext, ExtensibilityEnabled: true))));
+
+            ServerWithTypesEnabled.Initialize(
+                async () => await MultiFileLanguageServerHelper.StartLanguageServer(
+                    testContext,
+                    services => services.WithFeatureOverrides(new(testContext, UserDefinedTypesEnabled: true))));
 
             ServerWithBuiltInTypes.Initialize(
                 async () => await MultiFileLanguageServerHelper.StartLanguageServer(
                     testContext,
-                    new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create())));
+                    services => services.WithNamespaceProvider(BuiltInTestTypes.Create())));
         }
 
         [ClassCleanup]
@@ -97,7 +98,8 @@ namespace Bicep.LangServer.IntegrationTests
             await ServerWithNamespaceProvider.DisposeAsync();
             await ServerWithNamespaceAndTestResolver.DisposeAsync();
             await DefaultServer.DisposeAsync();
-            await ServerWithImportsEnabled.DisposeAsync();
+            await ServerWithExtensibilityEnabled.DisposeAsync();
+            await ServerWithTypesEnabled.DisposeAsync();
             await ServerWithBuiltInTypes.DisposeAsync();
         }
 
@@ -139,7 +141,7 @@ namespace Bicep.LangServer.IntegrationTests
 
             var bicepContents = await File.ReadAllTextAsync(bicepFileName);
             bicepContents = StringUtils.ReplaceNewlines(bicepContents, "\n");
-            var cursor = bicepContents.IndexOf("// Insert snippet here");
+            (bicepContents, var cursor) = ParserHelper.GetFileWithSingleCursor(bicepContents, "// Insert snippet here");
 
             // Request the expected completion from the server, and ensure it is unique + valid
             var completionText = await RequestSnippetCompletion(bicepFileName, completionData, bicepContents, cursor);
@@ -158,11 +160,10 @@ namespace Bicep.LangServer.IntegrationTests
                 File.Exists(combinedFileName).Should().BeTrue($"Combined snippet file \"{combinedSourceFileName}\" should be checked in");
 
                 var combinedFileUri = PathHelper.FilePathToFileUrl(combinedFileName);
-                var sourceFileGrouping = SourceFileGroupingFactory.CreateForFiles(new Dictionary<Uri, string>
+                var compilation = Services.BuildCompilation(new Dictionary<Uri, string>
                 {
                     [combinedFileUri] = bicepContentsReplaced,
-                }, combinedFileUri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration);
-                var compilation = new Compilation(BicepTestConstants.Features, NamespaceProvider, sourceFileGrouping, BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+                }, combinedFileUri);
                 var diagnostics = compilation.GetEntrypointSemanticModel().GetAllDiagnostics();
 
                 var sourceTextWithDiags = OutputHelper.AddDiagsToSourceText(bicepContentsReplaced, "\n", diagnostics, diag => OutputHelper.GetDiagLoggingString(bicepContentsReplaced, outputDirectory, diag));
@@ -252,7 +253,7 @@ hel|lo
 '''|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -262,7 +263,7 @@ hel|lo
 var interpolatedString = 'abc${|true}def${|}ghi${res|}xyz'
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
         }
 
         [TestMethod]
@@ -273,7 +274,7 @@ var test = |// comment here
 var test2 = |/* block comment */|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
         }
 
         [TestMethod]
@@ -289,7 +290,7 @@ resource testRes 'Test.Rp/readWriteTests@2020-01-01' = {|
 output baz object = {|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -300,7 +301,7 @@ var test = /|/ comment here|
 var test2 = /|* block c|omment *|/
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -384,7 +385,8 @@ var test2 = /|* block c|omment *|/
                         {
                             c.Label.Should().Be("for-filtered");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -421,7 +423,8 @@ var test2 = /|* block c|omment *|/
   }
 }");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -458,7 +461,8 @@ var test2 = /|* block c|omment *|/
   }
 }");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -591,7 +595,8 @@ output string test2 = testRes.properties.|
                         x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(
                             d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which only supports reading."),
                             d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which supports reading AND writing!"),
-                            d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which is required."))));
+                            d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which is required."))),
+                '|');
         }
 
         [TestMethod]
@@ -625,7 +630,8 @@ output string test2 = testRes.properties.|
                         x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(
                             d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which only supports reading."),
                             d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which supports reading AND writing!"),
-                            d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which is required."))));
+                            d => d.Documentation!.MarkupContent!.Value.Should().Contain("This is a property which is required."))),
+                '|');
         }
 
         [TestMethod]
@@ -668,7 +674,64 @@ resource testRes5 'Test.Rp/readWriteTests@2020-01-01' |= {
                         x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(d => AssertExistingKeywordCompletion(d)),
                         x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(d => AssertExistingKeywordCompletion(d)),
                         x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(d => AssertExistingKeywordCompletion(d)),
-                        x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(d => AssertExistingKeywordCompletion(d))));
+                        x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(d => AssertExistingKeywordCompletion(d))),
+                '|');
+        }
+
+        [TestMethod]
+        public async Task Partial_identifier_resource_type_completions_work()
+        {
+            {
+                var fileWithCursors = @"
+resource myRes Te|st
+";
+
+                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+
+                var completions = await file.RequestCompletion(cursor);
+
+                var updatedFile = file.ApplyCompletion(completions, "'Test.Rp/basicTests'");
+                updatedFile.Should().HaveSourceText(@"
+resource myRes 'Test.Rp/basicTests@|'
+");
+            }
+        }
+
+        [TestMethod]
+        public async Task Partial_string_resource_type_completions_work()
+        {
+            {
+                var fileWithCursors = @"
+resource myRes 'Test.Rp/ba|si
+";
+
+                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+
+                var completions = await file.RequestCompletion(cursor);
+
+                var updatedFile = file.ApplyCompletion(completions, "'Test.Rp/basicTests'");
+                updatedFile.Should().HaveSourceText(@"
+resource myRes 'Test.Rp/basicTests@|'
+");
+            }
+
+            {
+                var fileWithCursors = @"
+resource myRes 'Test.Rp/basicTests@|
+";
+
+                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+
+                var completions = await file.RequestCompletion(cursor);
+
+                var updatedFile = file.ApplyCompletion(completions, "2020-01-01");
+                updatedFile.Should().HaveSourceText(@"
+resource myRes 'Test.Rp/basicTests@2020-01-01'|
+");
+            }
         }
 
         [TestMethod]
@@ -727,7 +790,8 @@ resource base64 'Microsoft.Foo/foos@2020-09-01' existing | {}
                             ),
                             x => x!.OrderBy(d => d.SortText).Should().SatisfyRespectively(
                                 d => AssertEqualsOperatorCompletion(d)
-                            )));
+                            )),
+                '|');
         }
 
         [TestMethod]
@@ -756,7 +820,8 @@ resource testRes2 'Test.Rp/readWriteTests@2020-01-01' = {
                 completions =>
                 completions.Should().SatisfyRespectively(
                     l => AssertPropertyNameCompletionsWithColons(l!),
-                    l => AssertPropertyNameCompletionsWithColons(l!)));
+                    l => AssertPropertyNameCompletionsWithColons(l!)),
+                '|');
         }
 
         [TestMethod]
@@ -786,7 +851,8 @@ resource testRes3 'Test.Rp/readWriteTests@2020-01-01' = {
                 completions =>
                    completions.Should().SatisfyRespectively(
                        l => AssertPropertyNameCompletionsWithoutColons(l!),
-                       l => AssertPropertyNameCompletionsWithoutColons(l!)));
+                       l => AssertPropertyNameCompletionsWithoutColons(l!)),
+                '|');
         }
 
         [TestMethod]
@@ -800,7 +866,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {|
   }
 |}
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -823,7 +889,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {
                 }
             }
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsContainResourceLabel);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsContainResourceLabel, '|');
         }
 
         [TestMethod]
@@ -836,7 +902,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {
   name: 'myRes'
 }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -854,7 +920,7 @@ var obj6 = { |
   prop  | : false
  |  }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -873,7 +939,7 @@ var arr6 = [ |
   |  true
 | ]
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -884,7 +950,7 @@ var unary = |! | true
 var binary = -1 | |+| | 2
 var ternary = true | |?| | 'yes' | |:| | 'no'
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -894,7 +960,7 @@ var ternary = true | |?| | 'yes' | |:| | 'no'
 |param foo string
 v|ar expr = 1 + 2
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -913,7 +979,7 @@ resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
 }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
 
@@ -925,7 +991,7 @@ var booleanExp = !|tr|ue| && |fal|se|
 var integerExp = |12|345| + |543|21|
 var nullLit = |n|ull|
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty);
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -939,17 +1005,16 @@ module bar 'doesNotExist.bicep' = [for item in list:|]
 module bar2 'test.bicep' = [for item in list: |  ]
 ";
 
-            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
             Uri mainUri = new Uri("file:///main.bicep");
-            var fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string>
+            var files = new Dictionary<Uri, string>
             {
                 [new Uri("file:///test.bicep")] = @"param foo string",
                 [mainUri] = text
-            });
+            };
 
             var bicepFile = SourceFileFactory.CreateBicepFile(mainUri, text);
-            var creationOptions = new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver);
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(this.TestContext, text, bicepFile.FileUri, creationOptions: creationOptions);
+            using var helper = await LanguageServerHelper.StartServerWithText(this.TestContext, files, bicepFile.FileUri, services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
 
             var file = new FileRequestHelper(helper.Client, bicepFile);
             var completions = await file.RequestCompletions(cursors);
@@ -973,47 +1038,36 @@ module bar2 'test.bicep' = [for item in list: |  ]
         [TestMethod]
         public async Task RequestModulePathCompletions_ArmTemplateFilesInDir_ReturnsCompletionsIncludingArmTemplatePaths()
         {
-            var mainUri = DocumentUri.FromFileSystemPath("/path/to/main.bicep");
-            var armTemplateUri1 = DocumentUri.FromFileSystemPath("/path/to/template1.arm");
-            var armTemplateUri2 = DocumentUri.FromFileSystemPath("/path/to/template2.json");
-            var armTemplateUri3 = DocumentUri.FromFileSystemPath("/path/to/template3.jsonc");
-            var armTemplateUri4 = DocumentUri.FromFileSystemPath("/path/to/template4.json");
-            var armTemplateUri5 = DocumentUri.FromFileSystemPath("/path/to/template5.json");
-            var jsonUri1 = DocumentUri.FromFileSystemPath("/path/to/json1.json");
-            var jsonUri2 = DocumentUri.FromFileSystemPath("/path/to/json2.json");
-            var bicepModuleUri1 = DocumentUri.FromFileSystemPath("/path/to/module1.txt");
-            var bicepModuleUri2 = DocumentUri.FromFileSystemPath("/path/to/module2.bicep");
-            var bicepModuleUri3 = DocumentUri.FromFileSystemPath("/path/to/module3.bicep");
-
+            var mainUri = InMemoryFileResolver.GetFileUri("/path/to/main.bicep");
             var (mainFileText, cursor) = ParserHelper.GetFileWithSingleCursor(@"
 module mod1 './module1.txt' = {}
 module mod2 './template3.jsonc' = {}
 module mod2 './|' = {}
-");
-            var mainFile = SourceFileFactory.CreateBicepFile(mainUri.ToUri(), mainFileText);
+",
+                '|');
+            var mainFile = SourceFileFactory.CreateBicepFile(mainUri, mainFileText);
             var schema = "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#";
 
             var fileTextsByUri = new Dictionary<Uri, string>
             {
-                [mainUri.ToUri()] = mainFileText,
-                [armTemplateUri1.ToUri()] = "",
-                [armTemplateUri2.ToUri()] = @$"{{ ""schema"": ""{schema}"" }}",
-                [armTemplateUri3.ToUri()] = @"{}",
-                [armTemplateUri4.ToUri()] = new string('x', 2000 - schema.Length) + schema,
-                [armTemplateUri5.ToUri()] = new string('x', 2002 - schema.Length) + schema,
-                [jsonUri1.ToUri()] = "{}",
-                [jsonUri2.ToUri()] = @"[{ ""name"": ""value"" }]",
-                [bicepModuleUri1.ToUri()] = "param foo string",
-                [bicepModuleUri2.ToUri()] = "param bar bool",
-                [bicepModuleUri3.ToUri()] = "",
+                [mainUri] = mainFileText,
+                [InMemoryFileResolver.GetFileUri("/path/to/template1.arm")] = "",
+                [InMemoryFileResolver.GetFileUri("/path/to/template2.json")] = @$"{{ ""schema"": ""{schema}"" }}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template3.jsonc")] = @"{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template4.json")] = new string('x', 2000 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/template5.json")] = new string('x', 2002 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/json1.json")] = "{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/json2.json")] = @"[{ ""name"": ""value"" }]",
+                [InMemoryFileResolver.GetFileUri("/path/to/module1.txt")] = "param foo string",
+                [InMemoryFileResolver.GetFileUri("/path/to/module2.bicep")] = "param bar bool",
+                [InMemoryFileResolver.GetFileUri("/path/to/module3.bicep")] = "",
             };
 
-            var fileResolver = new InMemoryFileResolver(fileTextsByUri);
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(
+            using var helper = await LanguageServerHelper.StartServerWithText(
                 TestContext,
-                mainFileText,
+                fileTextsByUri,
                 mainUri,
-                creationOptions: new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver));
+                services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
 
             var file = new FileRequestHelper(helper.Client, mainFile);
 
@@ -1024,7 +1078,14 @@ module mod2 './|' = {}
                 x => x.Label.Should().Be("template1.arm"),
                 x => x.Label.Should().Be("template2.json"),
                 x => x.Label.Should().Be("template3.jsonc"),
-                x => x.Label.Should().Be("template4.json"));
+                x => x.Label.Should().Be("template4.json"),
+                x => x.Label.Should().Be("../"));
+
+            file.ApplyCompletion(completions, "module2.bicep").Should().HaveSourceText(@"
+module mod1 './module1.txt' = {}
+module mod2 './template3.jsonc' = {}
+module mod2 './module2.bicep'| = {}
+");
         }
 
         [TestMethod]
@@ -1057,7 +1118,8 @@ module mod2 './|' = {}
                         {
                             c.Label.Should().Be("if-else");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -1116,7 +1178,8 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2019-06-01' 
                         {
                             x.Label.Should().Be("res-automation-variable");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -1155,7 +1218,8 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2019-06-01' 
                         {
                             c.Label.Should().Be("if-else");
                         });
-                });
+                },
+                '|');
         }
 
         [TestMethod]
@@ -1163,29 +1227,33 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2019-06-01' 
         {
             var fileWithCursors = @"
 |
-import ns1 |
-import ns2 a|
-import ns3 as|
+import 'ns1@1.0.0' |
+import 'ns2@1.0.0' a|
+import 'ns3@1.0.0' as|
 import |
 import a|
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithImportsEnabled, fileWithCursors, completions => completions.Should().SatisfyRespectively(
-                c => c!.Select(x => x.Label).Should().Contain("import"),
-                c => c!.Select(x => x.Label).Should().Equal("as"),
-                c => c!.Select(x => x.Label).Should().Equal("as"),
-                c => c!.Select(x => x.Label).Should().BeEmpty(),
-                c => c!.Select(x => x.Label).Should().Equal("az", "kubernetes", "sys"),
-                c => c!.Select(x => x.Label).Should().Equal("az", "kubernetes", "sys")
-            ));
+            await RunCompletionScenarioTest(this.TestContext, ServerWithExtensibilityEnabled, fileWithCursors,
+                completions => completions.Should().SatisfyRespectively(
+                    c => c!.Select(x => x.Label).Should().Contain("import"),
+                    c => c!.Select(x => x.Label).Should().Equal("with", "as"),
+                    c => c!.Select(x => x.Label).Should().Equal("with", "as"),
+                    c => c!.Select(x => x.Label).Should().BeEmpty(),
+                    c => c!.Select(x => x.Label).Should().Equal("'az@1.0.0'", "'kubernetes@1.0.0'", "'sys@1.0.0'"),
+                    c => c!.Select(x => x.Label).Should().Equal("'az@1.0.0'", "'kubernetes@1.0.0'", "'sys@1.0.0'")
+                ),
+                '|');
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, completions => completions.Should().SatisfyRespectively(
-                c => c!.Select(x => x.Label).Should().NotContain("import"),
-                c => c!.Select(x => x.Label).Should().BeEmpty(),
-                c => c!.Select(x => x.Label).Should().BeEmpty(),
-                c => c!.Select(x => x.Label).Should().BeEmpty(),
-                c => c!.Select(x => x.Label).Should().BeEmpty(),
-                c => c!.Select(x => x.Label).Should().BeEmpty()
-            ));
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors,
+                completions => completions.Should().SatisfyRespectively(
+                    c => c!.Select(x => x.Label).Should().NotContain("import"),
+                    c => c!.Select(x => x.Label).Should().BeEmpty(),
+                    c => c!.Select(x => x.Label).Should().BeEmpty(),
+                    c => c!.Select(x => x.Label).Should().BeEmpty(),
+                    c => c!.Select(x => x.Label).Should().BeEmpty(),
+                    c => c!.Select(x => x.Label).Should().BeEmpty()
+                ),
+                '|');
         }
 
         [TestMethod]
@@ -1193,11 +1261,11 @@ import a|
         {
             {
                 var fileWithCursors = @"
-import kubernetes as k8s |
+import 'kubernetes@1.0.0' with | as k8s
 ";
 
-                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
-                var file = await new ServerRequestHelper(TestContext, ServerWithImportsEnabled).OpenFile(text);
+                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+                var file = await new ServerRequestHelper(TestContext, ServerWithExtensibilityEnabled).OpenFile(text);
 
                 var completions = await file.RequestCompletion(cursor);
                 completions.Should().Contain(x => x.Label == "{}");
@@ -1205,22 +1273,22 @@ import kubernetes as k8s |
 
                 var updatedFile = file.ApplyCompletion(completions, "required-properties");
                 updatedFile.Should().HaveSourceText(@"
-import kubernetes as k8s {
+import 'kubernetes@1.0.0' with {
   kubeConfig: $1
   namespace: $2
-}|
+}| as k8s
 ");
             }
 
             {
                 var fileWithCursors = @"
-import kubernetes as k8s {
+import 'kubernetes@1.0.0' with {
   |
 }
 ";
 
-                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
-                var file = await new ServerRequestHelper(TestContext, ServerWithImportsEnabled).OpenFile(text);
+                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+                var file = await new ServerRequestHelper(TestContext, ServerWithExtensibilityEnabled).OpenFile(text);
 
                 var completions = await file.RequestCompletion(cursor);
                 completions.Should().Contain(x => x.Label == "namespace");
@@ -1228,24 +1296,139 @@ import kubernetes as k8s {
 
                 var updatedFile = file.ApplyCompletion(completions, "kubeConfig");
                 updatedFile.Should().HaveSourceText(@"
-import kubernetes as k8s {
+import 'kubernetes@1.0.0' with {
   kubeConfig:|
 }
 ");
             }
+        }
 
-            {
-                // az provider does not support configuration - expect no completions
-                var fileWithCursors = @"
-import az as az |
+        [TestMethod]
+        public async Task TypeCompletionsIncludeAmbientTypes()
+        {
+            var fileWithCursors = @"
+type a = ǂ
 ";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "string");
+            completions.Should().Contain(x => x.Label == "int");
+            completions.Should().Contain(x => x.Label == "bool");
+            completions.Should().Contain(x => x.Label == "object");
+            completions.Should().Contain(x => x.Label == "array");
+        }
 
-                var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
-                var file = await new ServerRequestHelper(TestContext, ServerWithImportsEnabled).OpenFile(text);
+        [TestMethod]
+        public async Task TypeCompletionsIncludeUserDefinedTypes()
+        {
+            var fileWithCursors = @"
+type a = ǂ
+type b = string
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "b");
+        }
 
-                var completions = await file.RequestCompletion(cursor);
-                completions.Should().BeEmpty();
-            }
+        [TestMethod]
+        public async Task UnionTypeMembersShouldReceiveTypeCompletions()
+        {
+            var fileWithCursors = @"
+type a = 'fizz'|'buzz'|ǂ
+type b = 'pop'
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "b");
+            completions.Should().NotContain(x => x.Label == "a");
+        }
+
+        [TestMethod]
+        public async Task UnionTypeMembersWithSeparationShouldReceiveTypeCompletions()
+        {
+            var fileWithCursors = @"
+type a = 'fizz' | 'buzz' | ǂ
+type b = 'pop'
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "b");
+        }
+
+        [TestMethod]
+        public async Task UnionTypeMemberCompletionsShouldNotIncludeNonLiteralTypes()
+        {
+            var fileWithCursors = @"
+type a = 'fizz'|'buzz'|ǂ
+type b = 'pop'
+type c = string[]
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "b");
+            completions.Should().NotContain(x => x.Label == "c");
+            completions.Should().NotContain(x => x.Label == "string");
+            completions.Should().NotContain(x => x.Label == "int");
+            completions.Should().NotContain(x => x.Label == "bool");
+            completions.Should().NotContain(x => x.Label == "object");
+            completions.Should().NotContain(x => x.Label == "array");
+        }
+
+        [TestMethod]
+        public async Task TypeCompletionsShouldNotIncludeCyclicReferences()
+        {
+            var fileWithCursors = @"
+type a = ǂ
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().NotContain(x => x.Label == "a");
+        }
+
+        [TestMethod]
+        public async Task UnionTypeMemberCompletionsShouldNotIncludeCyclicReferences()
+        {
+            var fileWithCursors = @"
+type a = 'fizz'|'buzz'|ǂ
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().NotContain(x => x.Label == "a");
+        }
+
+        [TestMethod]
+        public async Task ObjectTypePropertyCompletionsShouldNotIncludeCyclicReferences()
+        {
+            var fileWithCursors = @"
+type a = {
+    requiredAndRecursive: ǂ
+}
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().NotContain(x => x.Label == "a");
+        }
+
+        [TestMethod]
+        public async Task OptionalObjectTypePropertyCompletionsShouldIncludeRecursiveReferences()
+        {
+            var fileWithCursors = @"
+type a = {
+    optionalAndRecursive?: ǂ
+}
+";
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, 'ǂ');
+            var file = await new ServerRequestHelper(TestContext, ServerWithTypesEnabled).OpenFile(text);
+            var completions = await file.RequestCompletion(cursor);
+            completions.Should().Contain(x => x.Label == "a");
         }
 
         [TestMethod]
@@ -1257,27 +1440,27 @@ module a '|' = {
 }
 ";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
-            Uri mainUri = new Uri("file:///main.bicep");
-            var fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string>
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+            Uri mainUri = InMemoryFileResolver.GetFileUri("/dir/main.bicep");
+            var files = new Dictionary<Uri, string>
             {
-                [new Uri("file:///folder with space/mod with space.bicep")] = @"param foo string",
-                [new Uri("file:///percentage%file.bicep")] = @"param foo string",
-                [new Uri("file:///already%20escaped.bicep")] = @"param foo string",
+                [InMemoryFileResolver.GetFileUri("/dir/folder with space/mod with space.bicep")] = @"param foo string",
+                [InMemoryFileResolver.GetFileUri("/dir/percentage%file.bicep")] = @"param foo string",
+                [InMemoryFileResolver.GetFileUri("/dir/already%20escaped.bicep")] = @"param foo string",
                 [mainUri] = text
-            });
+            };
 
             var bicepFile = SourceFileFactory.CreateBicepFile(mainUri, text);
-            var creationOptions = new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver);
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(this.TestContext, text, bicepFile.FileUri, creationOptions: creationOptions);
+            using var helper = await LanguageServerHelper.StartServerWithText(this.TestContext, files, bicepFile.FileUri, services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
 
             var file = new FileRequestHelper(helper.Client, bicepFile);
             var completions = await file.RequestCompletion(cursor);
 
             completions.Should().SatisfyRespectively(
-                x => x.Label.Should().Be("mod with space.bicep"),
                 x => x.Label.Should().Be("percentage%file.bicep"),
-                x => x.Label.Should().Be("already escaped.bicep"));
+                x => x.Label.Should().Be("already%20escaped.bicep"),
+                x => x.Label.Should().Be("folder with space/"),
+                x => x.Label.Should().Be("../"));
         }
 
         [TestMethod]
@@ -1303,22 +1486,20 @@ module m 'mod.bicep' = {
 var modOut = m.outputs.inputTi|
 ";
 
-            var (text, cursors) = ParserHelper.GetFileWithCursors(mainContent);
+            var (text, cursors) = ParserHelper.GetFileWithCursors(mainContent, '|');
             Uri mainUri = new Uri("file:///main.bicep");
-            var fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string>
+            var files = new Dictionary<Uri, string>
             {
                 [new Uri("file:///mod.bicep")] = moduleContent,
                 [mainUri] = text
-            });
+            };
 
             var bicepFile = SourceFileFactory.CreateBicepFile(mainUri, text);
-            var creationOptions = new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver);
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(
+            using var helper = await LanguageServerHelper.StartServerWithText(
                 this.TestContext,
-                text,
+                files,
                 bicepFile.FileUri,
-                null,
-                creationOptions);
+                services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
 
             var file = new FileRequestHelper(helper.Client, bicepFile);
             var completions = await file.RequestCompletions(cursors);
@@ -1345,7 +1526,8 @@ resource abc 'Test.Rp/basicTests@|'
                 completions =>
                     completions.Should().SatisfyRespectively(
                         c => c.Should().SatisfyRespectively(
-                            x => x.Label.Should().Be("2020-01-01"))));
+                            x => x.Label.Should().Be("2020-01-01"))),
+                '|');
         }
 
         [TestMethod]
@@ -1362,7 +1544,8 @@ resource abc 'Test.Rp/basic|'
                 completions =>
                     completions.Should().SatisfyRespectively(
                         c => c.Should().Contain(
-                            x => x.Label == "'Test.Rp/basicTests'")));
+                            x => x.Label == "'Test.Rp/basicTests'")),
+                '|');
         }
 
         [TestMethod]
@@ -1376,7 +1559,7 @@ resource abc 'Test.Rp/listFuncTests@2020-01-01' existing = {
 var outTest = abc.|
 ";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1404,7 +1587,7 @@ resource abc 'Test.Rp/listFuncTests@2020-01-01' existing = {
 var outTest = abc.listWithInput(|)
 ";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1431,7 +1614,7 @@ resource abc 'Test.Rp/listFuncTests@2020-01-01' existing = {
 var outTest = abc.listWithInput('2020-01-01', |)
 ";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1463,7 +1646,7 @@ var outTest = abc.listWithInput('2020-01-01', {
 })
 ";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1580,7 +1763,7 @@ var outTest = abc.listWithInput('2020-01-01', {
 ")]
         public async Task List_functions_accepting_inputs_permit_object_value_completions(string fileWithCursors, string updatedFileWithCursors)
         {
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1601,7 +1784,7 @@ resource abc 'Test.Rp/listFuncTests@2020-01-01' existing = {
 
 var outTest = abc.listWithInput().|
 ";
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1645,7 +1828,8 @@ var testF = stg.listAccountSas('2021-06-01', {}).|
                         c => c!.Select(x => x.Label).Should().Contain("'2021-06-01'"),
                         c => c!.Select(x => x.Label).Should().Contain("required-properties"),
                         c => c!.Select(x => x.Label).Should().Contain("accountSasToken")
-                    )
+                    ),
+                '|'
 );
         }
 
@@ -1655,7 +1839,7 @@ var testF = stg.listAccountSas('2021-06-01', {}).|
             var fileWithCursors = @"#|
 param storageAccount string = 'testAccount";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1677,7 +1861,7 @@ var sorted = sort(['abc'], (x, y) => |)
 var sorted2 = sort(['abc'], (x, y) => x < |)
 ";
 
-            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletions(cursors);
@@ -1696,7 +1880,8 @@ var sorted2 = sort(['abc'], (x, y) => x < |)
         {
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(@"
 var foo = map([123], |)
-");
+",
+                '|');
 
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
@@ -1712,7 +1897,8 @@ var foo = map([123], foo => |)
         {
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(@"
 var foo = sort([123], |)
-");
+",
+                '|');
 
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
@@ -1733,7 +1919,8 @@ var foo = sort([123], (foo, bar) => |)
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -1746,7 +1933,8 @@ var foo = sort([123], (foo, bar) => |)
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -1759,7 +1947,8 @@ var foo = sort([123], (foo, bar) => |)
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -1772,7 +1961,8 @@ var foo = sort([123], (foo, bar) => |)
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -1783,7 +1973,7 @@ param storageAccount1 string = 'testAccount'
     #|
 param storageAccount2 string = 'testAccount'";
 
-            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursors[0]);
@@ -1825,7 +2015,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
   properties: vmProperties
 }";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1872,7 +2062,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
   properties: vmProperties
 }";
 
-            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithNamespaceProvider).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursors[0]);
@@ -1963,7 +2153,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
   properties: vmProperties
 }";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithNamespaceProvider).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -1995,7 +2185,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
 var foo = concat('abc'/*
   */, 'asd')";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithNamespaceProvider).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
@@ -2038,7 +2228,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -2066,7 +2257,8 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
                 ServerWithNamespaceProvider,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
-                    completions => completions.Should().BeEmpty()));
+                    completions => completions.Should().BeEmpty()),
+                '|');
         }
 
         [TestMethod]
@@ -2075,7 +2267,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
             string fileWithCursors = @"#disable-next-line |
 resource test";
 
-            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors);
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
             var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
 
             CompilationHelper.Compile(text).ExcludingLinterDiagnostics().Diagnostics.Should().SatisfyRespectively(
@@ -2107,7 +2299,8 @@ resourceId(subscriptionId: string, resourceGroupName: string, resourceType: stri
 
 ```
 Returns the unique identifier of a resource. You use this function when the resource name is ambiguous or not provisioned within the same template. The format of the returned identifier varies based on whether the deployment happens at the scope of a resource group, subscription, management group, or tenant.
-")));
+")),
+                '|');
         }
 
         private static void AssertAllCompletionsNonEmpty(IEnumerable<CompletionList?> completionLists)
@@ -2179,9 +2372,9 @@ Returns the unique identifier of a resource. You use this function when the reso
             return await file.RequestCompletion(offset);
         }
 
-        private static async Task RunCompletionScenarioTest(TestContext testContext, SharedLanguageHelperManager server, string fileWithCursors, Action<IEnumerable<CompletionList>> assertAction)
+        private static async Task RunCompletionScenarioTest(TestContext testContext, SharedLanguageHelperManager server, string fileWithCursors, Action<IEnumerable<CompletionList>> assertAction, char cursor)
         {
-            var (fileText, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (fileText, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
             var file = await new ServerRequestHelper(testContext, server).OpenFile(fileText);
 
             var completions = await file.RequestCompletions(cursors);
@@ -2315,46 +2508,35 @@ Returns the unique identifier of a resource. You use this function when the reso
         [DataRow("loadJsonContent", true)]
         public async Task LoadFunctionsPathArgument_returnsFilesInCompletions(string functionName, bool jsonOnTop = false)
         {
-            var mainUri = DocumentUri.FromFileSystemPath("/path/to/main.bicep");
-            var armTemplateUri1 = DocumentUri.FromFileSystemPath("/path/to/template1.arm");
-            var armTemplateUri2 = DocumentUri.FromFileSystemPath("/path/to/template2.json");
-            var armTemplateUri3 = DocumentUri.FromFileSystemPath("/path/to/template3.jsonc");
-            var armTemplateUri4 = DocumentUri.FromFileSystemPath("/path/to/template4.json");
-            var armTemplateUri5 = DocumentUri.FromFileSystemPath("/path/to/template5.json");
-            var jsonUri1 = DocumentUri.FromFileSystemPath("/path/to/json1.json");
-            var jsonUri2 = DocumentUri.FromFileSystemPath("/path/to/json2.json");
-            var bicepModuleUri1 = DocumentUri.FromFileSystemPath("/path/to/module1.txt");
-            var bicepModuleUri2 = DocumentUri.FromFileSystemPath("/path/to/module2.bicep");
-            var bicepModuleUri3 = DocumentUri.FromFileSystemPath("/path/to/module3.bicep");
+            var mainUri = InMemoryFileResolver.GetFileUri("/path/to/main.bicep");
 
             var (mainFileText, cursor) = ParserHelper.GetFileWithSingleCursor(@"
 var file = " + functionName + @"('|')
-");
-            var mainFile = SourceFileFactory.CreateBicepFile(mainUri.ToUri(), mainFileText);
+",
+                '|');
+            var mainFile = SourceFileFactory.CreateBicepFile(mainUri, mainFileText);
             var schema = "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#";
 
             var fileTextsByUri = new Dictionary<Uri, string>
             {
-                [mainUri.ToUri()] = mainFileText,
-                [armTemplateUri1.ToUri()] = "",
-                [armTemplateUri2.ToUri()] = @$"{{ ""schema"": ""{schema}"" }}",
-                [armTemplateUri3.ToUri()] = @"{}",
-                [armTemplateUri4.ToUri()] = new string('x', 2000 - schema.Length) + schema,
-                [armTemplateUri5.ToUri()] = new string('x', 2002 - schema.Length) + schema,
-                [jsonUri1.ToUri()] = "{}",
-                [jsonUri2.ToUri()] = @"[{ ""name"": ""value"" }]",
-                [bicepModuleUri1.ToUri()] = "param foo string",
-                [bicepModuleUri2.ToUri()] = "param bar bool",
-                [bicepModuleUri3.ToUri()] = "",
+                [mainUri] = mainFileText,
+                [InMemoryFileResolver.GetFileUri("/path/to/template1.arm")] = "",
+                [InMemoryFileResolver.GetFileUri("/path/to/template2.json")] = @$"{{ ""schema"": ""{schema}"" }}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template3.jsonc")] = @"{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template4.json")] = new string('x', 2000 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/template5.json")] = new string('x', 2002 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/json1.json")] = "{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/json2.json")] = @"[{ ""name"": ""value"" }]",
+                [InMemoryFileResolver.GetFileUri("/path/to/module1.txt")] = "param foo string",
+                [InMemoryFileResolver.GetFileUri("/path/to/module2.bicep")] = "param bar bool",
+                [InMemoryFileResolver.GetFileUri("/path/to/module3.bicep")] = "",
             };
 
-            var fileResolver = new InMemoryFileResolver(fileTextsByUri);
-
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(
+            using var helper = await LanguageServerHelper.StartServerWithText(
                 TestContext,
-                mainFileText,
+                fileTextsByUri,
                 mainUri,
-                creationOptions: new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver));
+                services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
 
             var file = new FileRequestHelper(helper.Client, mainFile);
 
@@ -2399,47 +2581,36 @@ var file = " + functionName + @"('|')
         [DataRow("loadJsonContent", true)]
         public async Task LoadFunctionsPathArgument_returnsSymbolsAndFilePathsInCompletions(string functionName, bool jsonOnTop = false)
         {
-            var mainUri = DocumentUri.FromFileSystemPath("/path/to/main.bicep");
-            var armTemplateUri1 = DocumentUri.FromFileSystemPath("/path/to/template1.arm");
-            var armTemplateUri2 = DocumentUri.FromFileSystemPath("/path/to/template2.json");
-            var armTemplateUri3 = DocumentUri.FromFileSystemPath("/path/to/template3.jsonc");
-            var armTemplateUri4 = DocumentUri.FromFileSystemPath("/path/to/template4.json");
-            var armTemplateUri5 = DocumentUri.FromFileSystemPath("/path/to/template5.json");
-            var jsonUri1 = DocumentUri.FromFileSystemPath("/path/to/json1.json");
-            var jsonUri2 = DocumentUri.FromFileSystemPath("/path/to/json2.json");
-            var bicepModuleUri1 = DocumentUri.FromFileSystemPath("/path/to/module1.txt");
-            var bicepModuleUri2 = DocumentUri.FromFileSystemPath("/path/to/module2.bicep");
-            var bicepModuleUri3 = DocumentUri.FromFileSystemPath("/path/to/module3.bicep");
+            var mainUri = InMemoryFileResolver.GetFileUri("/path/to/main.bicep");
 
             var (mainFileText, cursor) = ParserHelper.GetFileWithSingleCursor(@"
 var template = 'template1.json'
 var file = " + functionName + @"(templ|)
-");
-            var mainFile = SourceFileFactory.CreateBicepFile(mainUri.ToUri(), mainFileText);
+",
+                '|');
+            var mainFile = SourceFileFactory.CreateBicepFile(mainUri, mainFileText);
             var schema = "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#";
 
             var fileTextsByUri = new Dictionary<Uri, string>
             {
-                [mainUri.ToUri()] = mainFileText,
-                [armTemplateUri1.ToUri()] = "",
-                [armTemplateUri2.ToUri()] = @$"{{ ""schema"": ""{schema}"" }}",
-                [armTemplateUri3.ToUri()] = @"{}",
-                [armTemplateUri4.ToUri()] = new string('x', 2000 - schema.Length) + schema,
-                [armTemplateUri5.ToUri()] = new string('x', 2002 - schema.Length) + schema,
-                [jsonUri1.ToUri()] = "{}",
-                [jsonUri2.ToUri()] = @"[{ ""name"": ""value"" }]",
-                [bicepModuleUri1.ToUri()] = "param foo string",
-                [bicepModuleUri2.ToUri()] = "param bar bool",
-                [bicepModuleUri3.ToUri()] = "",
+                [mainUri] = mainFileText,
+                [InMemoryFileResolver.GetFileUri("/path/to/template1.arm")] = "",
+                [InMemoryFileResolver.GetFileUri("/path/to/template2.json")] = @$"{{ ""schema"": ""{schema}"" }}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template3.jsonc")] = @"{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/template4.json")] = new string('x', 2000 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/template5.json")] = new string('x', 2002 - schema.Length) + schema,
+                [InMemoryFileResolver.GetFileUri("/path/to/json1.json")] = "{}",
+                [InMemoryFileResolver.GetFileUri("/path/to/json2.json")] = @"[{ ""name"": ""value"" }]",
+                [InMemoryFileResolver.GetFileUri("/path/to/module1.txt")] = "param foo string",
+                [InMemoryFileResolver.GetFileUri("/path/to/module2.bicep")] = "param bar bool",
+                [InMemoryFileResolver.GetFileUri("/path/to/module3.bicep")] = "",
             };
 
-            var fileResolver = new InMemoryFileResolver(fileTextsByUri);
-
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(
+            using var helper = await LanguageServerHelper.StartServerWithText(
                 TestContext,
-                mainFileText,
+                fileTextsByUri,
                 mainUri,
-                creationOptions: new LanguageServer.Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create(), FileResolver: fileResolver));
+                services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
             var file = new FileRequestHelper(helper.Client, mainFile);
 
             var completions = await file.RequestCompletion(cursor);
@@ -2467,6 +2638,44 @@ var file = " + functionName + @"(templ|)
                     x => x.Label.Should().Be("template")
                 );
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("module foo |", "../", "module foo '../|'")]
+        [DataRow("module foo |", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo .|", "../", "module foo '../|'")]
+        [DataRow("module foo '.'|", "../", "module foo '../|'")]
+        [DataRow("module foo ./|", "../", "module foo '../|'")]
+        [DataRow("module foo ./|", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo './|'", "other.bicep", "module foo './other.bicep'|")]
+        [DataRow("module foo ../|", "../", "module foo '../|'")]
+        [DataRow("module foo '../'|", "../", "module foo '../../|'")]
+        [DataRow("module foo '../../|'", "path2/", "module foo '../../path2/|'")]
+        [DataRow("module foo '../../../|'", "path2/", "module foo '../../path2/|'")]
+        [DataRow("module foo ot|h", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo |oth", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo oth|", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo 'ot|h'", "other.bicep", "module foo 'other.bicep'|")]
+        [DataRow("module foo '../to2/|'", "main.bicep", "module foo '../to2/main.bicep'|")]
+        public async Task Module_path_completions_are_offered(string fileWithCursors, string expectedLabel, string expectedResult)
+        {
+            var fileUri = InMemoryFileResolver.GetFileUri("/path/to/main.bicep");
+            var fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string> {
+                [InMemoryFileResolver.GetFileUri("/path/to/other.bicep")] = "",
+                [InMemoryFileResolver.GetFileUri("/path/to2/main.bicep")] = "",
+                [InMemoryFileResolver.GetFileUri("/path2/to/main.bicep")] = "",
+            });
+
+            using var helper = await MultiFileLanguageServerHelper.StartLanguageServer(TestContext, services => services.WithFileResolver(fileResolver));
+
+            var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
+            var file = await new ServerRequestHelper(TestContext, helper).OpenFile(fileUri, text);
+
+            var completions = await file.RequestCompletion(cursor);
+
+            completions.Should().Contain(x => x.Label == expectedLabel, $"\"{fileWithCursors}\" should have completion");
+            var updatedFile = file.ApplyCompletion(completions, expectedLabel);
+            updatedFile.Should().HaveSourceText(expectedResult);
         }
     }
 }

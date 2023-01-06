@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "16943397028185821019"
+      "templateHash": "8647043276184354817"
     }
   },
   "parameters": {
@@ -221,7 +221,7 @@
       "properties": {
         "resolutionVirtualNetworks": [
           {
-            "id": "[resourceInfo(format('vnets[{0}]', add(parameters('index'), 1))).id]"
+            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[copyIndex()].name, copyIndex()))]"
           }
         ]
       },
@@ -237,10 +237,10 @@
       "properties": {
         "resolutionVirtualNetworks": [
           {
-            "id": "[resourceInfo(format('vnets[{0}]', sub(parameters('index'), 1))).id]"
+            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[copyIndex()].name, copyIndex()))]"
           },
           {
-            "id": "[resourceInfo(format('vnets[{0}]', mul(parameters('index'), 2))).id]"
+            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[copyIndex()].name, copyIndex()))]"
           }
         ]
       },
@@ -430,11 +430,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -477,11 +477,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -526,11 +526,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -571,11 +571,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -621,11 +621,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -671,11 +671,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6221643429023379733"
+              "templateHash": "13042200973157134899"
             }
           },
           "parameters": {
@@ -701,19 +701,19 @@
     },
     "indexedCollectionName": {
       "type": "string",
-      "value": "[resourceInfo(format('storageAccounts[{0}]', parameters('index'))).name]"
+      "value": "[format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex())]"
     },
     "indexedCollectionId": {
       "type": "string",
-      "value": "[resourceInfo(format('storageAccounts[{0}]', parameters('index'))).id]"
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex()))]"
     },
     "indexedCollectionType": {
       "type": "string",
-      "value": "[resourceInfo(format('storageAccounts[{0}]', parameters('index'))).type]"
+      "value": "Microsoft.Storage/storageAccounts"
     },
     "indexedCollectionVersion": {
       "type": "string",
-      "value": "[resourceInfo(format('storageAccounts[{0}]', parameters('index'))).apiVersion]"
+      "value": "2019-06-01"
     },
     "indexedCollectionIdentity": {
       "type": "object",
@@ -740,19 +740,19 @@
     },
     "existingIndexedResourceName": {
       "type": "string",
-      "value": "[resourceInfo(format('existingStorageAccounts[{0}]', mul(parameters('index'), 0))).name]"
+      "value": "[format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex())]"
     },
     "existingIndexedResourceId": {
       "type": "string",
-      "value": "[resourceInfo(format('existingStorageAccounts[{0}]', mul(parameters('index'), 1))).id]"
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex()))]"
     },
     "existingIndexedResourceType": {
       "type": "string",
-      "value": "[resourceInfo(format('existingStorageAccounts[{0}]', add(parameters('index'), 2))).type]"
+      "value": "Microsoft.Storage/storageAccounts"
     },
     "existingIndexedResourceApiVersion": {
       "type": "string",
-      "value": "[resourceInfo(format('existingStorageAccounts[{0}]', sub(parameters('index'), 7))).apiVersion]"
+      "value": "2019-06-01"
     },
     "existingIndexedResourceLocation": {
       "type": "string",

@@ -1,62 +1,105 @@
 param name string
-//@[11:13]     "name": {
+//@    "name": {
+//@      "type": "string"
+//@    },
 param accounts array
-//@[14:16]     "accounts": {
+//@    "accounts": {
+//@      "type": "array"
+//@    },
 param index int
-//@[17:19]     "index": {
+//@    "index": {
+//@      "type": "int"
+//@    }
 
 // single resource
 resource singleResource 'Microsoft.Storage/storageAccounts@2019-06-01' = {
-//@[43:52]       "type": "Microsoft.Storage/storageAccounts",
+//@    {
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}single-resource-name', parameters('name'))]",
+//@    },
   name: '${name}single-resource-name'
   location: resourceGroup().location
-//@[47:47]       "location": "[resourceGroup().location]",
+//@      "location": "[resourceGroup().location]",
   kind: 'StorageV2'
-//@[48:48]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[49:51]       "sku": {
+//@      "sku": {
+//@      }
     name: 'Standard_LRS'
-//@[50:50]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
 }
 
 // extension of single resource
 resource singleResourceExtension 'Microsoft.Authorization/locks@2016-09-01' = {
-//@[53:64]       "type": "Microsoft.Authorization/locks",
+//@    {
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('{0}single-resource-name', parameters('name')))]",
+//@      "name": "single-resource-lock",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name')))]"
+//@      ]
+//@    },
   scope: singleResource
   name: 'single-resource-lock'
   properties: {
-//@[58:60]       "properties": {
+//@      "properties": {
+//@      },
     level: 'CanNotDelete'
-//@[59:59]         "level": "CanNotDelete"
+//@        "level": "CanNotDelete"
   }
 }
 
 // single resource cascade extension
 resource singleResourceCascadeExtension 'Microsoft.Authorization/locks@2016-09-01' = {
-//@[65:76]       "type": "Microsoft.Authorization/locks",
+//@    {
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[extensionResourceId(format('Microsoft.Storage/storageAccounts/{0}', format('{0}single-resource-name', parameters('name'))), 'Microsoft.Authorization/locks', 'single-resource-lock')]",
+//@      "name": "single-resource-cascade-extension",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name'))), 'Microsoft.Authorization/locks', 'single-resource-lock')]"
+//@      ]
+//@    },
   scope: singleResourceExtension
   name: 'single-resource-cascade-extension'
   properties: {
-//@[70:72]       "properties": {
+//@      "properties": {
+//@      },
     level: 'CanNotDelete'
-//@[71:71]         "level": "CanNotDelete"
+//@        "level": "CanNotDelete"
   }
 }
 
 // resource collection
 @batchSize(42)
 resource storageAccounts 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (account, index) in accounts: {
-//@[77:95]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageAccounts",
+//@        "count": "[length(parameters('accounts'))]",
+//@        "mode": "serial",
+//@        "batchSize": 42
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name')))]"
+//@      ]
+//@    },
   name: '${name}-collection-${account.name}-${index}'
   location: account.location
-//@[87:87]       "location": "[parameters('accounts')[copyIndex()].location]",
+//@      "location": "[parameters('accounts')[copyIndex()].location]",
   kind: 'StorageV2'
-//@[88:88]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[89:91]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[90:90]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   dependsOn: [
     singleResource
@@ -65,24 +108,46 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (
 
 // extension of a single resource in a collection
 resource extendSingleResourceInCollection 'Microsoft.Authorization/locks@2016-09-01' = {
-//@[96:107]       "type": "Microsoft.Authorization/locks",
+//@    {
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mod(parameters('index'), 2)].name, mod(parameters('index'), 2)))]",
+//@      "name": "one-resource-collection-item-lock",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mod(parameters('index'), 2)].name, mod(parameters('index'), 2)))]"
+//@      ]
+//@    },
   name: 'one-resource-collection-item-lock'
   properties: {
-//@[101:103]       "properties": {
+//@      "properties": {
+//@      },
     level: 'ReadOnly'
-//@[102:102]         "level": "ReadOnly"
+//@        "level": "ReadOnly"
   }
   scope: storageAccounts[index % 2]
 }
 
 // collection of extensions
 resource extensionCollection 'Microsoft.Authorization/locks@2016-09-01' = [for (i, i2) in range(0,1): {
-//@[108:123]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "extensionCollection",
+//@        "count": "[length(range(0, 1))]"
+//@      },
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', format('{0}single-resource-name', parameters('name')))]",
+//@      "name": "[format('lock-{0}-{1}', range(0, 1)[copyIndex()], copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name')))]"
+//@      ]
+//@    },
   name: 'lock-${i}-${i2}'
   properties: {
-//@[117:119]       "properties": {
+//@      "properties": {
+//@      },
     level: i == 0 && i2 == 0 ? 'CanNotDelete' : 'ReadOnly'
-//@[118:118]         "level": "[if(and(equals(range(0, 1)[copyIndex()], 0), equals(copyIndex(), 0)), 'CanNotDelete', 'ReadOnly')]"
+//@        "level": "[if(and(equals(range(0, 1)[copyIndex()], 0), equals(copyIndex(), 0)), 'CanNotDelete', 'ReadOnly')]"
   }
   scope: singleResource
 }]
@@ -90,57 +155,109 @@ resource extensionCollection 'Microsoft.Authorization/locks@2016-09-01' = [for (
 // cascade extend the extension
 @batchSize(1)
 resource lockTheLocks 'Microsoft.Authorization/locks@2016-09-01' = [for (i, i2) in range(0,1): {
-//@[124:141]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "lockTheLocks",
+//@        "count": "[length(range(0, 1))]",
+//@        "mode": "serial",
+//@        "batchSize": 1
+//@      },
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[extensionResourceId(format('Microsoft.Storage/storageAccounts/{0}', format('{0}single-resource-name', parameters('name'))), 'Microsoft.Authorization/locks', format('lock-{0}-{1}', range(0, 1)[copyIndex()], copyIndex()))]",
+//@      "name": "[format('lock-the-lock-{0}-{1}', range(0, 1)[copyIndex()], copyIndex())]",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name'))), 'Microsoft.Authorization/locks', format('lock-{0}-{1}', range(0, 1)[copyIndex()], copyIndex()))]"
+//@      ]
+//@    },
   name: 'lock-the-lock-${i}-${i2}'
   properties: {
-//@[135:137]       "properties": {
+//@      "properties": {
+//@      },
     level: i == 0 && i2 == 0 ? 'CanNotDelete' : 'ReadOnly'
-//@[136:136]         "level": "[if(and(equals(range(0, 1)[copyIndex()], 0), equals(copyIndex(), 0)), 'CanNotDelete', 'ReadOnly')]"
+//@        "level": "[if(and(equals(range(0, 1)[copyIndex()], 0), equals(copyIndex(), 0)), 'CanNotDelete', 'ReadOnly')]"
   }
   scope: extensionCollection[i2]
 }]
 
 // special case property access
 output indexedCollectionBlobEndpoint string = storageAccounts[index].properties.primaryEndpoints.blob
-//@[673:676]     "indexedCollectionBlobEndpoint": {
+//@    "indexedCollectionBlobEndpoint": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))), '2019-06-01').primaryEndpoints.blob]"
+//@    },
 output indexedCollectionName string = storageAccounts[index].name
-//@[677:680]     "indexedCollectionName": {
+//@    "indexedCollectionName": {
+//@      "type": "string",
+//@      "value": "[format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))]"
+//@    },
 output indexedCollectionId string = storageAccounts[index].id
-//@[681:684]     "indexedCollectionId": {
+//@    "indexedCollectionId": {
+//@      "type": "string",
+//@      "value": "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index')))]"
+//@    },
 output indexedCollectionType string = storageAccounts[index].type
-//@[685:688]     "indexedCollectionType": {
+//@    "indexedCollectionType": {
+//@      "type": "string",
+//@      "value": "Microsoft.Storage/storageAccounts"
+//@    },
 output indexedCollectionVersion string = storageAccounts[index].apiVersion
-//@[689:692]     "indexedCollectionVersion": {
+//@    "indexedCollectionVersion": {
+//@      "type": "string",
+//@      "value": "2019-06-01"
+//@    },
 
 // general case property access
 output indexedCollectionIdentity object = storageAccounts[index].identity
-//@[693:696]     "indexedCollectionIdentity": {
+//@    "indexedCollectionIdentity": {
+//@      "type": "object",
+//@      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))), '2019-06-01', 'full').identity]"
+//@    },
 
 // indexed access of two properties
 output indexedEndpointPair object = {
-//@[697:703]     "indexedEndpointPair": {
+//@    "indexedEndpointPair": {
+//@      "type": "object",
+//@      "value": {
+//@      }
+//@    },
   primary: storageAccounts[index].properties.primaryEndpoints.blob
-//@[700:700]         "primary": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index')))).primaryEndpoints.blob]",
+//@        "primary": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))), '2019-06-01').primaryEndpoints.blob]",
   secondary: storageAccounts[index + 1].properties.secondaryEndpoints.blob
-//@[701:701]         "secondary": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(parameters('index'), 1)].name, add(parameters('index'), 1)))).secondaryEndpoints.blob]"
+//@        "secondary": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(parameters('index'), 1)].name, add(parameters('index'), 1))), '2019-06-01').secondaryEndpoints.blob]"
 }
 
 // nested indexer?
 output indexViaReference string = storageAccounts[int(storageAccounts[index].properties.creationTime)].properties.accessTier
-//@[704:707]     "indexViaReference": {
+//@    "indexViaReference": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[int(reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))), '2019-06-01').creationTime)].name, int(reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[parameters('index')].name, parameters('index'))), '2019-06-01').creationTime))), '2019-06-01').accessTier]"
+//@    },
 
 // dependency on a resource collection
 resource storageAccounts2 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (account, idx) in accounts: {
-//@[142:158]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageAccounts2",
+//@        "count": "[length(parameters('accounts'))]"
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[copyIndex()].name, copyIndex())]",
+//@      "dependsOn": [
+//@        "storageAccounts"
+//@      ]
+//@    },
   name: '${name}-collection-${account.name}-${idx}'
   location: account.location
-//@[150:150]       "location": "[parameters('accounts')[copyIndex()].location]",
+//@      "location": "[parameters('accounts')[copyIndex()].location]",
   kind: 'StorageV2'
-//@[151:151]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[152:154]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[153:153]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   dependsOn: [
     storageAccounts
@@ -149,30 +266,51 @@ resource storageAccounts2 'Microsoft.Storage/storageAccounts@2019-06-01' = [for 
 
 // one-to-one paired dependencies
 resource firstSet 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (i,ii) in range(0, length(accounts)): {
-//@[159:172]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "firstSet",
+//@        "count": "[length(range(0, length(parameters('accounts'))))]"
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}-set1-{1}-{2}', parameters('name'), range(0, length(parameters('accounts')))[copyIndex()], copyIndex())]",
+//@    },
   name: '${name}-set1-${i}-${ii}'
   location: resourceGroup().location
-//@[167:167]       "location": "[resourceGroup().location]",
+//@      "location": "[resourceGroup().location]",
   kind: 'StorageV2'
-//@[168:168]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[169:171]       "sku": {
+//@      "sku": {
+//@      }
     name: 'Standard_LRS'
-//@[170:170]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
 }]
 
 resource secondSet 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (i,iii) in range(0, length(accounts)): {
-//@[173:189]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "secondSet",
+//@        "count": "[length(range(0, length(parameters('accounts'))))]"
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}-set2-{1}-{2}', parameters('name'), range(0, length(parameters('accounts')))[copyIndex()], copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-set1-{1}-{2}', parameters('name'), range(0, length(parameters('accounts')))[copyIndex()], copyIndex()))]"
+//@      ]
+//@    },
   name: '${name}-set2-${i}-${iii}'
   location: resourceGroup().location
-//@[181:181]       "location": "[resourceGroup().location]",
+//@      "location": "[resourceGroup().location]",
   kind: 'StorageV2'
-//@[182:182]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[183:185]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[184:184]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   dependsOn: [
     firstSet[iii]
@@ -181,16 +319,24 @@ resource secondSet 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (i,iii)
 
 // depending on collection and one resource in the collection optimizes the latter part away
 resource anotherSingleResource 'Microsoft.Storage/storageAccounts@2019-06-01' = {
-//@[190:202]       "type": "Microsoft.Storage/storageAccounts",
+//@    {
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}single-resource-name', parameters('name'))]",
+//@      "dependsOn": [
+//@        "secondSet"
+//@      ]
+//@    },
   name: '${name}single-resource-name'
   location: resourceGroup().location
-//@[194:194]       "location": "[resourceGroup().location]",
+//@      "location": "[resourceGroup().location]",
   kind: 'StorageV2'
-//@[195:195]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[196:198]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[197:197]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   dependsOn: [
     secondSet
@@ -200,41 +346,65 @@ resource anotherSingleResource 'Microsoft.Storage/storageAccounts@2019-06-01' = 
 
 // vnets
 var vnetConfigurations = [
-//@[22:31]     "vnetConfigurations": [
+//@    "vnetConfigurations": [
+//@    ],
   {
+//@      {
+//@      },
     name: 'one'
-//@[24:24]         "name": "one",
+//@        "name": "one",
     location: resourceGroup().location
-//@[25:25]         "location": "[resourceGroup().location]"
+//@        "location": "[resourceGroup().location]"
   }
   {
+//@      {
+//@      }
     name: 'two'
-//@[28:28]         "name": "two",
+//@        "name": "two",
     location: 'westus'
-//@[29:29]         "location": "westus"
+//@        "location": "westus"
   }
 ]
 
 resource vnets 'Microsoft.Network/virtualNetworks@2020-06-01' = [for (vnetConfig, index) in vnetConfigurations: {
-//@[203:212]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "vnets",
+//@        "count": "[length(variables('vnetConfigurations'))]"
+//@      },
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('{0}-{1}', variables('vnetConfigurations')[copyIndex()].name, copyIndex())]",
+//@    },
   name: '${vnetConfig.name}-${index}'
   location: vnetConfig.location
-//@[211:211]       "location": "[variables('vnetConfigurations')[copyIndex()].location]"
+//@      "location": "[variables('vnetConfigurations')[copyIndex()].location]"
 }]
 
 // implicit dependency on single resource from a resource collection
 resource implicitDependencyOnSingleResourceByIndex 'Microsoft.Network/dnsZones@2018-05-01' = {
-//@[213:228]       "type": "Microsoft.Network/dnsZones",
+//@    {
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "test",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[add(parameters('index'), 1)].name, add(parameters('index'), 1)))]"
+//@      ]
+//@    },
   name: 'test'
   location: 'global'
-//@[217:217]       "location": "global",
+//@      "location": "global",
   properties: {
-//@[218:224]       "properties": {
+//@      "properties": {
+//@      },
     resolutionVirtualNetworks: [
-//@[219:223]         "resolutionVirtualNetworks": [
+//@        "resolutionVirtualNetworks": [
+//@        ]
       {
+//@          {
+//@          }
         id: vnets[index+1].id
-//@[221:221]             "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[add(parameters('index'), 1)].name, add(parameters('index'), 1)))]"
+//@            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[add(parameters('index'), 1)].name, add(parameters('index'), 1)))]"
       }
     ]
   }
@@ -242,21 +412,34 @@ resource implicitDependencyOnSingleResourceByIndex 'Microsoft.Network/dnsZones@2
 
 // implicit and explicit dependency combined
 resource combinedDependencies 'Microsoft.Network/dnsZones@2018-05-01' = {
-//@[229:247]       "type": "Microsoft.Network/dnsZones",
+//@    {
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "test2",
+//@      "dependsOn": [
+//@        "vnets"
+//@      ]
+//@    },
   name: 'test2'
   location: 'global'
-//@[233:233]       "location": "global",
+//@      "location": "global",
   properties: {
-//@[234:243]       "properties": {
+//@      "properties": {
+//@      },
     resolutionVirtualNetworks: [
-//@[235:242]         "resolutionVirtualNetworks": [
+//@        "resolutionVirtualNetworks": [
+//@        ]
       {
+//@          {
+//@          },
         id: vnets[index-1].id
-//@[237:237]             "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[sub(parameters('index'), 1)].name, sub(parameters('index'), 1)))]"
+//@            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[sub(parameters('index'), 1)].name, sub(parameters('index'), 1)))]"
       }
       {
+//@          {
+//@          }
         id: vnets[index * 2].id
-//@[240:240]             "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[mul(parameters('index'), 2)].name, mul(parameters('index'), 2)))]"
+//@            "id": "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-{1}', variables('vnetConfigurations')[mul(parameters('index'), 2)].name, mul(parameters('index'), 2)))]"
       }
     ]
   }
@@ -267,34 +450,117 @@ resource combinedDependencies 'Microsoft.Network/dnsZones@2018-05-01' = {
 
 // single module
 module singleModule 'passthrough.bicep' = {
-//@[401:439]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'test'
-//@[404:404]       "name": "test",
+//@      "name": "test",
   params: {
     myInput: 'hello'
-//@[412:412]             "value": "hello"
+//@            "value": "hello"
   }
 }
 
 var moduleSetup = [
-//@[32:36]     "moduleSetup": [
+//@    "moduleSetup": [
+//@    ],
   'one'
-//@[33:33]       "one",
+//@      "one",
   'two'
-//@[34:34]       "two",
+//@      "two",
   'three'
-//@[35:35]       "three"
+//@      "three"
 ]
 
 // module collection plus explicit dependency on single module
 @sys.batchSize(3)
 module moduleCollectionWithSingleDependency 'passthrough.bicep' = [for (moduleName, moduleIndex) in moduleSetup: {
-//@[440:488]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "moduleCollectionWithSingleDependency",
+//@        "count": "[length(variables('moduleSetup'))]",
+//@        "mode": "serial",
+//@        "batchSize": 3
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'test')]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}single-resource-name', parameters('name')))]"
+//@      ]
+//@    },
   name: concat(moduleName, moduleIndex)
-//@[449:449]       "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
+//@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
     myInput: 'in-${moduleName}-${moduleIndex}'
-//@[457:457]             "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@            "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
   }
   dependsOn: [
     singleModule
@@ -304,12 +570,56 @@ module moduleCollectionWithSingleDependency 'passthrough.bicep' = [for (moduleNa
 
 // another module collection with dependency on another module collection
 module moduleCollectionWithCollectionDependencies 'passthrough.bicep' = [for (moduleName, moduleIndex) in moduleSetup: {
-//@[489:535]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "moduleCollectionWithCollectionDependencies",
+//@        "count": "[length(variables('moduleSetup'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "moduleCollectionWithSingleDependency",
+//@        "storageAccounts"
+//@      ]
+//@    },
   name: concat(moduleName, moduleIndex)
-//@[496:496]       "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
+//@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
     myInput: 'in-${moduleName}-${moduleIndex}'
-//@[504:504]             "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@            "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
   }
   dependsOn: [
     storageAccounts
@@ -318,12 +628,53 @@ module moduleCollectionWithCollectionDependencies 'passthrough.bicep' = [for (mo
 }]
 
 module singleModuleWithIndexedDependencies 'passthrough.bicep' = {
-//@[536:579]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index')))]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3)))]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[sub(parameters('index'), 10)].name, sub(parameters('index'), 10)))]"
+//@      ]
+//@    },
   name: 'hello'
-//@[539:539]       "name": "hello",
+//@      "name": "hello",
   params: {
     myInput: concat(moduleCollectionWithCollectionDependencies[index].outputs.myOutput, storageAccounts[index * 3].properties.accessTier)
-//@[547:547]             "value": "[concat(reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index')))).outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3)))).accessTier)]"
+//@            "value": "[concat(reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2020-10-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier)]"
   }
   dependsOn: [
     storageAccounts2[index - 10]
@@ -331,12 +682,57 @@ module singleModuleWithIndexedDependencies 'passthrough.bicep' = {
 }
 
 module moduleCollectionWithIndexedDependencies 'passthrough.bicep' = [for (moduleName, moduleIndex) in moduleSetup: {
-//@[580:627]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "moduleCollectionWithIndexedDependencies",
+//@        "count": "[length(variables('moduleSetup'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index')))]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3)))]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[sub(parameters('index'), 9)].name, sub(parameters('index'), 9)))]"
+//@      ]
+//@    },
   name: concat(moduleName, moduleIndex)
-//@[587:587]       "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
+//@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
     myInput: '${moduleCollectionWithCollectionDependencies[index].outputs.myOutput} - ${storageAccounts[index * 3].properties.accessTier} - ${moduleName} - ${moduleIndex}'
-//@[595:595]             "value": "[format('{0} - {1} - {2} - {3}', reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index')))).outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3)))).accessTier, variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@            "value": "[format('{0} - {1} - {2} - {3}', reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2020-10-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier, variables('moduleSetup')[copyIndex()], copyIndex())]"
   }
   dependsOn: [
     storageAccounts2[index - 9]
@@ -344,9 +740,15 @@ module moduleCollectionWithIndexedDependencies 'passthrough.bicep' = [for (modul
 }]
 
 output indexedModulesName string = moduleCollectionWithSingleDependency[index].name
-//@[708:711]     "indexedModulesName": {
+//@    "indexedModulesName": {
+//@      "type": "string",
+//@      "value": "[concat(variables('moduleSetup')[parameters('index')], parameters('index'))]"
+//@    },
 output indexedModuleOutput string = moduleCollectionWithSingleDependency[index * 1].outputs.myOutput
-//@[712:715]     "indexedModuleOutput": {
+//@    "indexedModuleOutput": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[mul(parameters('index'), 1)], mul(parameters('index'), 1))), '2020-10-01').outputs.myOutput.value]"
+//@    },
 
 // resource collection
 resource existingStorageAccounts 'Microsoft.Storage/storageAccounts@2019-06-01' existing = [for (account, i) in accounts: {
@@ -354,85 +756,182 @@ resource existingStorageAccounts 'Microsoft.Storage/storageAccounts@2019-06-01' 
 }]
 
 output existingIndexedResourceName string = existingStorageAccounts[index * 0].name
-//@[716:719]     "existingIndexedResourceName": {
+//@    "existingIndexedResourceName": {
+//@      "type": "string",
+//@      "value": "[format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 0)].name, mul(parameters('index'), 0))]"
+//@    },
 output existingIndexedResourceId string = existingStorageAccounts[index * 1].id
-//@[720:723]     "existingIndexedResourceId": {
+//@    "existingIndexedResourceId": {
+//@      "type": "string",
+//@      "value": "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 1)].name, mul(parameters('index'), 1)))]"
+//@    },
 output existingIndexedResourceType string = existingStorageAccounts[index+2].type
-//@[724:727]     "existingIndexedResourceType": {
+//@    "existingIndexedResourceType": {
+//@      "type": "string",
+//@      "value": "Microsoft.Storage/storageAccounts"
+//@    },
 output existingIndexedResourceApiVersion string = existingStorageAccounts[index-7].apiVersion
-//@[728:731]     "existingIndexedResourceApiVersion": {
+//@    "existingIndexedResourceApiVersion": {
+//@      "type": "string",
+//@      "value": "2019-06-01"
+//@    },
 output existingIndexedResourceLocation string = existingStorageAccounts[index/2].location
-//@[732:735]     "existingIndexedResourceLocation": {
+//@    "existingIndexedResourceLocation": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[div(parameters('index'), 2)].name, div(parameters('index'), 2))), '2019-06-01', 'full').location]"
+//@    },
 output existingIndexedResourceAccessTier string = existingStorageAccounts[index%3].properties.accessTier
-//@[736:739]     "existingIndexedResourceAccessTier": {
+//@    "existingIndexedResourceAccessTier": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-existing-{1}-{2}', parameters('name'), parameters('accounts')[mod(parameters('index'), 3)].name, mod(parameters('index'), 3))), '2019-06-01').accessTier]"
+//@    }
 
 resource duplicatedNames 'Microsoft.Network/dnsZones@2018-05-01' = [for (zone,i) in []: {
-//@[248:257]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicatedNames",
+//@        "count": "[length(createArray())]"
+//@      },
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "no loop variable",
+//@    },
   name: 'no loop variable'
   location: 'eastus'
-//@[256:256]       "location": "eastus"
+//@      "location": "eastus"
 }]
 
 // reference to a resource collection whose name expression does not reference any loop variables
 resource referenceToDuplicateNames 'Microsoft.Network/dnsZones@2018-05-01' = [for (zone,i) in []: {
-//@[258:270]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "referenceToDuplicateNames",
+//@        "count": "[length(createArray())]"
+//@      },
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "no loop variable 2",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/dnsZones', 'no loop variable')]"
+//@      ]
+//@    },
   name: 'no loop variable 2'
   location: 'eastus'
-//@[266:266]       "location": "eastus",
+//@      "location": "eastus",
   dependsOn: [
     duplicatedNames[index]
   ]
 }]
 
 var regions = [
-//@[37:40]     "regions": [
+//@    "regions": [
+//@    ]
   'eastus'
-//@[38:38]       "eastus",
+//@      "eastus",
   'westus'
-//@[39:39]       "westus"
+//@      "westus"
 ]
 
 module apim 'passthrough.bicep' = [for (region, i) in regions: {
-//@[628:670]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "apim",
+//@        "count": "[length(variables('regions'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "myInput": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "14375999048727010492"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "myInput": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "myOutput": {
+//@              "type": "string",
+//@              "value": "[parameters('myInput')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    }
   name: 'apim-${region}-${name}-${i}'
-//@[635:635]       "name": "[format('apim-{0}-{1}-{2}', variables('regions')[copyIndex()], parameters('name'), copyIndex())]",
+//@      "name": "[format('apim-{0}-{1}-{2}', variables('regions')[copyIndex()], parameters('name'), copyIndex())]",
   params: {
     myInput: region
-//@[643:643]             "value": "[variables('regions')[copyIndex()]]"
+//@            "value": "[variables('regions')[copyIndex()]]"
   }
 }]
 
 resource propertyLoopDependencyOnModuleCollection 'Microsoft.Network/frontDoors@2020-05-01' = {
-//@[271:302]       "type": "Microsoft.Network/frontDoors",
+//@    {
+//@      "type": "Microsoft.Network/frontDoors",
+//@      "apiVersion": "2020-05-01",
+//@      "name": "[parameters('name')]",
+//@      "dependsOn": [
+//@        "apim"
+//@      ]
+//@    },
   name: name
   location: 'Global'
-//@[275:275]       "location": "Global",
+//@      "location": "Global",
   properties: {
-//@[276:298]       "properties": {
+//@      "properties": {
+//@      },
     backendPools: [
-//@[277:297]         "backendPools": [
+//@        "backendPools": [
+//@        ]
       {
+//@          {
+//@          }
         name: 'BackendAPIMs'
-//@[279:279]             "name": "BackendAPIMs",
+//@            "name": "BackendAPIMs",
         properties: {
-//@[280:295]             "properties": {
+//@            "properties": {
+//@              "copy": [
+//@              ]
+//@            }
           backends: [for (index,i) in range(0, length(regions)): {
-//@[282:293]                   "name": "backends",
+//@                {
+//@                  "name": "backends",
+//@                  "count": "[length(range(0, length(variables('regions'))))]",
+//@                  "input": {
+//@                  }
+//@                }
             // we cannot codegen index correctly because the generated dependsOn property
             // would be outside of the scope of the property loop
             // as a result, this will generate a dependency on the entire collection
             address: apim[index + i].outputs.myOutput
-//@[286:286]                     "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))))).outputs.myOutput.value]",
+//@                    "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2020-10-01').outputs.myOutput.value]",
             backendHostHeader: apim[index + i].outputs.myOutput
-//@[287:287]                     "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))))).outputs.myOutput.value]",
+//@                    "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2020-10-01').outputs.myOutput.value]",
             httpPort: 80
-//@[288:288]                     "httpPort": 80,
+//@                    "httpPort": 80,
             httpsPort: 443
-//@[289:289]                     "httpsPort": 443,
+//@                    "httpsPort": 443,
             priority: 1
-//@[290:290]                     "priority": 1,
+//@                    "priority": 1,
             weight: 50
-//@[291:291]                     "weight": 50
+//@                    "weight": 50
           }]
         }
       }
@@ -441,36 +940,56 @@ resource propertyLoopDependencyOnModuleCollection 'Microsoft.Network/frontDoors@
 }
 
 resource indexedModuleCollectionDependency 'Microsoft.Network/frontDoors@2020-05-01' = [for (index, i) in range(0, length(regions)): {
-//@[303:335]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "indexedModuleCollectionDependency",
+//@        "count": "[length(range(0, length(variables('regions'))))]"
+//@      },
+//@      "type": "Microsoft.Network/frontDoors",
+//@      "apiVersion": "2020-05-01",
+//@      "name": "[format('{0}-{1}-{2}', parameters('name'), range(0, length(variables('regions')))[copyIndex()], copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex())))]",
+//@        "[resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex())))]"
+//@      ]
+//@    },
   name: '${name}-${index}-${i}'
   location: 'Global'
-//@[311:311]       "location": "Global",
+//@      "location": "Global",
   properties: {
-//@[312:330]       "properties": {
+//@      "properties": {
+//@      },
     backendPools: [
-//@[313:329]         "backendPools": [
+//@        "backendPools": [
+//@        ]
       {
+//@          {
+//@          }
         name: 'BackendAPIMs'
-//@[315:315]             "name": "BackendAPIMs",
+//@            "name": "BackendAPIMs",
         properties: {
-//@[316:327]             "properties": {
+//@            "properties": {
+//@            }
           backends: [
-//@[317:326]               "backends": [
+//@              "backends": [
+//@              ]
             {
+//@                {
+//@                }
               // this indexed dependency on a module collection will be generated correctly because
               // copyIndex() can be invoked in the generated dependsOn
               address: apim[index+i].outputs.myOutput
-//@[319:319]                   "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex())))).outputs.myOutput.value]",
+//@                  "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2020-10-01').outputs.myOutput.value]",
               backendHostHeader: apim[index+i].outputs.myOutput
-//@[320:320]                   "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex())))).outputs.myOutput.value]",
+//@                  "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2020-10-01').outputs.myOutput.value]",
               httpPort: 80
-//@[321:321]                   "httpPort": 80,
+//@                  "httpPort": 80,
               httpsPort: 443
-//@[322:322]                   "httpsPort": 443,
+//@                  "httpsPort": 443,
               priority: 1
-//@[323:323]                   "priority": 1,
+//@                  "priority": 1,
               weight: 50
-//@[324:324]                   "weight": 50
+//@                  "weight": 50
             }
           ]
         }
@@ -480,36 +999,55 @@ resource indexedModuleCollectionDependency 'Microsoft.Network/frontDoors@2020-05
 }]
 
 resource propertyLoopDependencyOnResourceCollection 'Microsoft.Network/frontDoors@2020-05-01' = {
-//@[336:367]       "type": "Microsoft.Network/frontDoors",
+//@    {
+//@      "type": "Microsoft.Network/frontDoors",
+//@      "apiVersion": "2020-05-01",
+//@      "name": "[parameters('name')]",
+//@      "dependsOn": [
+//@        "storageAccounts"
+//@      ]
+//@    },
   name: name
   location: 'Global'
-//@[340:340]       "location": "Global",
+//@      "location": "Global",
   properties: {
-//@[341:363]       "properties": {
+//@      "properties": {
+//@      },
     backendPools: [
-//@[342:362]         "backendPools": [
+//@        "backendPools": [
+//@        ]
       {
+//@          {
+//@          }
         name: 'BackendAPIMs'
-//@[344:344]             "name": "BackendAPIMs",
+//@            "name": "BackendAPIMs",
         properties: {
-//@[345:360]             "properties": {
+//@            "properties": {
+//@              "copy": [
+//@              ]
+//@            }
           backends: [for index in range(0, length(accounts)): {
-//@[347:358]                   "name": "backends",
+//@                {
+//@                  "name": "backends",
+//@                  "count": "[length(range(0, length(parameters('accounts'))))]",
+//@                  "input": {
+//@                  }
+//@                }
             // we cannot codegen index correctly because the generated dependsOn property
             // would be outside of the scope of the property loop
             // as a result, this will generate a dependency on the entire collection
             address: storageAccounts[index].properties.primaryEndpoints.internetEndpoints.web
-//@[351:351]                     "address": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[range(0, length(parameters('accounts')))[copyIndex('backends')]].name, range(0, length(parameters('accounts')))[copyIndex('backends')]))).primaryEndpoints.internetEndpoints.web]",
+//@                    "address": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[range(0, length(parameters('accounts')))[copyIndex('backends')]].name, range(0, length(parameters('accounts')))[copyIndex('backends')])), '2019-06-01').primaryEndpoints.internetEndpoints.web]",
             backendHostHeader: storageAccounts[index].properties.primaryEndpoints.internetEndpoints.web
-//@[352:352]                     "backendHostHeader": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[range(0, length(parameters('accounts')))[copyIndex('backends')]].name, range(0, length(parameters('accounts')))[copyIndex('backends')]))).primaryEndpoints.internetEndpoints.web]",
+//@                    "backendHostHeader": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[range(0, length(parameters('accounts')))[copyIndex('backends')]].name, range(0, length(parameters('accounts')))[copyIndex('backends')])), '2019-06-01').primaryEndpoints.internetEndpoints.web]",
             httpPort: 80
-//@[353:353]                     "httpPort": 80,
+//@                    "httpPort": 80,
             httpsPort: 443
-//@[354:354]                     "httpsPort": 443,
+//@                    "httpsPort": 443,
             priority: 1
-//@[355:355]                     "priority": 1,
+//@                    "priority": 1,
             weight: 50
-//@[356:356]                     "weight": 50
+//@                    "weight": 50
           }]
         }
       }
@@ -518,36 +1056,56 @@ resource propertyLoopDependencyOnResourceCollection 'Microsoft.Network/frontDoor
 }
 
 resource indexedResourceCollectionDependency 'Microsoft.Network/frontDoors@2020-05-01' = [for (index,i) in range(0, length(accounts)): {
-//@[368:400]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "indexedResourceCollectionDependency",
+//@        "count": "[length(range(0, length(parameters('accounts'))))]"
+//@      },
+//@      "type": "Microsoft.Network/frontDoors",
+//@      "apiVersion": "2020-05-01",
+//@      "name": "[format('{0}-{1}-{2}', parameters('name'), range(0, length(parameters('accounts')))[copyIndex()], copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())))]",
+//@        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())))]"
+//@      ]
+//@    },
   name: '${name}-${index}-${i}'
   location: 'Global'
-//@[376:376]       "location": "Global",
+//@      "location": "Global",
   properties: {
-//@[377:395]       "properties": {
+//@      "properties": {
+//@      },
     backendPools: [
-//@[378:394]         "backendPools": [
+//@        "backendPools": [
+//@        ]
       {
+//@          {
+//@          }
         name: 'BackendAPIMs'
-//@[380:380]             "name": "BackendAPIMs",
+//@            "name": "BackendAPIMs",
         properties: {
-//@[381:392]             "properties": {
+//@            "properties": {
+//@            }
           backends: [
-//@[382:391]               "backends": [
+//@              "backends": [
+//@              ]
             {
+//@                {
+//@                }
               // this indexed dependency on a module collection will be generated correctly because
               // copyIndex() can be invoked in the generated dependsOn
               address: storageAccounts[index+i].properties.primaryEndpoints.internetEndpoints.web
-//@[384:384]                   "address": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())))).primaryEndpoints.internetEndpoints.web]",
+//@                  "address": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex()))), '2019-06-01').primaryEndpoints.internetEndpoints.web]",
               backendHostHeader: storageAccounts[index+i].properties.primaryEndpoints.internetEndpoints.web
-//@[385:385]                   "backendHostHeader": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())))).primaryEndpoints.internetEndpoints.web]",
+//@                  "backendHostHeader": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex())].name, add(range(0, length(parameters('accounts')))[copyIndex()], copyIndex()))), '2019-06-01').primaryEndpoints.internetEndpoints.web]",
               httpPort: 80
-//@[386:386]                   "httpPort": 80,
+//@                  "httpPort": 80,
               httpsPort: 443
-//@[387:387]                   "httpsPort": 443,
+//@                  "httpsPort": 443,
               priority: 1
-//@[388:388]                   "priority": 1,
+//@                  "priority": 1,
               weight: 50
-//@[389:389]                   "weight": 50
+//@                  "weight": 50
             }
           ]
         }

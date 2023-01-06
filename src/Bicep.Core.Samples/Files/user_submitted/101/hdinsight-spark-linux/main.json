@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "17616152062973047505"
+      "templateHash": "11678485373313306625"
     }
   },
   "parameters": {
@@ -24,7 +24,7 @@
       }
     },
     "clusterLoginPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "minLength": 10,
       "metadata": {
         "description": "The password must be at least 10 characters in length and must contain at least one digit, one upper case letter, one lower case letter, and one non-alphanumeric character except (single-quote, double-quote, backslash, right-bracket, full-stop). Also, the password must not contain 3 consecutive characters from the cluster username or SSH username."
@@ -38,7 +38,7 @@
       }
     },
     "sshPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "maxLength": 72,
       "minLength": 6,
       "metadata": {
@@ -122,7 +122,7 @@
         "storageProfile": {
           "storageaccounts": [
             {
-              "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', format('storage{0}', uniqueString(resourceGroup().id)))).primaryEndpoints.blob, 'https://', ''), '/', '')]",
+              "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', format('storage{0}', uniqueString(resourceGroup().id))), '2021-04-01').primaryEndpoints.blob, 'https://', ''), '/', '')]",
               "isDefault": true,
               "container": "[parameters('clusterName')]",
               "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', format('storage{0}', uniqueString(resourceGroup().id))), '2021-04-01').keys[0].value]"
@@ -168,11 +168,11 @@
   "outputs": {
     "storage": {
       "type": "object",
-      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('storage{0}', uniqueString(resourceGroup().id))))]"
+      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', format('storage{0}', uniqueString(resourceGroup().id))), '2021-04-01')]"
     },
     "cluster": {
       "type": "object",
-      "value": "[reference(resourceId('Microsoft.HDInsight/clusters', parameters('clusterName')))]"
+      "value": "[reference(resourceId('Microsoft.HDInsight/clusters', parameters('clusterName')), '2018-06-01-preview')]"
     }
   }
 }

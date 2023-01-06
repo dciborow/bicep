@@ -5,9 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Bicep.Core.FileSystem;
+using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
+using Bicep.Core.UnitTests.FileSystem;
 using Bicep.Core.UnitTests.Utils;
 using Bicep.LangServer.IntegrationTests.Helpers;
 using Bicep.LanguageServer;
@@ -56,13 +59,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // update bicepconfig.json and verify diagnostics message is not sent
@@ -115,13 +116,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // Delete bicepconfig.json and verify diagnostics are based off of default bicepconfig.json
@@ -137,13 +136,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -161,13 +158,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // Create bicepconfig.json and verify diagnostics
@@ -196,13 +191,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -220,13 +213,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // Create bicepconfig.json and verify diagnostics
@@ -256,13 +247,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -297,13 +286,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // create new bicepconfig.json and verify diagnostics
@@ -333,13 +320,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -373,13 +358,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // add bicepconfig.json to parent directory and verify diagnostics
@@ -408,13 +391,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -443,12 +424,17 @@ namespace Bicep.LangServer.IntegrationTests
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(mainUri, bicepFileContents, 1));
 
                 await VerifyDiagnosticsAsync(diagsListener,
-                    $"Failed to parse the contents of the Bicep configuration file \"{bicepConfigUri.GetFileSystemPath()}\" as valid JSON",
                     mainUri,
-                    DiagnosticSeverity.Error,
-                    new Position(0, 0),
-                    new Position(1, 0),
-                    "Invalid Bicep Configuration");
+                    ($"Failed to parse the contents of the Bicep configuration file \"{bicepConfigUri.GetFileSystemPath()}\" as valid JSON",
+                        DiagnosticSeverity.Error,
+                        new Position(0, 0),
+                        new Position(0, 0),
+                        "BCP271"),
+                    (@"Parameter ""storageAccountName"" is declared but never used.",
+                        DiagnosticSeverity.Warning,
+                        new Position(0, 6),
+                        new Position(0, 24),
+                        "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // update bicepconfig.json and verify diagnostics
@@ -475,13 +461,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    mainUri,
+                await VerifyDiagnosticsAsync(diagsListener, mainUri, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -517,13 +501,11 @@ namespace Bicep.LangServer.IntegrationTests
             {
                 client.TextDocument.DidOpenTextDocument(TextDocumentParamHelper.CreateDidOpenDocumentParams(uriOfFileInChildDirectory, bicepFileContents, 1));
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    uriOfFileInChildDirectory,
+                await VerifyDiagnosticsAsync(diagsListener, uriOfFileInChildDirectory, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Information,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
 
             // add bicepconfig.json to parent directory and verify diagnostics
@@ -557,13 +539,11 @@ namespace Bicep.LangServer.IntegrationTests
                     })
                 });
 
-                await VerifyDiagnosticsAsync(diagsListener,
-                    @"Parameter ""storageAccountName"" is declared but never used.",
-                    uriOfFileInParentDirectory,
+                await VerifyDiagnosticsAsync(diagsListener, uriOfFileInParentDirectory, (@"Parameter ""storageAccountName"" is declared but never used.",
                     DiagnosticSeverity.Warning,
                     new Position(0, 6),
                     new Position(0, 24),
-                    "https://aka.ms/bicep/linter/no-unused-params");
+                    "https://aka.ms/bicep/linter/no-unused-params"));
             }
         }
 
@@ -653,18 +633,19 @@ param storageAccountName string = 'test'";
         }
 
         private static async Task VerifyDiagnosticsAsync(MultipleMessageListener<PublishDiagnosticsParams> diagsListener,
-            string message,
             DocumentUri documentUri,
+            params (string message,
             DiagnosticSeverity diagnosticSeverity,
             Position start,
             Position end,
-            string code)
+            string code)[] expectedDiagnostics)
         {
             var diagsParams = await diagsListener.WaitNext();
             diagsParams.Uri.Should().Be(documentUri);
-            diagsParams.Diagnostics.Should().SatisfyRespectively(
+            diagsParams.Diagnostics.Should().SatisfyRespectively(expectedDiagnostics.Select<(string, DiagnosticSeverity, Position, Position, string), Action<Diagnostic>>(expected =>
                 x =>
                 {
+                    var (message, diagnosticSeverity, start, end, code) = expected;
                     x.Message.Should().Contain(message);
                     x.Severity.Should().Be(diagnosticSeverity);
                     x.Code?.String.Should().Be(code);
@@ -673,7 +654,7 @@ param storageAccountName string = 'test'";
                         Start = start,
                         End = end
                     });
-                });
+                }));
         }
 
         private (MultipleMessageListener<PublishDiagnosticsParams> diagsListener, string testOutputPath) GetTestConfig()
@@ -687,15 +668,10 @@ param storageAccountName string = 'test'";
         private async Task<LanguageServerHelper> StartServerWithClientConnectionAsync(MultipleMessageListener<PublishDiagnosticsParams> diagsListener)
         {
             var fileSystemDict = new Dictionary<Uri, string>();
-            var fileResolver = new InMemoryFileResolver(fileSystemDict);
-            var serverOptions = new Server.CreationOptions(FileResolver: fileResolver);
-            return await LanguageServerHelper.StartServerWithClientConnectionAsync(
+            return await LanguageServerHelper.StartServer(
                 TestContext,
-                options =>
-                {
-                    options.OnPublishDiagnostics(diags => diagsListener.AddMessage(diags));
-                },
-                serverOptions);
+                options => options.OnPublishDiagnostics(diagsListener.AddMessage),
+                services => services.WithFileResolver(new InMemoryFileResolver(fileSystemDict)));
         }
 
         private DocumentUri SaveFile(string fileName, string fileContents, string testOutputPath)

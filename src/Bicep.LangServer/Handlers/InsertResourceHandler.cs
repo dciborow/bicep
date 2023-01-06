@@ -59,7 +59,7 @@ namespace Bicep.LanguageServer.Handlers
             this.compilationManager = compilationManager;
             this.azResourceProvider = azResourceProvider;
             this.azResourceTypeLoader = azResourceTypeLoader;
-            this.helper = new TelemetryAndErrorHandlingHelper<Unit>(server.Window, telemetryProvider, Unit.Value);
+            this.helper = new TelemetryAndErrorHandlingHelper<Unit>(server.Window, telemetryProvider);
         }
 
         public Task<Unit> Handle(InsertResourceParams request, CancellationToken cancellationToken)
@@ -70,11 +70,14 @@ namespace Bicep.LanguageServer.Handlers
                     return (Unit.Value, null);
                 }
 
+                var model = context.Compilation.GetEntrypointSemanticModel();
+
                 if (TryParseResourceId(request.ResourceId) is not { } resourceId)
                 {
-                    throw new TelemetryAndErrorHandlingException(
+                    throw helper.CreateException(
                         $"Failed to parse supplied resourceId \"{request.ResourceId}\".",
-                        BicepTelemetryEvent.InsertResourceFailure("ParseResourceIdFailed"));
+                        BicepTelemetryEvent.InsertResourceFailure("ParseResourceIdFailed"),
+                        Unit.Value);
                 }
 
                 var matchedType = azResourceTypeLoader.GetAvailableTypes()
@@ -84,9 +87,10 @@ namespace Bicep.LanguageServer.Handlers
 
                 if (matchedType is null || matchedType.ApiVersion is null)
                 {
-                    throw new TelemetryAndErrorHandlingException(
+                    throw helper.CreateException(
                         $"Failed to find a Bicep type definition for resource of type \"{resourceId.FullyQualifiedType}\".",
-                        BicepTelemetryEvent.InsertResourceFailure($"MissingType({resourceId.FullyQualifiedType})"));
+                        BicepTelemetryEvent.InsertResourceFailure($"MissingType({resourceId.FullyQualifiedType})"),
+                        Unit.Value);
                 }
 
                 JsonElement? resource = null;
@@ -94,7 +98,7 @@ namespace Bicep.LanguageServer.Handlers
                 {
                     // First attempt a direct GET on the resource using the Bicep type API version.
                     resource = await azResourceProvider.GetGenericResource(
-                        context.Compilation.Configuration,
+                        model.Configuration,
                         resourceId,
                         apiVersion: matchedType.ApiVersion,
                         cancellationToken);
@@ -112,7 +116,7 @@ namespace Bicep.LanguageServer.Handlers
                     if (resource is null)
                     {
                         resource = await azResourceProvider.GetGenericResource(
-                            context.Compilation.Configuration,
+                            model.Configuration,
                             resourceId,
                             apiVersion: null,
                             cancellationToken);
@@ -122,9 +126,10 @@ namespace Bicep.LanguageServer.Handlers
                 {
                     Trace.WriteLine($"Failed to fetch resource '{resourceId}' without API version: {exception}");
 
-                    throw new TelemetryAndErrorHandlingException(
+                    throw helper.CreateException(
                         $"Caught exception fetching resource: {exception.Message}.",
-                        BicepTelemetryEvent.InsertResourceFailure($"FetchResourceFailure"));
+                        BicepTelemetryEvent.InsertResourceFailure($"FetchResourceFailure"),
+                        Unit.Value);
                 }
 
                 var resourceDeclaration = CreateResourceSyntax(resource.Value, resourceId, matchedType);
@@ -306,7 +311,10 @@ namespace Bicep.LanguageServer.Handlers
                     {
                         return SyntaxFactory.CreatePositiveOrNegativeInteger(intValue);
                     }
-                    return SyntaxFactory.CreateStringLiteral(element.ToString()!);
+
+                    return SyntaxFactory.CreateFunctionCall(
+                        "json",
+                        SyntaxFactory.CreateStringLiteral(element.ToString()));
                 case JsonValueKind.True:
                     return SyntaxFactory.CreateToken(TokenType.TrueKeyword);
                 case JsonValueKind.False:

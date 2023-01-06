@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "12688862376099572684"
+      "templateHash": "3379072964600254192"
     }
   },
   "parameters": {
@@ -61,15 +61,15 @@
   "outputs": {
     "diagAccountId": {
       "type": "string",
-      "value": "[resourceInfo('diagsAccount').id]"
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', format('diags{0}', uniqueString(resourceGroup().id)))]"
     },
     "cacheAccountName": {
       "type": "string",
-      "value": "[resourceInfo('cacheAccount').name]"
+      "value": "[parameters('cacheAccountName')]"
     },
     "cacheAccountId": {
       "type": "string",
-      "value": "[resourceInfo('cacheAccount').id]"
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('cacheAccountName'))]"
     }
   }
 }

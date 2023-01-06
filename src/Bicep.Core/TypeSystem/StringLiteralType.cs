@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+
+using System;
 using Bicep.Core.Parsing;
 
 namespace Bicep.Core.TypeSystem
@@ -21,5 +23,10 @@ namespace Bicep.Core.TypeSystem
         public override TypeKind TypeKind => TypeKind.StringLiteral;
 
         public string RawStringValue { get; }
+
+        public override bool Equals(object? other) =>
+            other is StringLiteralType otherStringLiteral ? RawStringValue == otherStringLiteral.RawStringValue : false;
+
+        public override int GetHashCode() => HashCode.Combine(TypeKind, RawStringValue);
     }
 }

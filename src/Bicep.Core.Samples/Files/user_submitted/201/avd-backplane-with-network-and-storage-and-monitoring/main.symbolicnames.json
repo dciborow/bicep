@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "17661008059809120835"
+      "templateHash": "12119456684933518376"
     }
   },
   "parameters": {
@@ -214,10 +214,10 @@
             "value": "[parameters('logAnalyticslocation')]"
           },
           "logAnalyticsResourceGroup": {
-            "value": "[resourceInfo('rdmon').name]"
+            "value": "[format('{0}MONITOR', parameters('resourceGroupPrefrix'))]"
           },
           "avdBackplaneResourceGroup": {
-            "value": "[resourceInfo('rgavd').name]"
+            "value": "[format('{0}BACKPLANE', parameters('resourceGroupPrefrix'))]"
           }
         },
         "template": {
@@ -225,11 +225,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "11734737491927560896"
+              "templateHash": "16124052747105188444"
             }
           },
           "parameters": {
@@ -309,7 +309,7 @@
               "properties": {
                 "friendlyName": "[parameters('appgroupNameFriendlyName')]",
                 "applicationGroupType": "[parameters('applicationgrouptype')]",
-                "hostPoolArmPath": "[resourceInfo('hp').id]"
+                "hostPoolArmPath": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('hostpoolName'))]"
               },
               "dependsOn": [
                 "hp"
@@ -323,7 +323,7 @@
               "properties": {
                 "friendlyName": "[parameters('workspaceNameFriendlyName')]",
                 "applicationGroupReferences": [
-                  "[resourceInfo('ag').id]"
+                  "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('appgroupName'))]"
                 ]
               },
               "dependsOn": [
@@ -351,10 +351,10 @@
                     "value": "[parameters('logAnalyticsWorkspaceSku')]"
                   },
                   "hostpoolName": {
-                    "value": "[resourceInfo('hp').name]"
+                    "value": "[parameters('hostpoolName')]"
                   },
                   "workspaceName": {
-                    "value": "[resourceInfo('ws').name]"
+                    "value": "[parameters('workspaceName')]"
                   },
                   "avdBackplaneResourceGroup": {
                     "value": "[parameters('avdBackplaneResourceGroup')]"
@@ -365,11 +365,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "16864722642105308362"
+                      "templateHash": "15422770400368608700"
                     }
                   },
                   "parameters": {
@@ -418,7 +418,7 @@
                         "mode": "Incremental",
                         "parameters": {
                           "logAnalyticsWorkspaceID": {
-                            "value": "[resourceInfo('avdla').id]"
+                            "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
                           },
                           "hostpoolName": {
                             "value": "[parameters('hostpoolName')]"
@@ -432,11 +432,11 @@
                           "languageVersion": "1.9-experimental",
                           "contentVersion": "1.0.0.0",
                           "metadata": {
-                            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                             "_generator": {
                               "name": "bicep",
                               "version": "dev",
-                              "templateHash": "1620512394627203274"
+                              "templateHash": "15554635999490937810"
                             }
                           },
                           "parameters": {
@@ -576,11 +576,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "6012228004721039961"
+              "templateHash": "8377334280691214017"
             }
           },
           "parameters": {
@@ -653,7 +653,7 @@
             },
             "vnetId": {
               "type": "string",
-              "value": "[resourceInfo('vnet').id]"
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
             }
           }
         }
@@ -694,11 +694,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3646938118059409476"
+              "templateHash": "6107639765738611258"
             }
           },
           "parameters": {
@@ -721,7 +721,7 @@
             }
           },
           "variables": {
-            "filesharelocation": "[format('{0}/default/{1}', resourceInfo('sa').name, parameters('fileshareFolderName'))]"
+            "filesharelocation": "[format('{0}/default/{1}', parameters('storageaccountName'), parameters('fileshareFolderName'))]"
           },
           "resources": {
             "sa": {
@@ -746,7 +746,7 @@
           "outputs": {
             "storageAccountId": {
               "type": "string",
-              "value": "[resourceInfo('sa').id]"
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageaccountName'))]"
             }
           }
         }
@@ -787,11 +787,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "17753774574855992740"
+              "templateHash": "1046509696741722446"
             }
           },
           "parameters": {
@@ -830,7 +830,7 @@
                   {
                     "name": "config1",
                     "properties": {
-                      "privateDnsZoneId": "[resourceInfo('privateDNSZone').id]"
+                      "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDNSZoneName'))]"
                     }
                   }
                 ]
@@ -843,7 +843,7 @@
             "privateDNSZone::virtualNetworkLink": {
               "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/{1}', parameters('privateDNSZoneName'), format('{0}-link', resourceInfo('privateDNSZone').name))]",
+              "name": "[format('{0}/{1}', parameters('privateDNSZoneName'), format('{0}-link', parameters('privateDNSZoneName')))]",
               "location": "global",
               "properties": {
                 "registrationEnabled": false,
@@ -933,11 +933,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "10796674423451692405"
+              "templateHash": "1270528138025457372"
             }
           },
           "parameters": {
@@ -1010,9 +1010,9 @@
             "galleryassignment": {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
-              "name": "[guid(resourceGroup().id, resourceInfo('gallerydef').id, resourceInfo('managedidentity').id)]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.Authorization/roleDefinitions', guid(parameters('roleNameGalleryImage'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')))]",
               "properties": {
-                "roleDefinitionId": "[resourceInfo('gallerydef').id]",
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', guid(parameters('roleNameGalleryImage')))]",
                 "principalId": "[reference('managedidentity').principalId]",
                 "principalType": "ServicePrincipal"
               },
@@ -1024,7 +1024,7 @@
             "avdid": {
               "type": "Microsoft.Compute/galleries/images",
               "apiVersion": "2019-07-01",
-              "name": "[format('{0}/{1}', resourceInfo('avdsig').name, parameters('imageDefinitionName'))]",
+              "name": "[format('{0}/{1}', parameters('sigName'), parameters('imageDefinitionName'))]",
               "location": "[parameters('sigLocation')]",
               "properties": {
                 "osType": "Windows",
@@ -1059,7 +1059,7 @@
             },
             "avdidoutput": {
               "type": "string",
-              "value": "[resourceInfo('avdid').id]"
+              "value": "[resourceId('Microsoft.Compute/galleries/images', split(format('{0}/{1}', parameters('sigName'), parameters('imageDefinitionName')), '/')[0], split(format('{0}/{1}', parameters('sigName'), parameters('imageDefinitionName')), '/')[1])]"
             }
           }
         }
@@ -1106,11 +1106,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7366460419688481408"
+              "templateHash": "4602590212295487082"
             }
           },
           "parameters": {
@@ -1175,7 +1175,7 @@
               "identity": {
                 "type": "UserAssigned",
                 "userAssignedIdentities": {
-                  "[format('{0}', resourceInfo('managedidentity').id)]": {}
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')))]": {}
                 }
               },
               "properties": {
@@ -1233,9 +1233,9 @@
               "condition": "[parameters('InvokeRunImageBuildThroughDeploymentScript')]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
-              "name": "[guid(resourceGroup().id, resourceInfo('aibdef').id, resourceInfo('managedidentity').id)]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.Authorization/roleDefinitions', guid(parameters('roleNameAIBCustom'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')))]",
               "properties": {
-                "roleDefinitionId": "[resourceInfo('aibdef').id]",
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', guid(parameters('roleNameAIBCustom')))]",
                 "principalId": "[reference('managedidentity').principalId]",
                 "principalType": "ServicePrincipal"
               },
@@ -1247,7 +1247,7 @@
               "condition": "[parameters('InvokeRunImageBuildThroughDeploymentScript')]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
-              "name": "[guid(resourceGroup().id, '/providers/Microsoft.Authorization/roleDefinitions/f1a07417-d97a-45cb-824c-7a7467783830', resourceInfo('managedidentity').id)]",
+              "name": "[guid(resourceGroup().id, '/providers/Microsoft.Authorization/roleDefinitions/f1a07417-d97a-45cb-824c-7a7467783830', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')))]",
               "properties": {
                 "roleDefinitionId": "/providers/Microsoft.Authorization/roleDefinitions/f1a07417-d97a-45cb-824c-7a7467783830",
                 "principalId": "[reference('managedidentity').principalId]",

@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Bicep.Core.CodeAction;
+using Bicep.Core.Configuration;
 using Bicep.Core.Extensions;
 using Bicep.Core.Modules;
 using Bicep.Core.Navigation;
@@ -41,6 +42,9 @@ namespace Bicep.Core.Diagnostics
 
             private static string ToQuotedString(IEnumerable<string> elements)
                 => elements.Any() ? $"\"{elements.ConcatString("\", \"")}\"" : "";
+
+            private static string ToQuotedStringWithCaseInsensitiveOrdering(IEnumerable<string> elements)
+                => ToQuotedString(elements.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
 
             private static string BuildVariableDependencyChainClause(IEnumerable<string>? variableDependencyChain) => variableDependencyChain is not null
                 ? $" You are referencing a variable which cannot be calculated at the start (\"{string.Join("\" -> \"", variableDependencyChain)}\")."
@@ -95,7 +99,7 @@ namespace Bicep.Core.Diagnostics
             public ErrorDiagnostic UnrecognizedDeclaration() => new(
                 TextSpan,
                 "BCP007",
-                "This declaration type is not recognized. Specify a parameter, variable, resource, or output declaration.");
+                "This declaration type is not recognized. Specify a metadata, parameter, variable, resource, or output declaration.");
 
             public ErrorDiagnostic ExpectedParameterContinuation() => new(
                 TextSpan,
@@ -126,11 +130,6 @@ namespace Bicep.Core.Diagnostics
                 TextSpan,
                 "BCP013",
                 "Expected a parameter identifier at this location.");
-
-            public ErrorDiagnostic ExpectedParameterType() => new(
-                TextSpan,
-                "BCP014",
-                $"Expected a parameter type at this location. Please specify one of the following types: {ToQuotedString(LanguageConstants.DeclarationTypes.Keys)}.");
 
             public ErrorDiagnostic ExpectedVariableIdentifier() => new(
                 TextSpan,
@@ -192,11 +191,6 @@ namespace Bicep.Core.Diagnostics
                 "BCP026",
                 $"The output expects a value of type \"{expectedType}\" but the provided value is of type \"{actualType}\".");
 
-            public ErrorDiagnostic ParameterTypeMismatch(TypeSymbol expectedType, TypeSymbol actualType) => new(
-                TextSpan,
-                "BCP027",
-                $"The parameter expects a default value of type \"{expectedType}\" but provided value is of type \"{actualType}\".");
-
             public ErrorDiagnostic IdentifierMultipleDeclarations(string identifier) => new(
                 TextSpan,
                 "BCP028",
@@ -212,10 +206,10 @@ namespace Bicep.Core.Diagnostics
                 "BCP030",
                 $"The output type is not valid. Please specify one of the following types: {ToQuotedString(LanguageConstants.DeclarationTypes.Keys)}.");
 
-            public ErrorDiagnostic InvalidParameterType() => new(
+            public ErrorDiagnostic InvalidParameterType(IEnumerable<string> validTypes) => new(
                 TextSpan,
                 "BCP031",
-                $"The parameter type is not valid. Please specify one of the following types: {ToQuotedString(LanguageConstants.DeclarationTypes.Keys)}.");
+                $"The parameter type is not valid. Please specify one of the following types: {ToQuotedString(validTypes)}.");
 
             public ErrorDiagnostic CompileTimeConstantRequired() => new(
                 TextSpan,
@@ -240,9 +234,21 @@ namespace Bicep.Core.Diagnostics
                     ? $" from source declaration \"{sourceDeclaration.Name}\""
                     : string.Empty;
 
-                var newSyntax = objectSyntax.AddChildrenWithFormatting(
+                var newSyntax = SyntaxModifier.TryAddProperties(
+                    objectSyntax,
                     properties.Select(p => SyntaxFactory.CreateObjectProperty(p, SyntaxFactory.EmptySkippedTrivia))
                 );
+
+                if (newSyntax is null)
+                {
+                    // We're unable to come up with an automatic code fix - most likely because there are unhandled parse errors
+                    return new Diagnostic(
+                        TextSpan,
+                        warnInsteadOfError ? DiagnosticLevel.Warning : DiagnosticLevel.Error,
+                        "BCP035",
+                        $"The specified \"{blockName}\" declaration is missing the following required properties{sourceDeclarationClause}: {ToQuotedString(properties)}.{(showTypeInaccuracy ? TypeInaccuracyClause : string.Empty)}",
+                        showTypeInaccuracy ? TypeInaccuracyLink : null);
+                }
 
                 var codeFix = new CodeFix("Add required properties", true, CodeFixKind.QuickFix, new CodeReplacement(objectSyntax.Span, newSyntax.ToTextPreserveFormatting()));
 
@@ -626,10 +632,10 @@ namespace Bicep.Core.Diagnostics
                 "BCP094",
                 "This module references itself, which is not allowed.");
 
-            public ErrorDiagnostic CyclicModule(IEnumerable<string> cycle) => new(
+            public ErrorDiagnostic CyclicFile(IEnumerable<string> cycle) => new(
                 TextSpan,
                 "BCP095",
-                $"The module is involved in a cycle (\"{string.Join("\" -> \"", cycle)}\").");
+                $"The file is involved in a cycle (\"{string.Join("\" -> \"", cycle)}\").");
 
             public ErrorDiagnostic ExpectedModuleIdentifier() => new(
                 TextSpan,
@@ -1125,7 +1131,7 @@ namespace Bicep.Core.Diagnostics
                 TextSpan,
                 DiagnosticLevel.Warning,
                 "BCP187",
-                $"The property \"{property}\" does not exist in the resource definition, although it might still be valid.{TypeInaccuracyClause}", TypeInaccuracyLink);
+                $"The property \"{property}\" does not exist in the resource or type definition, although it might still be valid.{TypeInaccuracyClause}", TypeInaccuracyLink);
 
             public ErrorDiagnostic ReferencedArmTemplateHasErrors() => new(
                 TextSpan,
@@ -1208,10 +1214,10 @@ namespace Bicep.Core.Diagnostics
                 "BCP200",
                 $"{BuildInvalidOciArtifactReferenceClause(aliasName, badRef)} The registry \"{badRegistry}\" exceeds the maximum length of {maxLength} characters.");
 
-            public ErrorDiagnostic ExpectedImportProviderName() => new(
+            public ErrorDiagnostic ExpectedProviderSpecification() => new(
                 TextSpan,
                 "BCP201",
-                "Expected an import provider name at this location.");
+                "Expected a provider specification string. Specify a valid provider of format \"<providerName>@<providerVersion>\".");
 
             public ErrorDiagnostic ExpectedImportAliasName() => new(
                 TextSpan,
@@ -1221,7 +1227,7 @@ namespace Bicep.Core.Diagnostics
             public ErrorDiagnostic ImportsAreDisabled() => new(
                 TextSpan,
                 "BCP203",
-                "Import statements are currently not supported.");
+                $@"Using import statements requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.Extensibility)}"".");
 
             public ErrorDiagnostic UnrecognizedImportProvider(string identifier) => new(
                 TextSpan,
@@ -1340,15 +1346,10 @@ namespace Bicep.Core.Diagnostics
                 "Expected at least one diagnostic code at this location. Valid format is \"#disable-next-line diagnosticCode1 diagnosticCode2 ...\""
             );
 
-            public ErrorDiagnostic UnsupportedResourceTypeParameterType(string resourceType) => new(
+            public ErrorDiagnostic UnsupportedResourceTypeParameterOrOutputType(string resourceType) => new(
                 TextSpan,
                 "BCP227",
-                $"The type \"{resourceType}\" cannot be used as a parameter type. Extensibility types are currently not supported as parameters or outputs.");
-
-            public ErrorDiagnostic UnsupportedResourceTypeOutputType(string resourceType) => new(
-                TextSpan,
-                "BCP228",
-                $"The type \"{resourceType}\" cannot be used as an output type. Extensibility types are currently not supported as parameters or outputs.");
+                $"The type \"{resourceType}\" cannot be used as a parameter or output type. Extensibility types are currently not supported as parameters or outputs.");
 
             public ErrorDiagnostic InvalidResourceScopeCannotBeResourceTypeParameter(string parameterName) => new(
                 TextSpan,
@@ -1364,7 +1365,7 @@ namespace Bicep.Core.Diagnostics
             public ErrorDiagnostic ParamOrOutputResourceTypeUnsupported() => new(
                 TextSpan,
                 "BCP231",
-                "Using resource-typed parameters and outputs requires enabling EXPERIMENTAL feature BICEP_RESOURCE_TYPED_PARAMS_AND_OUTPUTS_EXPERIMENTAL.");
+                $@"Using resource-typed parameters and outputs requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.ResourceTypedParamsAndOutputs)}"".");
 
             public ErrorDiagnostic ModuleDeleteFailed(string moduleRef) => new(
                 TextSpan,
@@ -1463,6 +1464,338 @@ namespace Bicep.Core.Diagnostics
                 TextSpan,
                 "BCP249",
                 $"Expected loop variable block to consist of exactly 2 elements (item variable and index variable), but found {actualCount}.");
+
+            public ErrorDiagnostic ParameterMultipleAssignments(string identifier) => new(
+                TextSpan,
+                "BCP250",
+                $"Parameter \"{identifier}\" is assigned multiple times. Remove or rename the duplicates.");
+
+            public ErrorDiagnostic ParameterTernaryOperationNotSupported() => new(
+                TextSpan,
+                "BCP251",
+                $"Ternary operator is not allowed in Bicep parameter file.");
+
+            public ErrorDiagnostic ParameterBinaryOperationNotSupported() => new(
+                TextSpan,
+                "BCP252",
+                $"Binary operator is not allowed in Bicep parameter file.");
+
+            public ErrorDiagnostic ParameterUnaryOperationNotSupported() => new(
+                TextSpan,
+                "BCP253",
+                $"Unary operator is not allowed in Bicep parameter file.");
+
+            public ErrorDiagnostic ParameterLambdaFunctionNotSupported() => new(
+                TextSpan,
+                "BCP254",
+                $"Lambda function is not allowed in Bicep parameter file.");
+
+            public ErrorDiagnostic ParameterFunctionCallNotSupported() => new(
+                TextSpan,
+                "BCP255",
+                $"Function call is not allowed in Bicep parameter file.");
+
+            public ErrorDiagnostic TemplatePathHasNotBeenSpecified() => new(
+                TextSpan,
+                "BCP256",
+                "The using declaration is missing a bicep template file path reference.");
+
+            public ErrorDiagnostic ExpectedFilePathString() => new(
+                TextSpan,
+                "BCP257",
+                "Expected a Bicep file path string. This should be a relative path to another bicep file, e.g. 'myModule.bicep' or '../parent/myModule.bicep'");
+
+            public ErrorDiagnostic MissingParameterAssignment(IEnumerable<string> identifiers) => new(
+                TextSpan,
+                "BCP258",
+                $"The following parameters are declared in the Bicep file but are missing an assignment in the params file: {ToQuotedString(identifiers)}.");
+
+            public ErrorDiagnostic MissingParameterDeclaration(string? identifier) => new(
+                TextSpan,
+                "BCP259",
+                $"The parameter \"{identifier}\" is assigned in the params file without being declared in the Bicep file.");
+
+            public ErrorDiagnostic ParameterTypeMismatch(string? identifier, TypeSymbol expectedType, TypeSymbol actualType) => new(
+                TextSpan,
+                "BCP260",
+                $"The parameter \"{identifier}\" expects a value of type \"{expectedType}\" but the provided value is of type \"{actualType}\".");
+
+            public Diagnostic UsingDeclarationNotSpecified() => new(
+                TextSpan,
+                DiagnosticLevel.Warning,
+                "BCP261",
+                "No using declaration is present in this parameters file. Parameter validation/completions will not be available");
+
+            public ErrorDiagnostic MoreThanOneUsingDeclarationSpecified() => new(
+                TextSpan,
+                "BCP262",
+                "More than one using declaration are present");
+
+            public ErrorDiagnostic UsingDeclarationReferencesInvalidFile() => new(
+                TextSpan,
+                "BCP263",
+                "The file specified in the using declaration path does not exist");
+
+            public ErrorDiagnostic AmbiguousResourceTypeBetweenImports(string resourceTypeName, IEnumerable<string> namespaces) => new(
+                TextSpan,
+                "BCP264",
+                $"Resource type \"{resourceTypeName}\" is declared in multiple imported namespaces ({ToQuotedStringWithCaseInsensitiveOrdering(namespaces)}), and must be fully-qualified.");
+
+            public FixableErrorDiagnostic SymbolicNameShadowsAKnownFunction(string name, string knownFunctionNamespace, string knownFunctionName) => new(
+                TextSpan,
+                "BCP265",
+                $"The name \"{name}\" is not a function. Did you mean \"{knownFunctionNamespace}.{knownFunctionName}\"?",
+                null,
+                DiagnosticStyling.Default,
+                new CodeFix($"Change \"{name}\" to \"{knownFunctionNamespace}.{knownFunctionName}\"", true, CodeFixKind.QuickFix, CodeManipulator.Replace(TextSpan, $"{knownFunctionNamespace}.{knownFunctionName}")));
+
+            public ErrorDiagnostic ExpectedMetadataIdentifier() => new(
+                TextSpan,
+                "BCP266",
+                "Expected a metadata identifier at this location.");
+
+            public ErrorDiagnostic ExpectedMetadataDeclarationAfterDecorator() => new(
+                TextSpan,
+                "BCP267",
+                "Expected an metadata declaration after the decorator.");
+
+            public ErrorDiagnostic ReservedMetadataIdentifier(string name) => new(
+                TextSpan,
+                "BCP268",
+                $"Invalid identifier: \"{name}\". Metadata identifiers starting with '_' are reserved. Please use a different identifier.");
+
+            public ErrorDiagnostic CannotUseFunctionAsMetadataDecorator(string functionName) => new(
+                TextSpan,
+                "BCP269",
+                $"Function \"{functionName}\" cannot be used as a metadata decorator.");
+
+            public ErrorDiagnostic UnparsableBicepConfigFile(string configurationPath, string parsingErrorMessage) => new(
+                TextSpan,
+                "BCP271",
+                $"Failed to parse the contents of the Bicep configuration file \"{configurationPath}\" as valid JSON: \"{parsingErrorMessage}\".");
+
+            public ErrorDiagnostic UnloadableBicepConfigFile(string configurationPath, string loadErrorMessage) => new(
+                TextSpan,
+                "BCP272",
+                $"Could not load the Bicep configuration file \"{configurationPath}\": \"{loadErrorMessage}\".");
+
+            public ErrorDiagnostic InvalidBicepConfigFile(string configurationPath, string parsingErrorMessage) => new(
+                TextSpan,
+                "BCP273",
+                $"Failed to parse the contents of the Bicep configuration file \"{configurationPath}\": \"{parsingErrorMessage}\".");
+
+            public Diagnostic PotentialConfigDirectoryCouldNotBeScanned(string? directoryPath, string scanErrorMessage) => new(
+                TextSpan,
+                DiagnosticLevel.Info, // should this be a warning instead?
+                "BCP274",
+                $"Error scanning \"{directoryPath}\" for bicep configuration: \"{scanErrorMessage}\".");
+
+            public ErrorDiagnostic FoundDirectoryInsteadOfFile(string directoryPath) => new(
+                TextSpan,
+                "BCP275",
+                $"Unable to open file at path \"{directoryPath}\". Found a directory instead.");
+
+            public ErrorDiagnostic UsingDeclarationMustReferenceBicepFile() => new(
+                TextSpan,
+                "BCP276",
+                "A using declaration can only reference a Bicep file.");
+
+            public ErrorDiagnostic ModuleDeclarationMustReferenceBicepModule() => new(
+                TextSpan,
+                "BCP277",
+                "A module declaration can only reference a Bicep File, an ARM template, a registry reference or a template spec reference.");
+
+            public ErrorDiagnostic CyclicParametersSelfReference() => new(
+                TextSpan,
+                "BCP278",
+                "This parameters file references itself, which is not allowed.");
+
+            public ErrorDiagnostic UnrecognizedTypeExpression() => new(
+                TextSpan,
+                "BCP279",
+                $"Expected a type at this location. Please specify a valid type expression or one of the following types: {ToQuotedString(LanguageConstants.DeclarationTypes.Keys)}.");
+
+            public ErrorDiagnostic TypeDeclarationStatementsUnsupported() => new(
+                TextSpan,
+                "BCP280",
+                $@"Using a type declaration statement requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic TypedArrayDeclarationsUnsupported() => new(
+                TextSpan,
+                "BCP281",
+                $@"Using a typed array type declaration requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic TypedObjectDeclarationsUnsupported() => new(
+                TextSpan,
+                "BCP282",
+                $@"Using a strongly-typed object type declaration requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic TypeLiteralDeclarationsUnsupported() => new(
+                TextSpan,
+                "BCP283",
+                $@"Using a literal value as a type requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic TypeUnionDeclarationsUnsupported() => new(
+                TextSpan,
+                "BCP284",
+                $@"Using a type union declaration requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic TypeExpressionLiteralConversionFailed() => new(
+                TextSpan,
+                "BCP285",
+                "The type expression could not be reduced to a literal value.");
+
+            public ErrorDiagnostic InvalidUnionTypeMember(string keystoneType) => new(
+                TextSpan,
+                "BCP286",
+                $"This union member is invalid because it cannot be assigned to the '{keystoneType}' type.");
+
+            public ErrorDiagnostic ValueSymbolUsedAsType(string symbolName) => new(
+                TextSpan,
+                "BCP287",
+                // TODO: Add "Did you mean 'typeof({symbolName})'?" When support for typeof has been added.
+                $"'{symbolName}' refers to a value but is being used as a type here.");
+
+            public ErrorDiagnostic TypeSymbolUsedAsValue(string symbolName) => new(
+                TextSpan,
+                "BCP288",
+                $"'{symbolName}' refers to a type but is being used as a value here.");
+
+            public ErrorDiagnostic InvalidTypeDefinition() => new(
+                TextSpan,
+                "BCP289",
+                $"The type definition is not valid.");
+
+            public ErrorDiagnostic ExpectedParameterOrTypeDeclarationAfterDecorator() => new(
+                TextSpan,
+                "BCP290",
+                "Expected a parameter or type declaration after the decorator.");
+
+            public ErrorDiagnostic ExpectedParameterOrOutputDeclarationAfterDecorator() => new(
+                TextSpan,
+                "BCP291",
+                "Expected a parameter or output declaration after the decorator.");
+
+            public ErrorDiagnostic ExpectedParameterOutputOrTypeDeclarationAfterDecorator() => new(
+                TextSpan,
+                "BCP292",
+                "Expected a parameter, output, or type declaration after the decorator.");
+
+            public ErrorDiagnostic NonLiteralUnionMember() => new(
+                TextSpan,
+                "BCP293",
+                "All members of a union type declaration must be literal values.");
+
+            public ErrorDiagnostic InvalidTypeUnion() => new(
+                TextSpan,
+                "BCP294",
+                "Type unions must be reduceable to a single ARM type (such as 'string', 'int', or 'bool').");
+
+            public ErrorDiagnostic DecoratorNotPermittedOnLiteralType(string decoratorName) => new(
+                TextSpan,
+                "BCP295",
+                $"The '{decoratorName}' decorator may not be used on targets of a union or literal type. The allowed values for this parameter or type definition will be derived from the union or literal type automatically.");
+
+            public ErrorDiagnostic NonConstantTypeProperty() => new(
+                TextSpan,
+                "BCP296",
+                "Property names on types must be compile-time constant values.");
+
+            public ErrorDiagnostic CannotUseFunctionAsTypeDecorator(string functionName) => new(
+                TextSpan,
+                "BCP297",
+                $"Function \"{functionName}\" cannot be used as a type decorator.");
+
+            public ErrorDiagnostic CyclicTypeSelfReference() => new(
+                TextSpan,
+                "BCP298",
+                "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled.");
+
+            public ErrorDiagnostic CyclicType(IEnumerable<string> cycle) => new(
+                TextSpan,
+                "BCP299",
+                $"This type definition includes itself as a required component via a cycle (\"{string.Join("\" -> \"", cycle)}\").");
+
+            public ErrorDiagnostic ExpectedTypeLiteral() => new(
+                TextSpan,
+                "BCP300",
+                $"Expected a type literal at this location. Please specify a concrete value or a reference to a literal type.");
+
+            public ErrorDiagnostic ReservedTypeName(string reservedName) => new(
+                TextSpan,
+                "BCP301",
+                $@"The type name ""{reservedName}"" is reserved and may not be attached to a user-defined type.");
+
+            public ErrorDiagnostic SymbolicNameIsNotAType(string name, IEnumerable<string> validTypes) => new(
+                TextSpan,
+                "BCP302",
+                $@"The name ""{name}"" is not a valid type. Please specify one of the following types: {ToQuotedString(validTypes)}.");
+
+            public ErrorDiagnostic ProviderSpecificationInterpolationUnsupported() => new(
+                TextSpan,
+                "BCP303",
+                "String interpolation is unsupported for specifying the provider.");
+
+            public ErrorDiagnostic InvalidProviderSpecification() => new(
+                TextSpan,
+                "BCP304",
+                "Invalid provider specifier string. Specify a valid provider of format \"<providerName>@<providerVersion>\".");
+
+            public ErrorDiagnostic ExpectedWithOrAsKeywordOrNewLine() => new(
+                TextSpan,
+                "BCP305",
+                $"Expected the \"with\" keyword, \"as\" keyword, or a new line character at this location.");
+
+            public ErrorDiagnostic NamespaceSymbolUsedAsType(string name) => new(
+                TextSpan,
+                "BCP306",
+                $@"The name ""{name}"" refers to a namespace, not to a type.");
+
+            public ErrorDiagnostic NestedRuntimePropertyAccessNotSupported(string? resourceSymbol, IEnumerable<string> accessiblePropertyNames, IEnumerable<string> accessibleFunctionNames)
+            {
+                var accessiblePropertyNamesClause = accessiblePropertyNames.Any() ? @$" the accessible properties of ""{resourceSymbol}"" include {ToQuotedString(accessiblePropertyNames.OrderBy(x => x))}." : "";
+                var accessibleFunctionNamesClause = accessibleFunctionNames.Any() ? @$" The accessible functions of ""{resourceSymbol}"" include {ToQuotedString(accessibleFunctionNames.OrderBy(x => x))}." : "";
+
+                return new(
+                    TextSpan,
+                    "BCP307",
+                    $"The expression cannot be evaluated, because the \"name\" property of the referenced existing resource contains a value that cannot be calculated at the start of the deployment. In this situation,{accessiblePropertyNamesClause}{accessibleFunctionNamesClause}");
+            }
+
+            public ErrorDiagnostic DecoratorMayNotTargetTypeAlias(string decoratorName) => new(
+                TextSpan,
+                "BCP308",
+                $@"The decorator ""{decoratorName}"" may not be used on statements whose declared type is a reference to a user-defined type.");
+
+            public ErrorDiagnostic ValueCannotBeFlattened(TypeSymbol flattenInputType, TypeSymbol incompatibleType) => new(
+                TextSpan,
+                "BCP309",
+                $@"Values of type ""{flattenInputType.Name}"" cannot be flattened because ""{incompatibleType.Name}"" is not an array type.");
+
+            public ErrorDiagnostic TypedTupleDeclarationsUnsupported() => new(
+                TextSpan,
+                "BCP310",
+                $@"Using a strongly-typed tuple type declaration requires enabling EXPERIMENTAL feature ""{nameof(ExperimentalFeaturesEnabled.UserDefinedTypes)}"".");
+
+            public ErrorDiagnostic IndexOutOfBounds(string typeName, long tupleLength, long indexSought) => new(
+                TextSpan,
+                "BCP311",
+                $@"The provided index value of ""{indexSought}"" is not valid for type ""{typeName}"". Indexes for this type must be between 0 and {tupleLength - 1}");
+
+            public ErrorDiagnostic CyclicArmTypeRefs(IEnumerable<string> cycleLinks) => new(
+                TextSpan,
+                "BCP312",
+                $@"Type reference cycle detected in the linked ARM JSON file (""{string.Join(" -> ", cycleLinks.Select(l => $@"""{l}"""))}"").");
+
+            public ErrorDiagnostic ArmTypeRefTargetNotFound(string refSansTarget) => new(
+                TextSpan,
+                "BCP313",
+                $@"The ""{refSansTarget}"" type definition could not be found in the linked ARM JSON file.");
+
+            public ErrorDiagnostic ArmTypeDefHasNoTypeOrRef(string invalidTypeDef) => new(
+                TextSpan,
+                "BCP314",
+                $@"The ""{invalidTypeDef}"" type definition in the linked ARM JSON file is invalid because it has neither a ""type"" property nor a ""$ref"" property.");
         }
 
         public static DiagnosticBuilderInternal ForPosition(TextSpan span)
@@ -1470,5 +1803,8 @@ namespace Bicep.Core.Diagnostics
 
         public static DiagnosticBuilderInternal ForPosition(IPositionable positionable)
             => new(positionable.Span);
+
+        public static DiagnosticBuilderInternal ForDocumentStart()
+            => new(TextSpan.TextDocumentStart);
     }
 }

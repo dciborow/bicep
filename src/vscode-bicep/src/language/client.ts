@@ -11,31 +11,19 @@ import {
   parseError,
 } from "@microsoft/vscode-azext-utils";
 import {
-  ErrorAction,
+  ErrorHandlerResult,
   Message,
-  CloseAction,
+  CloseHandlerResult,
   TransportKind,
 } from "vscode-languageclient/node";
 import { writeDeploymentOutputMessageToBicepOperationsOutputChannel } from "../commands/deployHelper";
+import { bicepLanguageId } from "./constants";
 
 const dotnetRuntimeVersion = "6.0";
 const packagedServerPath = "bicepLanguageServer/Bicep.LangServer.dll";
 const extensionId = "ms-azuretools.vscode-bicep";
-
-export async function launchLanguageServiceWithProgressReport(
-  actionContext: IActionContext,
-  context: vscode.ExtensionContext,
-  outputChannel: vscode.OutputChannel
-): Promise<lsp.LanguageClient> {
-  return await vscode.window.withProgress(
-    {
-      title: "Launching Bicep language service...",
-      location: vscode.ProgressLocation.Notification,
-    },
-    async () =>
-      await launchLanguageService(actionContext, context, outputChannel)
-  );
-}
+const dotnetAcquisitionExtensionSetting = "dotnetAcquisitionExtension";
+const existingDotnetPathSetting = "existingDotnetPath";
 
 function getServerStartupOptions(
   dotnetCommandPath: string,
@@ -48,10 +36,6 @@ function getServerStartupOptions(
     // pause language server startup until a dotnet debugger has been attached
     args.push(`--wait-for-debugger`);
   }
-  const envVars = {
-    ...process.env,
-    ...getFeatureEnvVars(),
-  };
 
   switch (transportKind) {
     case TransportKind.stdio: {
@@ -59,7 +43,7 @@ function getServerStartupOptions(
         command: dotnetCommandPath,
         args: [languageServerPath, ...args],
         options: {
-          env: envVars,
+          env: process.env,
         },
       };
       return {
@@ -74,7 +58,7 @@ function getServerStartupOptions(
         transport: transportKind,
         args,
         options: {
-          env: envVars,
+          env: process.env,
         },
       };
       return {
@@ -87,7 +71,7 @@ function getServerStartupOptions(
   throw new Error(`TransportKind '${transportKind}' is not supported.`);
 }
 
-async function launchLanguageService(
+export async function createLanguageService(
   actionContext: IActionContext,
   context: vscode.ExtensionContext,
   outputChannel: vscode.OutputChannel
@@ -110,7 +94,7 @@ async function launchLanguageService(
   );
 
   const clientOptions: lsp.LanguageClientOptions = {
-    documentSelector: [{ language: "bicep" }],
+    documentSelector: [{ language: bicepLanguageId }],
     initializationOptions: {
       // this tells the server that this client can handle additional DocumentUri schemes
       enableRegistryContent: true,
@@ -142,7 +126,7 @@ async function launchLanguageService(
   };
 
   const client = new lsp.LanguageClient(
-    "bicep",
+    bicepLanguageId,
     "Bicep",
     serverOptions,
     clientOptions
@@ -155,12 +139,6 @@ async function launchLanguageService(
   // To enable language server tracing, you MUST have a package setting named 'bicep.trace.server'; I was unable to find a way to enable it through code.
   // See https://github.com/microsoft/vscode-languageserver-node/blob/77c3a10a051ac619e4e3ef62a3865717702b64a3/client/src/common/client.ts#L3268
 
-  context.subscriptions.push(client.start());
-
-  getLogger().info("Bicep language service started.");
-
-  await client.onReady();
-
   client.onNotification(
     "deploymentComplete",
     writeDeploymentOutputMessageToBicepOperationsOutputChannel
@@ -170,15 +148,34 @@ async function launchLanguageService(
     vscode.commands.executeCommand("editor.action.triggerSuggest");
   });
 
-  getLogger().info("Bicep language service ready.");
-
   return client;
+}
+
+function getCustomDotnetRuntimePathConfig() {
+  const acquireConfig = vscode.workspace
+    .getConfiguration(dotnetAcquisitionExtensionSetting)
+    .get(existingDotnetPathSetting);
+  if (!Array.isArray(acquireConfig)) {
+    return null;
+  }
+
+  return acquireConfig.filter((x) => x.extensionId === extensionId)[0];
 }
 
 async function ensureDotnetRuntimeInstalled(
   actionContext: IActionContext
 ): Promise<string> {
   getLogger().info("Acquiring dotnet runtime...");
+
+  const customDotnetRuntimePathConfig = getCustomDotnetRuntimePathConfig();
+  if (customDotnetRuntimePathConfig) {
+    // This setting is a common source of issues. Add explicit logging to help with investigation.
+    getLogger().info(
+      `Found config for '${dotnetAcquisitionExtensionSetting}.${existingDotnetPathSetting}': ${JSON.stringify(
+        customDotnetRuntimePathConfig
+      )}`
+    );
+  }
 
   const result = await vscode.commands.executeCommand<{ dotnetPath: string }>(
     "dotnet.acquire",
@@ -198,7 +195,20 @@ async function ensureDotnetRuntimeInstalled(
     throw new Error(errorMessage);
   }
 
-  return path.resolve(result.dotnetPath);
+  const dotnetPath = path.resolve(result.dotnetPath);
+  if (!existsSync(dotnetPath)) {
+    // The 'dotnet.acquire' command doesn't actually verify that the dotnet path is valid, in the case
+    // that the user has configured a custom path using the 'dotnetAcquisitionExtension.existingDotnetPath' setting.
+    // Let's sanity check it here to help users unblock themselves.
+    let errorMessage = `Failed to find dotnet executable at path '${dotnetPath}'.`;
+    if (customDotnetRuntimePathConfig) {
+      errorMessage += ` Please ensure the path configured for extension '${extensionId}' with setting '${dotnetAcquisitionExtensionSetting}.${existingDotnetPathSetting}' is valid.`;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return dotnetPath;
 }
 
 function ensureLanguageServerExists(context: vscode.ExtensionContext): string {
@@ -240,7 +250,7 @@ function configureTelemetry(client: lsp.LanguageClient) {
       error: Error,
       message: Message | undefined,
       count: number | undefined
-    ): ErrorAction {
+    ): ErrorHandlerResult {
       callWithTelemetryAndErrorHandlingSync(
         "bicep.lsp-error",
         (context: IActionContext) => {
@@ -255,7 +265,7 @@ function configureTelemetry(client: lsp.LanguageClient) {
       );
       return defaultErrorHandler.error(error, message, count);
     },
-    closed(): CloseAction {
+    closed(): CloseHandlerResult {
       callWithTelemetryAndErrorHandlingSync(
         "bicep.lsp-error",
         (context: IActionContext) => {
@@ -267,15 +277,5 @@ function configureTelemetry(client: lsp.LanguageClient) {
       );
       return defaultErrorHandler.closed();
     },
-  };
-}
-
-function getFeatureEnvVars() {
-  const importsEnabledExperimental = vscode.workspace
-    .getConfiguration("bicep")
-    .get<boolean>("importsEnabledExperimental");
-
-  return {
-    BICEP_IMPORTS_ENABLED_EXPERIMENTAL: importsEnabledExperimental,
   };
 }

@@ -1,13 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import vscode from "vscode";
-import { BicepVisualizerViewManager } from "./visualizer";
-import { createAzExtOutputChannel } from "./utils/AzExtOutputChannel";
-import { OutputChannelManager } from "./utils/OutputChannelManager";
 import { registerAzureUtilsExtensionVariables } from "@microsoft/vscode-azext-azureutils";
 import { registerUIExtensionVariables } from "@microsoft/vscode-azext-utils";
-import { TreeManager } from "./tree/TreeManager";
+import {
+  ExtensionContext,
+  ProgressLocation,
+  TextDocument,
+  TextEditor,
+  Uri,
+  window,
+  workspace,
+} from "vscode";
+import * as lsp from "vscode-languageclient/node";
 import {
   BuildCommand,
   CommandManager,
@@ -22,25 +27,37 @@ import {
   WalkthroughCreateBicepFileCommand,
   WalkthroughOpenBicepFileCommand,
 } from "./commands";
-import {
-  BicepCacheContentProvider,
-  launchLanguageServiceWithProgressReport,
-} from "./language";
+import { CreateBicepConfigurationFile } from "./commands/createConfigurationFile";
+import { DecompileCommand } from "./commands/decompile";
+import { ImportKubernetesManifestCommand } from "./commands/importKubernetesManifest";
+import { PasteAsBicepCommand } from "./commands/pasteAsBicep";
+import { BicepCacheContentProvider, createLanguageService } from "./language";
+import { TreeManager } from "./tree/TreeManager";
+import { updateUiContext } from "./updateUiContext";
 import {
   activateWithTelemetryAndErrorHandling,
   createLogger,
   Disposable,
+  getLogger,
   resetLogger,
 } from "./utils";
-import { CreateBicepConfigurationFile } from "./commands/createConfigurationFile";
-import { ImportKubernetesManifestCommand } from "./commands/importKubernetesManifest";
+import { createAzExtOutputChannel } from "./utils/AzExtOutputChannel";
+import { OutputChannelManager } from "./utils/OutputChannelManager";
+import { BicepVisualizerViewManager } from "./visualizer";
+import {
+  bicepConfigurationPrefix,
+  bicepLanguageId,
+} from "./language/constants";
+import { SuppressedWarningsManager } from "./commands/SuppressedWarningsManager";
+
+let languageClient: lsp.LanguageClient | null = null;
 
 class BicepExtension extends Disposable {
-  private constructor(public readonly extensionUri: vscode.Uri) {
+  private constructor(public readonly extensionUri: Uri) {
     super();
   }
 
-  public static create(context: vscode.ExtensionContext) {
+  public static create(context: ExtensionContext) {
     const extension = new BicepExtension(context.extensionUri);
     context.subscriptions.push(extension);
 
@@ -48,11 +65,24 @@ class BicepExtension extends Disposable {
   }
 }
 
-export async function activate(
-  context: vscode.ExtensionContext
+export async function activateWithProgressReport(
+  activateFunc: () => Promise<void>
 ): Promise<void> {
+  return await window.withProgress(
+    {
+      title: "Launching Bicep language service...",
+      location: ProgressLocation.Notification,
+    },
+    activateFunc
+  );
+}
+
+export async function activate(context: ExtensionContext): Promise<void> {
   const extension = BicepExtension.create(context);
-  const outputChannel = createAzExtOutputChannel("Bicep", "bicep");
+  const outputChannel = createAzExtOutputChannel(
+    "Bicep",
+    bicepConfigurationPrefix
+  );
 
   extension.register(outputChannel);
   extension.register(createLogger(context, outputChannel));
@@ -61,59 +91,128 @@ export async function activate(
   registerAzureUtilsExtensionVariables({
     context,
     outputChannel,
-    prefix: "bicep",
+    prefix: bicepLanguageId,
   });
 
-  await activateWithTelemetryAndErrorHandling(async (actionContext) => {
-    const languageClient = await launchLanguageServiceWithProgressReport(
-      actionContext,
-      context,
-      outputChannel
-    );
+  // Launch language server
+  await activateWithTelemetryAndErrorHandling(
+    async (actionContext) =>
+      await activateWithProgressReport(async () => {
+        languageClient = await createLanguageService(
+          actionContext,
+          context,
+          outputChannel
+        );
 
-    // go2def links that point to the bicep cache will have the bicep-cache scheme in their document URIs
-    // this content provider will allow VS code to understand that scheme
-    // and surface the content as a read-only file
-    extension.register(
-      vscode.workspace.registerTextDocumentContentProvider(
-        "bicep-cache",
-        new BicepCacheContentProvider(languageClient)
-      )
-    );
+        // go2def links that point to the bicep cache will have the bicep-cache scheme in their document URIs
+        // this content provider will allow VS code to understand that scheme
+        // and surface the content as a read-only file
+        extension.register(
+          workspace.registerTextDocumentContentProvider(
+            "bicep-cache",
+            new BicepCacheContentProvider(languageClient)
+          )
+        );
 
-    const viewManager = extension.register(
-      new BicepVisualizerViewManager(extension.extensionUri, languageClient)
-    );
+        const viewManager = extension.register(
+          new BicepVisualizerViewManager(extension.extensionUri, languageClient)
+        );
 
-    const outputChannelManager = extension.register(
-      new OutputChannelManager("Bicep Operations", "bicep")
-    );
+        const outputChannelManager = extension.register(
+          new OutputChannelManager("Bicep Operations", bicepConfigurationPrefix)
+        );
 
-    const treeManager = extension.register(
-      new TreeManager(outputChannelManager)
-    );
+        const treeManager = extension.register(
+          new TreeManager(outputChannelManager)
+        );
 
-    // Register commands.
-    await extension
-      .register(new CommandManager(context))
-      .registerCommands(
-        new BuildCommand(languageClient, outputChannelManager),
-        new GenerateParamsCommand(languageClient, outputChannelManager),
-        new CreateBicepConfigurationFile(languageClient),
-        new DeployCommand(languageClient, outputChannelManager, treeManager),
-        new ForceModulesRestoreCommand(languageClient, outputChannelManager),
-        new InsertResourceCommand(languageClient),
-        new ShowVisualizerCommand(viewManager),
-        new ShowVisualizerToSideCommand(viewManager),
-        new ShowSourceCommand(viewManager),
-        new WalkthroughCopyToClipboardCommand(),
-        new WalkthroughCreateBicepFileCommand(),
-        new WalkthroughOpenBicepFileCommand(),
-        new ImportKubernetesManifestCommand(languageClient)
-      );
-  });
+        const suppressedWarningsManager = new SuppressedWarningsManager();
+
+        // Register commands.
+        const pasteAsBicepCommand = new PasteAsBicepCommand(
+          languageClient,
+          outputChannelManager,
+          suppressedWarningsManager
+        );
+        await extension
+          .register(new CommandManager(context))
+          .registerCommands(
+            new BuildCommand(languageClient, outputChannelManager),
+            new GenerateParamsCommand(languageClient, outputChannelManager),
+            new CreateBicepConfigurationFile(languageClient),
+            new DeployCommand(
+              languageClient,
+              outputChannelManager,
+              treeManager
+            ),
+            new DecompileCommand(languageClient, outputChannelManager),
+            new ForceModulesRestoreCommand(
+              languageClient,
+              outputChannelManager
+            ),
+            new InsertResourceCommand(languageClient),
+            pasteAsBicepCommand,
+            new ShowVisualizerCommand(viewManager),
+            new ShowVisualizerToSideCommand(viewManager),
+            new ShowSourceCommand(viewManager),
+            new WalkthroughCopyToClipboardCommand(),
+            new WalkthroughCreateBicepFileCommand(),
+            new WalkthroughOpenBicepFileCommand(),
+            new ImportKubernetesManifestCommand(languageClient)
+          );
+
+        pasteAsBicepCommand.registerForPasteEvents(extension);
+
+        extension.register(
+          window.onDidChangeActiveTextEditor(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            async (editor: TextEditor | undefined) => {
+              await updateUiContext(editor?.document, pasteAsBicepCommand);
+            }
+          )
+        );
+
+        extension.register(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          workspace.onDidCloseTextDocument(async (_d: TextDocument) => {
+            await updateUiContext(
+              window.activeTextEditor?.document,
+              pasteAsBicepCommand
+            );
+          })
+        );
+
+        extension.register(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          workspace.onDidOpenTextDocument(async (_d: TextDocument) => {
+            await updateUiContext(
+              window.activeTextEditor?.document,
+              pasteAsBicepCommand
+            );
+          })
+        );
+
+        extension.register(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          workspace.onDidSaveTextDocument(async (_d: TextDocument) => {
+            await updateUiContext(window.activeTextEditor?.document);
+          })
+        );
+
+        await updateUiContext(
+          window.activeTextEditor?.document,
+          pasteAsBicepCommand
+        );
+
+        await languageClient.start();
+        getLogger().info("Bicep language service started.");
+      })
+  );
 }
 
-export function deactivate(): void {
+export async function deactivate(): Promise<void> {
+  await languageClient?.stop();
+  getLogger().info("Bicep language service stopped.");
+
   resetLogger();
 }

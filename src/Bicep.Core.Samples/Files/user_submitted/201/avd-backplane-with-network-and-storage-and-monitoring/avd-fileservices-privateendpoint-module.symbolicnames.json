@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "17753774574855992740"
+      "templateHash": "1046509696741722446"
     }
   },
   "parameters": {
@@ -46,7 +46,7 @@
           {
             "name": "config1",
             "properties": {
-              "privateDnsZoneId": "[resourceInfo('privateDNSZone').id]"
+              "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDNSZoneName'))]"
             }
           }
         ]
@@ -59,7 +59,7 @@
     "privateDNSZone::virtualNetworkLink": {
       "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/{1}', parameters('privateDNSZoneName'), format('{0}-link', resourceInfo('privateDNSZone').name))]",
+      "name": "[format('{0}/{1}', parameters('privateDNSZoneName'), format('{0}-link', parameters('privateDNSZoneName')))]",
       "location": "global",
       "properties": {
         "registrationEnabled": false,

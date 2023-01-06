@@ -1,21 +1,24 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+import { IAzExtOutputChannel } from "@microsoft/vscode-azext-utils";
 import { createAzExtOutputChannel } from "./AzExtOutputChannel";
 import { Disposable } from "./disposable";
-import { IAzExtOutputChannel } from "@microsoft/vscode-azext-utils";
 
 export class OutputChannelManager extends Disposable {
   private _azExtOutputChannel: IAzExtOutputChannel;
 
-  constructor(name: string, extensionPrefix: string) {
+  constructor(name: string, extensionConfigurationPrefix: string) {
     super();
     this._azExtOutputChannel = this.register(
-      createAzExtOutputChannel(name, extensionPrefix)
+      createAzExtOutputChannel(name, extensionConfigurationPrefix)
     );
   }
 
-  appendToOutputChannel(text: string): void {
-    this._azExtOutputChannel.show();
+  appendToOutputChannel(text: string, noFocus = false): void {
+    if (!noFocus) {
+      this._azExtOutputChannel.show();
+    }
+
     this._azExtOutputChannel.appendLog(text);
   }
 }

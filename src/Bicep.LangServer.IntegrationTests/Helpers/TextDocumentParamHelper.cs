@@ -4,6 +4,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Bicep.Core;
 using System.IO;
+using Bicep.Core.FileSystem;
 
 namespace Bicep.LangServer.IntegrationTests.Helpers
 {
@@ -14,8 +15,11 @@ namespace Bicep.LangServer.IntegrationTests.Helpers
             {
                 TextDocument = new TextDocumentItem
                 {
-                    LanguageId = LanguageConstants.LanguageId,
-                    Version = version,
+                    LanguageId =
+                        PathHelper.HasBicepparamsExension(documentUri.ToUri()) ? LanguageConstants.ParamsLanguageId :
+                        PathHelper.HasArmTemplateLikeExtension(documentUri.ToUri()) ? LanguageConstants.ArmTemplateLanguageId :
+                        LanguageConstants.LanguageId,
+                    Version = version,  
                     Uri = documentUri,
                     Text = text,
                 },

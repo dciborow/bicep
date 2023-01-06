@@ -1,315 +1,440 @@
-/* 
+/*
   This is a block comment.
 */
 
 // parameters without default value
 @sys.description('''
-//@[14:14]         "description": "this is my multi line \ndescription for my myString\n"
-this is my multi line 
+//@        "description": "this is my multi line\ndescription for my myString\n"
+this is my multi line
 description for my myString
 ''')
 param myString string
-//@[11:16]     "myString": {
+//@    "myString": {
+//@      "type": "string",
+//@      "metadata": {
+//@      }
+//@    },
 param myInt int
-//@[17:19]     "myInt": {
+//@    "myInt": {
+//@      "type": "int"
+//@    },
 param myBool bool
-//@[20:22]     "myBool": {
+//@    "myBool": {
+//@      "type": "bool"
+//@    },
 
 // parameters with default value
 @sys.description('this is myString2')
-//@[27:27]         "description": "this is myString2"
+//@        "description": "this is myString2"
 @metadata({
   description: 'overwrite but still valid'
 })
 param myString2 string = 'string value'
-//@[23:29]     "myString2": {
+//@    "myString2": {
+//@      "type": "string",
+//@      "defaultValue": "string value",
+//@      "metadata": {
+//@      }
+//@    },
 param myInt2 int = 42
-//@[30:33]     "myInt2": {
+//@    "myInt2": {
+//@      "type": "int",
+//@      "defaultValue": 42
+//@    },
 param myTruth bool = true
-//@[34:37]     "myTruth": {
+//@    "myTruth": {
+//@      "type": "bool",
+//@      "defaultValue": true
+//@    },
 param myFalsehood bool = false
-//@[38:41]     "myFalsehood": {
+//@    "myFalsehood": {
+//@      "type": "bool",
+//@      "defaultValue": false
+//@    },
 param myEscapedString string = 'First line\r\nSecond\ttabbed\tline'
-//@[42:45]     "myEscapedString": {
+//@    "myEscapedString": {
+//@      "type": "string",
+//@      "defaultValue": "First line\r\nSecond\ttabbed\tline"
+//@    },
 
 // object default value
 @sys.description('this is foo')
-//@[70:70]         "description": "this is foo",
+//@        "description": "this is foo",
 @metadata({
   description: 'overwrite but still valid'
   another: 'just for fun'
-//@[71:71]         "another": "just for fun"
+//@        "another": "just for fun"
 })
 param foo object = {
-//@[46:73]     "foo": {
+//@    "foo": {
+//@      "type": "object",
+//@      "defaultValue": {
+//@      },
+//@      "metadata": {
+//@      }
+//@    },
   enabled: true
-//@[49:49]         "enabled": true,
+//@        "enabled": true,
   name: 'this is my object'
-//@[50:50]         "name": "this is my object",
+//@        "name": "this is my object",
   priority: 3
-//@[51:51]         "priority": 3,
+//@        "priority": 3,
   info: {
-//@[52:54]         "info": {
+//@        "info": {
+//@        },
     a: 'b'
-//@[53:53]           "a": "b"
+//@          "a": "b"
   }
   empty: {
-//@[55:55]         "empty": {},
+//@        "empty": {},
   }
   array: [
-//@[56:67]         "array": [
+//@        "array": [
+//@        ]
     'string item'
-//@[57:57]           "string item",
+//@          "string item",
     12
-//@[58:58]           12,
+//@          12,
     true
-//@[59:59]           true,
+//@          true,
     [
+//@          [
+//@          ],
       'inner'
-//@[61:61]             "inner",
+//@            "inner",
       false
-//@[62:62]             false
+//@            false
     ]
     {
+//@          {
+//@          }
       a: 'b'
-//@[65:65]             "a": "b"
+//@            "a": "b"
     }
   ]
 }
 
 // array default value
 param myArrayParam array = [
-//@[74:81]     "myArrayParam": {
+//@    "myArrayParam": {
+//@      "type": "array",
+//@      "defaultValue": [
+//@      ]
+//@    },
   'a'
-//@[77:77]         "a",
+//@        "a",
   'b'
-//@[78:78]         "b",
+//@        "b",
   'c'
-//@[79:79]         "c"
+//@        "c"
 ]
 
 // secure string
 @secure()
 param password string
-//@[82:84]     "password": {
+//@    "password": {
+//@      "type": "securestring"
+//@    },
 
 // secure object
 @secure()
 param secretObject object
-//@[85:87]     "secretObject": {
+//@    "secretObject": {
+//@      "type": "secureObject"
+//@    },
 
 // enum parameter
 @allowed([
-//@[90:93]       "allowedValues": [
+//@      "allowedValues": [
+//@      ]
   'Standard_LRS'
-//@[91:91]         "Standard_LRS",
+//@        "Standard_LRS",
   'Standard_GRS'
-//@[92:92]         "Standard_GRS"
+//@        "Standard_GRS"
 ])
 param storageSku string
-//@[88:94]     "storageSku": {
+//@    "storageSku": {
+//@      "type": "string",
+//@    },
+
+@allowed([
+//@      "allowedValues": [
+//@      ]
+  1
+//@        1,
+  2
+//@        2,
+  3
+//@        3
+])
+param intEnum int
+//@    "intEnum": {
+//@      "type": "int",
+//@    },
 
 // length constraint on a string
 @minLength(3)
-//@[98:98]       "minLength": 3
+//@      "minLength": 3
 @maxLength(24)
-//@[97:97]       "maxLength": 24,
+//@      "maxLength": 24,
 param storageName string
-//@[95:99]     "storageName": {
+//@    "storageName": {
+//@      "type": "string",
+//@    },
 
 // length constraint on an array
 @minLength(3)
-//@[103:103]       "minLength": 3
+//@      "minLength": 3
 @maxLength(24)
-//@[102:102]       "maxLength": 24,
+//@      "maxLength": 24,
 param someArray array
-//@[100:104]     "someArray": {
+//@    "someArray": {
+//@      "type": "array",
+//@    },
 
 // empty metadata
 @metadata({})
-//@[107:107]       "metadata": {}
+//@      "metadata": {}
 param emptyMetadata string
-//@[105:108]     "emptyMetadata": {
+//@    "emptyMetadata": {
+//@      "type": "string",
+//@    },
 
 // description
 @metadata({
-//@[111:113]       "metadata": {
+//@      "metadata": {
+//@      }
   description: 'my description'
-//@[112:112]         "description": "my description"
+//@        "description": "my description"
 })
 param description string
-//@[109:114]     "description": {
+//@    "description": {
+//@      "type": "string",
+//@    },
 
 @sys.description('my description')
-//@[118:118]         "description": "my description"
+//@        "description": "my description"
 param description2 string
-//@[115:120]     "description2": {
+//@    "description2": {
+//@      "type": "string",
+//@      "metadata": {
+//@      }
+//@    },
 
 // random extra metadata
 @metadata({
-//@[123:131]       "metadata": {
+//@      "metadata": {
+//@      }
   description: 'my description'
-//@[124:124]         "description": "my description",
+//@        "description": "my description",
   a: 1
-//@[125:125]         "a": 1,
+//@        "a": 1,
   b: true
-//@[126:126]         "b": true,
+//@        "b": true,
   c: [
-//@[127:127]         "c": [],
+//@        "c": [],
   ]
   d: {
-//@[128:130]         "d": {
+//@        "d": {
+//@        }
     test: 'abc'
-//@[129:129]           "test": "abc"
+//@          "test": "abc"
   }
 })
 param additionalMetadata string
-//@[121:132]     "additionalMetadata": {
+//@    "additionalMetadata": {
+//@      "type": "string",
+//@    },
 
 // all modifiers together
 @secure()
 @minLength(3)
-//@[144:144]       "minLength": 3
+//@      "minLength": 3
 @maxLength(24)
-//@[143:143]       "maxLength": 24,
+//@      "maxLength": 24,
 @allowed([
-//@[138:142]       "allowedValues": [
+//@      "allowedValues": [
+//@      ],
   'one'
-//@[139:139]         "one",
+//@        "one",
   'two'
-//@[140:140]         "two",
+//@        "two",
   'three'
-//@[141:141]         "three"
+//@        "three"
 ])
 @metadata({
-//@[135:137]       "metadata": {
+//@      "metadata": {
+//@      },
   description: 'Name of the storage account'
-//@[136:136]         "description": "Name of the storage account"
+//@        "description": "Name of the storage account"
 })
 param someParameter string
-//@[133:145]     "someParameter": {
+//@    "someParameter": {
+//@      "type": "securestring",
+//@    },
 
 param defaultExpression bool = 18 != (true || false)
-//@[146:149]     "defaultExpression": {
+//@    "defaultExpression": {
+//@      "type": "bool",
+//@      "defaultValue": "[not(equals(18, or(true(), false())))]"
+//@    },
 
 @allowed([
-//@[152:155]       "allowedValues": [
+//@      "allowedValues": [
+//@      ]
   'abc'
-//@[153:153]         "abc",
+//@        "abc",
   'def'
-//@[154:154]         "def"
+//@        "def"
 ])
 param stringLiteral string
-//@[150:156]     "stringLiteral": {
+//@    "stringLiteral": {
+//@      "type": "string",
+//@    },
 
 @allowed([
-//@[160:164]       "allowedValues": [
+//@      "allowedValues": [
+//@      ]
   'abc'
-//@[161:161]         "abc",
+//@        "abc",
   'def'
-//@[162:162]         "def",
+//@        "def",
   'ghi'
-//@[163:163]         "ghi"
+//@        "ghi"
 ])
 param stringLiteralWithAllowedValuesSuperset string = stringLiteral
-//@[157:165]     "stringLiteralWithAllowedValuesSuperset": {
+//@    "stringLiteralWithAllowedValuesSuperset": {
+//@      "type": "string",
+//@      "defaultValue": "[parameters('stringLiteral')]",
+//@    },
 
 @secure()
 @minLength(2)
-//@[173:173]       "minLength": 2
+//@      "minLength": 2
   @maxLength(10)
-//@[172:172]       "maxLength": 10,
+//@      "maxLength": 10,
 @allowed([
-//@[168:171]       "allowedValues": [
+//@      "allowedValues": [
+//@      ],
   'Apple'
-//@[169:169]         "Apple",
+//@        "Apple",
   'Banana'
-//@[170:170]         "Banana"
+//@        "Banana"
 ])
 param decoratedString string
-//@[166:174]     "decoratedString": {
+//@    "decoratedString": {
+//@      "type": "securestring",
+//@    },
 
 @minValue(200)
-//@[178:178]       "minValue": 200
+//@      "minValue": 200
 param decoratedInt int = 123
-//@[175:179]     "decoratedInt": {
+//@    "decoratedInt": {
+//@      "type": "int",
+//@      "defaultValue": 123,
+//@    },
 
 // negative integer literals are allowed as decorator values
 @minValue(-10)
-//@[183:183]       "minValue": -10
+//@      "minValue": -10
 @maxValue(-3)
-//@[182:182]       "maxValue": -3,
+//@      "maxValue": -3,
 param negativeValues int
-//@[180:184]     "negativeValues": {
+//@    "negativeValues": {
+//@      "type": "int",
+//@    },
 
 @sys.description('A boolean.')
-//@[189:189]         "description": "A boolean.",
+//@        "description": "A boolean.",
 @metadata({
     description: 'I will be overrode.'
     foo: 'something'
-//@[190:190]         "foo": "something",
+//@        "foo": "something",
     bar: [
-//@[191:195]         "bar": [
+//@        "bar": [
+//@        ]
         {          }
+//@          {},
         true
-//@[193:193]           true,
+//@          true,
         123
-//@[194:194]           123
+//@          123
     ]
 })
-param decoratedBool bool = (true && false) != true
-//@[185:197]     "decoratedBool": {
+param decoratedBool bool = /* comment1 */ /* comment2*/      /* comment3 */ /* comment4 */ (true && false) != true
+//@    "decoratedBool": {
+//@      "type": "bool",
+//@      "defaultValue": "[not(equals(and(true(), false()), true()))]",
+//@      "metadata": {
+//@      }
+//@    },
 
 @secure()
 param decoratedObject object = {
-//@[198:221]     "decoratedObject": {
+//@    "decoratedObject": {
+//@      "type": "secureObject",
+//@      "defaultValue": {
+//@      }
+//@    },
   enabled: true
-//@[201:201]         "enabled": true,
+//@        "enabled": true,
   name: 'this is my object'
-//@[202:202]         "name": "this is my object",
+//@        "name": "this is my object",
   priority: 3
-//@[203:203]         "priority": 3,
+//@        "priority": 3,
   info: {
-//@[204:206]         "info": {
+//@        "info": {
+//@        },
     a: 'b'
-//@[205:205]           "a": "b"
+//@          "a": "b"
   }
   empty: {
-//@[207:207]         "empty": {},
+//@        "empty": {},
   }
   array: [
-//@[208:219]         "array": [
+//@        "array": [
+//@        ]
     'string item'
-//@[209:209]           "string item",
+//@          "string item",
     12
-//@[210:210]           12,
+//@          12,
     true
-//@[211:211]           true,
+//@          true,
     [
+//@          [
+//@          ],
       'inner'
-//@[213:213]             "inner",
+//@            "inner",
       false
-//@[214:214]             false
+//@            false
     ]
     {
+//@          {
+//@          }
       a: 'b'
-//@[217:217]             "a": "b"
+//@            "a": "b"
     }
   ]
 }
 
 @sys.metadata({
     description: 'An array.'
-//@[229:229]         "description": "An array."
+//@        "description": "An array."
 })
 @sys.maxLength(20)
-//@[231:231]       "maxLength": 20
+//@      "maxLength": 20
 @sys.description('I will be overrode.')
 param decoratedArray array = [
-//@[222:232]     "decoratedArray": {
+//@    "decoratedArray": {
+//@      "type": "array",
+//@      "defaultValue": [
+//@      ],
+//@      "metadata": {
+//@      },
+//@    }
     utcNow()
-//@[225:225]         "[utcNow()]",
+//@        "[utcNow()]",
     newGuid()
-//@[226:226]         "[newGuid()]"
+//@        "[newGuid()]"
 ]
 

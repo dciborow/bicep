@@ -1,104 +1,140 @@
 
 @sys.description('this is basicStorage')
-//@[67:67]         "description": "this is basicStorage"
+//@        "description": "this is basicStorage"
 resource basicStorage 'Microsoft.Storage/storageAccounts@2019-06-01' = {
-//@[57:69]       "type": "Microsoft.Storage/storageAccounts",
+//@    {
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "basicblobs",
+//@      "metadata": {
+//@      }
+//@    },
   name: 'basicblobs'
   location: 'westus'
-//@[61:61]       "location": "westus",
+//@      "location": "westus",
   kind: 'BlobStorage'
-//@[62:62]       "kind": "BlobStorage",
+//@      "kind": "BlobStorage",
   sku: {
-//@[63:65]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_GRS'
-//@[64:64]         "name": "Standard_GRS"
+//@        "name": "Standard_GRS"
   }
 }
 
 @sys.description('this is dnsZone')
-//@[76:76]         "description": "this is dnsZone"
+//@        "description": "this is dnsZone"
 resource dnsZone 'Microsoft.Network/dnszones@2018-05-01' = {
-//@[70:78]       "type": "Microsoft.Network/dnsZones",
+//@    {
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "myZone",
+//@      "metadata": {
+//@      }
+//@    },
   name: 'myZone'
   location: 'global'
-//@[74:74]       "location": "global",
+//@      "location": "global",
 }
 
 resource myStorageAccount 'Microsoft.Storage/storageAccounts@2017-10-01' = {
-//@[79:103]       "type": "Microsoft.Storage/storageAccounts",
+//@    {
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2017-10-01",
+//@      "name": "myencryptedone",
+//@    },
   name: 'myencryptedone'
   location: 'eastus2'
-//@[83:83]       "location": "eastus2",
+//@      "location": "eastus2",
   properties: {
-//@[84:98]       "properties": {
+//@      "properties": {
+//@      },
     supportsHttpsTrafficOnly: true
-//@[85:85]         "supportsHttpsTrafficOnly": true,
+//@        "supportsHttpsTrafficOnly": true,
     accessTier: 'Hot'
-//@[86:86]         "accessTier": "Hot",
+//@        "accessTier": "Hot",
     encryption: {
-//@[87:97]         "encryption": {
+//@        "encryption": {
+//@        }
       keySource: 'Microsoft.Storage'
-//@[88:88]           "keySource": "Microsoft.Storage",
+//@          "keySource": "Microsoft.Storage",
       services: {
-//@[89:96]           "services": {
+//@          "services": {
+//@          }
         blob: {
-//@[90:92]             "blob": {
+//@            "blob": {
+//@            },
           enabled: true
-//@[91:91]               "enabled": true
+//@              "enabled": true
         }
         file: {
-//@[93:95]             "file": {
+//@            "file": {
+//@            }
           enabled: true
-//@[94:94]               "enabled": true
+//@              "enabled": true
         }
       }
     }
   }
   kind: 'StorageV2'
-//@[99:99]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[100:102]       "sku": {
+//@      "sku": {
+//@      }
     name: 'Standard_LRS'
-//@[101:101]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
 }
 
 resource withExpressions 'Microsoft.Storage/storageAccounts@2017-10-01' = {
-//@[104:131]       "type": "Microsoft.Storage/storageAccounts",
+//@    {
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2017-10-01",
+//@      "name": "myencryptedone2",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Storage/storageAccounts', 'myencryptedone')]"
+//@      ]
+//@    },
   name: 'myencryptedone2'
   location: 'eastus2'
-//@[108:108]       "location": "eastus2",
+//@      "location": "eastus2",
   properties: {
-//@[109:123]       "properties": {
+//@      "properties": {
+//@      },
     supportsHttpsTrafficOnly: !false
-//@[110:110]         "supportsHttpsTrafficOnly": "[not(false())]",
+//@        "supportsHttpsTrafficOnly": "[not(false())]",
     accessTier: true ? 'Hot' : 'Cold'
-//@[111:111]         "accessTier": "[if(true(), 'Hot', 'Cold')]",
+//@        "accessTier": "[if(true(), 'Hot', 'Cold')]",
     encryption: {
-//@[112:122]         "encryption": {
+//@        "encryption": {
+//@        }
       keySource: 'Microsoft.Storage'
-//@[113:113]           "keySource": "Microsoft.Storage",
+//@          "keySource": "Microsoft.Storage",
       services: {
-//@[114:121]           "services": {
+//@          "services": {
+//@          }
         blob: {
-//@[115:117]             "blob": {
+//@            "blob": {
+//@            },
           enabled: true || false
-//@[116:116]               "enabled": "[or(true(), false())]"
+//@              "enabled": "[or(true(), false())]"
         }
         file: {
-//@[118:120]             "file": {
+//@            "file": {
+//@            }
           enabled: true
-//@[119:119]               "enabled": true
+//@              "enabled": true
         }
       }
     }
   }
   kind: 'StorageV2'
-//@[124:124]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
   sku: {
-//@[125:127]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[126:126]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   dependsOn: [
     myStorageAccount
@@ -106,40 +142,53 @@ resource withExpressions 'Microsoft.Storage/storageAccounts@2017-10-01' = {
 }
 
 param applicationName string = 'to-do-app${uniqueString(resourceGroup().id)}'
-//@[11:14]     "applicationName": {
+//@    "applicationName": {
+//@      "type": "string",
+//@      "defaultValue": "[format('to-do-app{0}', uniqueString(resourceGroup().id))]"
+//@    },
 var hostingPlanName = applicationName // why not just use the param directly?
-//@[33:33]     "hostingPlanName": "[parameters('applicationName')]",
+//@    "hostingPlanName": "[parameters('applicationName')]",
 
 param appServicePlanTier string
-//@[15:17]     "appServicePlanTier": {
+//@    "appServicePlanTier": {
+//@      "type": "string"
+//@    },
 param appServicePlanInstances int
-//@[18:20]     "appServicePlanInstances": {
+//@    "appServicePlanInstances": {
+//@      "type": "int"
+//@    },
 
 var location = resourceGroup().location
-//@[34:34]     "location": "[resourceGroup().location]",
+//@    "location": "[resourceGroup().location]",
 
 resource farm 'Microsoft.Web/serverFarms@2019-08-01' = {
-//@[132:144]       "type": "Microsoft.Web/serverfarms",
+//@    {
+//@      "type": "Microsoft.Web/serverfarms",
+//@      "apiVersion": "2019-08-01",
+//@      "name": "[variables('hostingPlanName')]",
+//@    },
   // dependsOn: resourceId('Microsoft.DocumentDB/databaseAccounts', cosmosAccountName)
   name: hostingPlanName
   location: location
-//@[136:136]       "location": "[variables('location')]",
+//@      "location": "[variables('location')]",
   sku: {
-//@[137:140]       "sku": {
+//@      "sku": {
+//@      },
     name: appServicePlanTier
-//@[138:138]         "name": "[parameters('appServicePlanTier')]",
+//@        "name": "[parameters('appServicePlanTier')]",
     capacity: appServicePlanInstances
-//@[139:139]         "capacity": "[parameters('appServicePlanInstances')]"
+//@        "capacity": "[parameters('appServicePlanInstances')]"
   }
   properties: {
-//@[141:143]       "properties": {
+//@      "properties": {
+//@      }
     name: hostingPlanName // just hostingPlanName results in an error
-//@[142:142]         "name": "[variables('hostingPlanName')]"
+//@        "name": "[variables('hostingPlanName')]"
   }
 }
 
 var cosmosDbResourceId = resourceId('Microsoft.DocumentDB/databaseAccounts', cosmosDb.account)
-//@[35:35]     "cosmosDbResourceId": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDb').account)]",
+//@    "cosmosDbResourceId": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDb').account)]",
 var cosmosDbRef = reference(cosmosDbResourceId).documentEndpoint
 
 // this variable is not accessed anywhere in this template and depends on a run-time reference
@@ -147,44 +196,63 @@ var cosmosDbRef = reference(cosmosDbResourceId).documentEndpoint
 var cosmosDbEndpoint = cosmosDbRef.documentEndpoint
 
 param webSiteName string
-//@[21:23]     "webSiteName": {
+//@    "webSiteName": {
+//@      "type": "string"
+//@    },
 param cosmosDb object
-//@[24:26]     "cosmosDb": {
+//@    "cosmosDb": {
+//@      "type": "object"
+//@    },
 resource site 'Microsoft.Web/sites@2019-08-01' = {
-//@[145:172]       "type": "Microsoft.Web/sites",
+//@    {
+//@      "type": "Microsoft.Web/sites",
+//@      "apiVersion": "2019-08-01",
+//@      "name": "[parameters('webSiteName')]",
+//@    },
   name: webSiteName
   location: location
-//@[149:149]       "location": "[variables('location')]",
+//@      "location": "[variables('location')]",
   properties: {
-//@[150:171]       "properties": {
+//@      "properties": {
+//@      }
     // not yet supported // serverFarmId: farm.id
     siteConfig: {
-//@[151:170]         "siteConfig": {
+//@        "siteConfig": {
+//@        }
       appSettings: [
-//@[152:169]           "appSettings": [
+//@          "appSettings": [
+//@          ]
         {
+//@            {
+//@            },
           name: 'CosmosDb:Account'
-//@[154:154]               "name": "CosmosDb:Account",
+//@              "name": "CosmosDb:Account",
           value: reference(cosmosDbResourceId).documentEndpoint
-//@[155:155]               "value": "[reference(variables('cosmosDbResourceId')).documentEndpoint]"
+//@              "value": "[reference(variables('cosmosDbResourceId')).documentEndpoint]"
         }
         {
+//@            {
+//@            },
           name: 'CosmosDb:Key'
-//@[158:158]               "name": "CosmosDb:Key",
+//@              "name": "CosmosDb:Key",
           value: listKeys(cosmosDbResourceId, '2020-04-01').primaryMasterKey
-//@[159:159]               "value": "[listKeys(variables('cosmosDbResourceId'), '2020-04-01').primaryMasterKey]"
+//@              "value": "[listKeys(variables('cosmosDbResourceId'), '2020-04-01').primaryMasterKey]"
         }
         {
+//@            {
+//@            },
           name: 'CosmosDb:DatabaseName'
-//@[162:162]               "name": "CosmosDb:DatabaseName",
+//@              "name": "CosmosDb:DatabaseName",
           value: cosmosDb.databaseName
-//@[163:163]               "value": "[parameters('cosmosDb').databaseName]"
+//@              "value": "[parameters('cosmosDb').databaseName]"
         }
         {
+//@            {
+//@            }
           name: 'CosmosDb:ContainerName'
-//@[166:166]               "name": "CosmosDb:ContainerName",
+//@              "name": "CosmosDb:ContainerName",
           value: cosmosDb.containerName
-//@[167:167]               "value": "[parameters('cosmosDb').containerName]"
+//@              "value": "[parameters('cosmosDb').containerName]"
         }
       ]
     }
@@ -192,31 +260,43 @@ resource site 'Microsoft.Web/sites@2019-08-01' = {
 }
 
 var _siteApiVersion = site.apiVersion
-//@[36:36]     "_siteApiVersion": "2019-08-01",
+//@    "_siteApiVersion": "2019-08-01",
 var _siteType = site.type
-//@[37:37]     "_siteType": "Microsoft.Web/sites",
+//@    "_siteType": "Microsoft.Web/sites",
 
 output siteApiVersion string = site.apiVersion
-//@[576:579]     "siteApiVersion": {
+//@    "siteApiVersion": {
+//@      "type": "string",
+//@      "value": "2019-08-01"
+//@    },
 output siteType string = site.type
-//@[580:583]     "siteType": {
+//@    "siteType": {
+//@      "type": "string",
+//@      "value": "Microsoft.Web/sites"
+//@    },
 
 resource nested 'Microsoft.Resources/deployments@2019-10-01' = {
-//@[173:185]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2019-10-01",
+//@      "name": "nestedTemplate1",
+//@    },
   name: 'nestedTemplate1'
   properties: {
-//@[177:184]       "properties": {
+//@      "properties": {
+//@      }
     mode: 'Incremental'
-//@[178:178]         "mode": "Incremental",
+//@        "mode": "Incremental",
     template: {
-//@[179:183]         "template": {
+//@        "template": {
+//@        }
       // string key value
       '$schema': 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
-//@[180:180]           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
       contentVersion: '1.0.0.0'
-//@[181:181]           "contentVersion": "1.0.0.0",
+//@          "contentVersion": "1.0.0.0",
       resources: [
-//@[182:182]           "resources": []
+//@          "resources": []
       ]
     }
   }
@@ -224,170 +304,260 @@ resource nested 'Microsoft.Resources/deployments@2019-10-01' = {
 
 // should be able to access the read only properties
 resource accessingReadOnlyProperties 'Microsoft.Foo/foos@2019-10-01' = {
-//@[186:200]       "type": "Microsoft.Foo/foos",
+//@    {
+//@      "type": "Microsoft.Foo/foos",
+//@      "apiVersion": "2019-10-01",
+//@      "name": "nestedTemplate1",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'nestedTemplate1')]"
+//@      ]
+//@    },
   name: 'nestedTemplate1'
   properties: {
-//@[190:196]       "properties": {
+//@      "properties": {
+//@      },
     otherId: nested.id
-//@[191:191]         "otherId": "[resourceId('Microsoft.Resources/deployments', 'nestedTemplate1')]",
+//@        "otherId": "[resourceId('Microsoft.Resources/deployments', 'nestedTemplate1')]",
     otherName: nested.name
-//@[192:192]         "otherName": "nestedTemplate1",
+//@        "otherName": "nestedTemplate1",
     otherVersion: nested.apiVersion
-//@[193:193]         "otherVersion": "2019-10-01",
+//@        "otherVersion": "2019-10-01",
     otherType: nested.type
-//@[194:194]         "otherType": "Microsoft.Resources/deployments",
+//@        "otherType": "Microsoft.Resources/deployments",
 
     otherThings: nested.properties.mode
-//@[195:195]         "otherThings": "[reference(resourceId('Microsoft.Resources/deployments', 'nestedTemplate1')).mode]"
+//@        "otherThings": "[reference(resourceId('Microsoft.Resources/deployments', 'nestedTemplate1'), '2019-10-01').mode]"
   }
 }
 
 resource resourceA 'My.Rp/typeA@2020-01-01' = {
-//@[201:205]       "type": "My.Rp/typeA",
+//@    {
+//@      "type": "My.Rp/typeA",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "resourceA"
+//@    },
   name: 'resourceA'
 }
 
 resource resourceB 'My.Rp/typeA/typeB@2020-01-01' = {
-//@[206:213]       "type": "My.Rp/typeA/typeB",
+//@    {
+//@      "type": "My.Rp/typeA/typeB",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "[format('{0}/myName', 'resourceA')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/typeA', 'resourceA')]"
+//@      ]
+//@    },
   name: '${resourceA.name}/myName'
 }
 
 resource resourceC 'My.Rp/typeA/typeB@2020-01-01' = {
-//@[214:229]       "type": "My.Rp/typeA/typeB",
+//@    {
+//@      "type": "My.Rp/typeA/typeB",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "[format('{0}/myName', 'resourceA')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/typeA', 'resourceA')]",
+//@        "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]"
+//@      ]
+//@    },
   name: '${resourceA.name}/myName'
   properties: {
-//@[218:224]       "properties": {
+//@      "properties": {
+//@      },
     aId: resourceA.id
-//@[219:219]         "aId": "[resourceId('My.Rp/typeA', 'resourceA')]",
+//@        "aId": "[resourceId('My.Rp/typeA', 'resourceA')]",
     aType: resourceA.type
-//@[220:220]         "aType": "My.Rp/typeA",
+//@        "aType": "My.Rp/typeA",
     aName: resourceA.name
-//@[221:221]         "aName": "resourceA",
+//@        "aName": "resourceA",
     aApiVersion: resourceA.apiVersion
-//@[222:222]         "aApiVersion": "2020-01-01",
+//@        "aApiVersion": "2020-01-01",
     bProperties: resourceB.properties
-//@[223:223]         "bProperties": "[reference(resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1]))]"
+//@        "bProperties": "[reference(resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1]), '2020-01-01')]"
   }
 }
 
 var varARuntime = {
   bId: resourceB.id
-//@[237:237]             "bId": "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]",
+//@            "bId": "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]",
   bType: resourceB.type
-//@[238:238]             "bType": "My.Rp/typeA/typeB",
+//@            "bType": "My.Rp/typeA/typeB",
   bName: resourceB.name
-//@[239:239]             "bName": "[format('{0}/myName', 'resourceA')]",
+//@            "bName": "[format('{0}/myName', 'resourceA')]",
   bApiVersion: resourceB.apiVersion
-//@[240:240]             "bApiVersion": "2020-01-01",
+//@            "bApiVersion": "2020-01-01",
   aKind: resourceA.kind
-//@[241:241]             "aKind": "[reference(resourceId('My.Rp/typeA', 'resourceA'), '2020-01-01', 'full').kind]"
+//@            "aKind": "[reference(resourceId('My.Rp/typeA', 'resourceA'), '2020-01-01', 'full').kind]"
 }
 
 var varBRuntime = [
   varARuntime
-//@[236:242]             "bId": "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]",
+//@          {
+//@          }
 ]
 
 var resourceCRef = {
-//@[38:40]     "resourceCRef": {
+//@    "resourceCRef": {
+//@    },
   id: resourceC.id
-//@[39:39]       "id": "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]"
+//@      "id": "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]"
 }
 var setResourceCRef = true
-//@[41:41]     "setResourceCRef": true,
+//@    "setResourceCRef": true,
 
 resource resourceD 'My.Rp/typeD@2020-01-01' = {
-//@[230:251]       "type": "My.Rp/typeD",
+//@    {
+//@      "type": "My.Rp/typeD",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "constant",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/typeA', 'resourceA')]",
+//@        "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]",
+//@        "[resourceId('My.Rp/typeA/typeB', split(format('{0}/myName', 'resourceA'), '/')[0], split(format('{0}/myName', 'resourceA'), '/')[1])]"
+//@      ]
+//@    },
   name: 'constant'
   properties: {
-//@[234:245]       "properties": {
+//@      "properties": {
+//@      },
     runtime: varBRuntime
-//@[235:243]         "runtime": [
+//@        "runtime": [
+//@        ],
     // repro for https://github.com/Azure/bicep/issues/316
     repro316: setResourceCRef ? resourceCRef : null
-//@[244:244]         "repro316": "[if(variables('setResourceCRef'), variables('resourceCRef'), null())]"
+//@        "repro316": "[if(variables('setResourceCRef'), variables('resourceCRef'), null())]"
   }
 }
 
 var myInterpKey = 'abc'
-//@[42:42]     "myInterpKey": "abc",
+//@    "myInterpKey": "abc",
 resource resourceWithInterp 'My.Rp/interp@2020-01-01' = {
-//@[252:261]       "type": "My.Rp/interp",
+//@    {
+//@      "type": "My.Rp/interp",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "interpTest",
+//@    },
   name: 'interpTest'
   properties: {
-//@[256:260]       "properties": {
+//@      "properties": {
+//@      }
     '${myInterpKey}': 1
-//@[257:257]         "[format('{0}', variables('myInterpKey'))]": 1,
+//@        "[format('{0}', variables('myInterpKey'))]": 1,
     'abc${myInterpKey}def': 2
-//@[258:258]         "[format('abc{0}def', variables('myInterpKey'))]": 2,
+//@        "[format('abc{0}def', variables('myInterpKey'))]": 2,
     '${myInterpKey}abc${myInterpKey}': 3
-//@[259:259]         "[format('{0}abc{1}', variables('myInterpKey'), variables('myInterpKey'))]": 3
+//@        "[format('{0}abc{1}', variables('myInterpKey'), variables('myInterpKey'))]": 3
   }
 }
 
 resource resourceWithEscaping 'My.Rp/mockResource@2020-01-01' = {
-//@[262:269]       "type": "My.Rp/mockResource",
+//@    {
+//@      "type": "My.Rp/mockResource",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "test",
+//@    },
   name: 'test'
   properties: {
-//@[266:268]       "properties": {
+//@      "properties": {
+//@      }
     // both key and value should be escaped in template output
     '[resourceGroup().location]': '[resourceGroup().location]'
-//@[267:267]         "[[resourceGroup().location]": "[[resourceGroup().location]"
+//@        "[[resourceGroup().location]": "[[resourceGroup().location]"
   }
 }
 
 param shouldDeployVm bool = true
-//@[27:30]     "shouldDeployVm": {
+//@    "shouldDeployVm": {
+//@      "type": "bool",
+//@      "defaultValue": true
+//@    }
 
 @sys.description('this is vmWithCondition')
-//@[284:284]         "description": "this is vmWithCondition"
+//@        "description": "this is vmWithCondition"
 resource vmWithCondition 'Microsoft.Compute/virtualMachines@2020-06-01' = if (shouldDeployVm) {
-//@[270:286]       "condition": "[parameters('shouldDeployVm')]",
+//@    {
+//@      "condition": "[parameters('shouldDeployVm')]",
+//@      "type": "Microsoft.Compute/virtualMachines",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "vmName",
+//@      "metadata": {
+//@      }
+//@    },
   name: 'vmName'
   location: 'westus'
-//@[275:275]       "location": "westus",
+//@      "location": "westus",
   properties: {
-//@[276:282]       "properties": {
+//@      "properties": {
+//@      },
     osProfile: {
-//@[277:281]         "osProfile": {
+//@        "osProfile": {
+//@        }
       windowsConfiguration: {
-//@[278:280]           "windowsConfiguration": {
+//@          "windowsConfiguration": {
+//@          }
         enableAutomaticUpdates: true
-//@[279:279]             "enableAutomaticUpdates": true
+//@            "enableAutomaticUpdates": true
       }
     }
   }
 }
 
 resource extension1 'My.Rp/extensionResource@2020-12-01' = {
-//@[287:295]       "type": "My.Rp/extensionResource",
+//@    {
+//@      "type": "My.Rp/extensionResource",
+//@      "apiVersion": "2020-12-01",
+//@      "scope": "[format('Microsoft.Compute/virtualMachines/{0}', 'vmName')]",
+//@      "name": "extension",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Compute/virtualMachines', 'vmName')]"
+//@      ]
+//@    },
   name: 'extension'
   scope: vmWithCondition
 }
 
 resource extension2 'My.Rp/extensionResource@2020-12-01' = {
-//@[296:304]       "type": "My.Rp/extensionResource",
+//@    {
+//@      "type": "My.Rp/extensionResource",
+//@      "apiVersion": "2020-12-01",
+//@      "scope": "[extensionResourceId(format('Microsoft.Compute/virtualMachines/{0}', 'vmName'), 'My.Rp/extensionResource', 'extension')]",
+//@      "name": "extension",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')]"
+//@      ]
+//@    },
   name: 'extension'
   scope: extension1
 }
 
 resource extensionDependencies 'My.Rp/mockResource@2020-01-01' = {
-//@[305:322]       "type": "My.Rp/mockResource",
+//@    {
+//@      "type": "My.Rp/mockResource",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "extensionDependencies",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')]",
+//@        "[extensionResourceId(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'My.Rp/extensionResource', 'extension')]",
+//@        "[resourceId('Microsoft.Compute/virtualMachines', 'vmName')]"
+//@      ]
+//@    },
   name: 'extensionDependencies'
   properties: {
-//@[309:316]       "properties": {
+//@      "properties": {
+//@      },
     res1: vmWithCondition.id
-//@[310:310]         "res1": "[resourceId('Microsoft.Compute/virtualMachines', 'vmName')]",
+//@        "res1": "[resourceId('Microsoft.Compute/virtualMachines', 'vmName')]",
     res1runtime: vmWithCondition.properties.something
-//@[311:311]         "res1runtime": "[reference(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), '2020-06-01').something]",
+//@        "res1runtime": "[reference(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), '2020-06-01').something]",
     res2: extension1.id
-//@[312:312]         "res2": "[extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')]",
+//@        "res2": "[extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')]",
     res2runtime: extension1.properties.something
-//@[313:313]         "res2runtime": "[reference(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')).something]",
+//@        "res2runtime": "[reference(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), '2020-12-01').something]",
     res3: extension2.id
-//@[314:314]         "res3": "[extensionResourceId(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'My.Rp/extensionResource', 'extension')]",
+//@        "res3": "[extensionResourceId(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'My.Rp/extensionResource', 'extension')]",
     res3runtime: extension2.properties.something
-//@[315:315]         "res3runtime": "[reference(extensionResourceId(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'My.Rp/extensionResource', 'extension')).something]"
+//@        "res3runtime": "[reference(extensionResourceId(extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'My.Rp/extensionResource', 'extension'), '2020-12-01').something]"
   }
 }
 
@@ -403,7 +573,15 @@ resource existing2 'Mock.Rp/existingExtensionResource@2020-01-01' existing = {
 }
 
 resource extension3 'My.Rp/extensionResource@2020-12-01' = {
-//@[323:331]       "type": "My.Rp/extensionResource",
+//@    {
+//@      "type": "My.Rp/extensionResource",
+//@      "apiVersion": "2020-12-01",
+//@      "scope": "[extensionResourceId(extensionResourceId(format('Microsoft.Compute/virtualMachines/{0}', 'vmName'), 'My.Rp/extensionResource', 'extension'), 'Mock.Rp/existingExtensionResource', 'existing1')]",
+//@      "name": "extension3",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Compute/virtualMachines', 'vmName'), 'My.Rp/extensionResource', 'extension')]"
+//@      ]
+//@    },
   name: 'extension3'
   scope: existing1
 }
@@ -412,116 +590,209 @@ resource extension3 'My.Rp/extensionResource@2020-12-01' = {
   valid loop cases
 */ 
 var storageAccounts = [
-//@[43:52]     "storageAccounts": [
+//@    "storageAccounts": [
+//@    ],
   {
+//@      {
+//@      },
     name: 'one'
-//@[45:45]         "name": "one",
+//@        "name": "one",
     location: 'eastus2'
-//@[46:46]         "location": "eastus2"
+//@        "location": "eastus2"
   }
   {
+//@      {
+//@      }
     name: 'two'
-//@[49:49]         "name": "two",
+//@        "name": "two",
     location: 'westus'
-//@[50:50]         "location": "westus"
+//@        "location": "westus"
   }
 ]
 
 // just a storage account loop
 @sys.description('this is just a storage account loop')
-//@[346:346]         "description": "this is just a storage account loop"
+//@        "description": "this is just a storage account loop"
 resource storageResources 'Microsoft.Storage/storageAccounts@2019-06-01' = [for account in storageAccounts: {
-//@[332:348]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageResources",
+//@        "count": "[length(variables('storageAccounts'))]"
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[variables('storageAccounts')[copyIndex()].name]",
+//@      "metadata": {
+//@      }
+//@    },
   name: account.name
   location: account.location
-//@[340:340]       "location": "[variables('storageAccounts')[copyIndex()].location]",
+//@      "location": "[variables('storageAccounts')[copyIndex()].location]",
   sku: {
-//@[341:343]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[342:342]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   kind: 'StorageV2'
-//@[344:344]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
 }]
 
 // storage account loop with index
 @sys.description('this is just a storage account loop with index')
-//@[363:363]         "description": "this is just a storage account loop with index"
+//@        "description": "this is just a storage account loop with index"
 resource storageResourcesWithIndex 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (account, i) in storageAccounts: {
-//@[349:365]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageResourcesWithIndex",
+//@        "count": "[length(variables('storageAccounts'))]"
+//@      },
+//@      "type": "Microsoft.Storage/storageAccounts",
+//@      "apiVersion": "2019-06-01",
+//@      "name": "[format('{0}{1}', variables('storageAccounts')[copyIndex()].name, copyIndex())]",
+//@      "metadata": {
+//@      }
+//@    },
   name: '${account.name}${i}'
   location: account.location
-//@[357:357]       "location": "[variables('storageAccounts')[copyIndex()].location]",
+//@      "location": "[variables('storageAccounts')[copyIndex()].location]",
   sku: {
-//@[358:360]       "sku": {
+//@      "sku": {
+//@      },
     name: 'Standard_LRS'
-//@[359:359]         "name": "Standard_LRS"
+//@        "name": "Standard_LRS"
   }
   kind: 'StorageV2'
-//@[361:361]       "kind": "StorageV2",
+//@      "kind": "StorageV2",
 }]
 
 // basic nested loop
 @sys.description('this is just a basic nested loop')
-//@[386:386]         "description": "this is just a basic nested loop"
+//@        "description": "this is just a basic nested loop"
 resource vnet 'Microsoft.Network/virtualNetworks@2020-06-01' = [for i in range(0, 3): {
-//@[366:388]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "vnet",
+//@        "count": "[length(range(0, 3))]"
+//@      },
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('vnet-{0}', range(0, 3)[copyIndex()])]",
+//@      "metadata": {
+//@      }
+//@    },
   name: 'vnet-${i}'
   properties: {
-//@[374:384]       "properties": {
+//@      "properties": {
+//@        "copy": [
+//@        ]
+//@      },
     subnets: [for j in range(0, 4): {
-//@[376:382]             "name": "subnets",
+//@          {
+//@            "name": "subnets",
+//@            "count": "[length(range(0, 4))]",
+//@            "input": {
+//@            }
+//@          }
       // #completionTest(0,1,2,3,4,5) -> subnetIdAndProperties
      
       // #completionTest(6) -> subnetIdAndPropertiesNoColon
       name: 'subnet-${i}-${j}'
-//@[380:380]               "name": "[format('subnet-{0}-{1}', range(0, 3)[copyIndex()], range(0, 4)[copyIndex('subnets')])]"
+//@              "name": "[format('subnet-{0}-{1}', range(0, 3)[copyIndex()], range(0, 4)[copyIndex('subnets')])]"
     }]
   }
 }]
 
 // duplicate identifiers within the loop are allowed
 resource duplicateIdentifiersWithinLoop 'Microsoft.Network/virtualNetworks@2020-06-01' = [for i in range(0, 3): {
-//@[389:408]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicateIdentifiersWithinLoop",
+//@        "count": "[length(range(0, 3))]"
+//@      },
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('vnet-{0}', range(0, 3)[copyIndex()])]",
+//@    },
   name: 'vnet-${i}'
   properties: {
-//@[397:407]       "properties": {
+//@      "properties": {
+//@        "copy": [
+//@        ]
+//@      }
     subnets: [for i in range(0, 4): {
-//@[399:405]             "name": "subnets",
+//@          {
+//@            "name": "subnets",
+//@            "count": "[length(range(0, 4))]",
+//@            "input": {
+//@            }
+//@          }
       name: 'subnet-${i}-${i}'
-//@[403:403]               "name": "[format('subnet-{0}-{1}', range(0, 4)[copyIndex('subnets')], range(0, 4)[copyIndex('subnets')])]"
+//@              "name": "[format('subnet-{0}-{1}', range(0, 4)[copyIndex('subnets')], range(0, 4)[copyIndex('subnets')])]"
     }]
   }
 }]
 
 // duplicate identifers in global and single loop scope are allowed (inner variable hides the outer)
 var canHaveDuplicatesAcrossScopes = 'hello'
-//@[53:53]     "canHaveDuplicatesAcrossScopes": "hello",
+//@    "canHaveDuplicatesAcrossScopes": "hello",
 resource duplicateInGlobalAndOneLoop 'Microsoft.Network/virtualNetworks@2020-06-01' = [for canHaveDuplicatesAcrossScopes in range(0, 3): {
-//@[409:428]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicateInGlobalAndOneLoop",
+//@        "count": "[length(range(0, 3))]"
+//@      },
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('vnet-{0}', range(0, 3)[copyIndex()])]",
+//@    },
   name: 'vnet-${canHaveDuplicatesAcrossScopes}'
   properties: {
-//@[417:427]       "properties": {
+//@      "properties": {
+//@        "copy": [
+//@        ]
+//@      }
     subnets: [for i in range(0, 4): {
-//@[419:425]             "name": "subnets",
+//@          {
+//@            "name": "subnets",
+//@            "count": "[length(range(0, 4))]",
+//@            "input": {
+//@            }
+//@          }
       name: 'subnet-${i}-${i}'
-//@[423:423]               "name": "[format('subnet-{0}-{1}', range(0, 4)[copyIndex('subnets')], range(0, 4)[copyIndex('subnets')])]"
+//@              "name": "[format('subnet-{0}-{1}', range(0, 4)[copyIndex('subnets')], range(0, 4)[copyIndex('subnets')])]"
     }]
   }
 }]
 
 // duplicate in global and multiple loop scopes are allowed (inner hides the outer)
 var duplicatesEverywhere = 'hello'
-//@[54:54]     "duplicatesEverywhere": "hello"
+//@    "duplicatesEverywhere": "hello"
 resource duplicateInGlobalAndTwoLoops 'Microsoft.Network/virtualNetworks@2020-06-01' = [for duplicatesEverywhere in range(0, 3): {
-//@[429:448]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicateInGlobalAndTwoLoops",
+//@        "count": "[length(range(0, 3))]"
+//@      },
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('vnet-{0}', range(0, 3)[copyIndex()])]",
+//@    },
   name: 'vnet-${duplicatesEverywhere}'
   properties: {
-//@[437:447]       "properties": {
+//@      "properties": {
+//@        "copy": [
+//@        ]
+//@      }
     subnets: [for duplicatesEverywhere in range(0, 4): {
-//@[439:445]             "name": "subnets",
+//@          {
+//@            "name": "subnets",
+//@            "count": "[length(range(0, 4))]",
+//@            "input": {
+//@            }
+//@          }
       name: 'subnet-${duplicatesEverywhere}'
-//@[443:443]               "name": "[format('subnet-{0}', range(0, 4)[copyIndex('subnets')])]"
+//@              "name": "[format('subnet-{0}', range(0, 4)[copyIndex('subnets')])]"
     }]
   }
 }]
@@ -530,127 +801,244 @@ resource duplicateInGlobalAndTwoLoops 'Microsoft.Network/virtualNetworks@2020-06
   Scope values created via array access on a resource collection
 */
 resource dnsZones 'Microsoft.Network/dnsZones@2018-05-01' = [for zone in range(0,4): {
-//@[449:458]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "dnsZones",
+//@        "count": "[length(range(0, 4))]"
+//@      },
+//@      "type": "Microsoft.Network/dnsZones",
+//@      "apiVersion": "2018-05-01",
+//@      "name": "[format('zone{0}', range(0, 4)[copyIndex()])]",
+//@    },
   name: 'zone${zone}'
   location: 'global'
-//@[457:457]       "location": "global"
+//@      "location": "global"
 }]
 
 resource locksOnZones 'Microsoft.Authorization/locks@2016-09-01' = [for lock in range(0,2): {
-//@[459:474]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "locksOnZones",
+//@        "count": "[length(range(0, 2))]"
+//@      },
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Network/dnsZones/{0}', format('zone{0}', range(0, 4)[range(0, 2)[copyIndex()]]))]",
+//@      "name": "[format('lock{0}', range(0, 2)[copyIndex()])]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/dnsZones', format('zone{0}', range(0, 4)[range(0, 2)[copyIndex()]]))]"
+//@      ]
+//@    },
   name: 'lock${lock}'
   properties: {
-//@[468:470]       "properties": {
+//@      "properties": {
+//@      },
     level: 'CanNotDelete'
-//@[469:469]         "level": "CanNotDelete"
+//@        "level": "CanNotDelete"
   }
   scope: dnsZones[lock]
 }]
 
 resource moreLocksOnZones 'Microsoft.Authorization/locks@2016-09-01' = [for (lock, i) in range(0,3): {
-//@[475:490]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "moreLocksOnZones",
+//@        "count": "[length(range(0, 3))]"
+//@      },
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Network/dnsZones/{0}', format('zone{0}', range(0, 4)[copyIndex()]))]",
+//@      "name": "[format('another{0}', copyIndex())]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/dnsZones', format('zone{0}', range(0, 4)[copyIndex()]))]"
+//@      ]
+//@    },
   name: 'another${i}'
   properties: {
-//@[484:486]       "properties": {
+//@      "properties": {
+//@      },
     level: 'ReadOnly'
-//@[485:485]         "level": "ReadOnly"
+//@        "level": "ReadOnly"
   }
   scope: dnsZones[i]
 }]
 
 resource singleLockOnFirstZone 'Microsoft.Authorization/locks@2016-09-01' = {
-//@[491:502]       "type": "Microsoft.Authorization/locks",
+//@    {
+//@      "type": "Microsoft.Authorization/locks",
+//@      "apiVersion": "2016-09-01",
+//@      "scope": "[format('Microsoft.Network/dnsZones/{0}', format('zone{0}', range(0, 4)[0]))]",
+//@      "name": "single-lock",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/dnsZones', format('zone{0}', range(0, 4)[0]))]"
+//@      ]
+//@    },
   name: 'single-lock'
   properties: {
-//@[496:498]       "properties": {
+//@      "properties": {
+//@      },
     level: 'ReadOnly'
-//@[497:497]         "level": "ReadOnly"
+//@        "level": "ReadOnly"
   }
   scope: dnsZones[0]
 }
 
 
 resource p1_vnet 'Microsoft.Network/virtualNetworks@2020-06-01' = {
-//@[503:515]       "type": "Microsoft.Network/virtualNetworks",
+//@    {
+//@      "type": "Microsoft.Network/virtualNetworks",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "myVnet",
+//@    },
   location: resourceGroup().location
-//@[507:507]       "location": "[resourceGroup().location]",
+//@      "location": "[resourceGroup().location]",
   name: 'myVnet'
   properties: {
-//@[508:514]       "properties": {
+//@      "properties": {
+//@      }
     addressSpace: {
-//@[509:513]         "addressSpace": {
+//@        "addressSpace": {
+//@        }
       addressPrefixes: [
-//@[510:512]           "addressPrefixes": [
+//@          "addressPrefixes": [
+//@          ]
         '10.0.0.0/20'
-//@[511:511]             "10.0.0.0/20"
+//@            "10.0.0.0/20"
       ]
     }
   }
 }
 
 resource p1_subnet1 'Microsoft.Network/virtualNetworks/subnets@2020-06-01' = {
-//@[516:526]       "type": "Microsoft.Network/virtualNetworks/subnets",
+//@    {
+//@      "type": "Microsoft.Network/virtualNetworks/subnets",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('{0}/{1}', 'myVnet', 'subnet1')]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/virtualNetworks', 'myVnet')]"
+//@      ]
+//@    },
   parent: p1_vnet
   name: 'subnet1'
   properties: {
-//@[520:522]       "properties": {
+//@      "properties": {
+//@      },
     addressPrefix: '10.0.0.0/24'
-//@[521:521]         "addressPrefix": "10.0.0.0/24"
+//@        "addressPrefix": "10.0.0.0/24"
   }
 }
 
 resource p1_subnet2 'Microsoft.Network/virtualNetworks/subnets@2020-06-01' = {
-//@[527:537]       "type": "Microsoft.Network/virtualNetworks/subnets",
+//@    {
+//@      "type": "Microsoft.Network/virtualNetworks/subnets",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('{0}/{1}', 'myVnet', 'subnet2')]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Network/virtualNetworks', 'myVnet')]"
+//@      ]
+//@    },
   parent: p1_vnet
   name: 'subnet2'
   properties: {
-//@[531:533]       "properties": {
+//@      "properties": {
+//@      },
     addressPrefix: '10.0.1.0/24'
-//@[532:532]         "addressPrefix": "10.0.1.0/24"
+//@        "addressPrefix": "10.0.1.0/24"
   }
 }
 
 output p1_subnet1prefix string = p1_subnet1.properties.addressPrefix
-//@[584:587]     "p1_subnet1prefix": {
+//@    "p1_subnet1prefix": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks/subnets', 'myVnet', 'subnet1'), '2020-06-01').addressPrefix]"
+//@    },
 output p1_subnet1name string = p1_subnet1.name
-//@[588:591]     "p1_subnet1name": {
+//@    "p1_subnet1name": {
+//@      "type": "string",
+//@      "value": "subnet1"
+//@    },
 output p1_subnet1type string = p1_subnet1.type
-//@[592:595]     "p1_subnet1type": {
+//@    "p1_subnet1type": {
+//@      "type": "string",
+//@      "value": "Microsoft.Network/virtualNetworks/subnets"
+//@    },
 output p1_subnet1id string = p1_subnet1.id
-//@[596:599]     "p1_subnet1id": {
+//@    "p1_subnet1id": {
+//@      "type": "string",
+//@      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'myVnet', 'subnet1')]"
+//@    },
 
 // parent property with extension resource
 resource p2_res1 'Microsoft.Rp1/resource1@2020-06-01' = {
-//@[538:542]       "type": "Microsoft.Rp1/resource1",
+//@    {
+//@      "type": "Microsoft.Rp1/resource1",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "res1"
+//@    },
   name: 'res1'
 }
 
 resource p2_res1child 'Microsoft.Rp1/resource1/child1@2020-06-01' = {
-//@[543:550]       "type": "Microsoft.Rp1/resource1/child1",
+//@    {
+//@      "type": "Microsoft.Rp1/resource1/child1",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('{0}/{1}', 'res1', 'child1')]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Rp1/resource1', 'res1')]"
+//@      ]
+//@    },
   parent: p2_res1
   name: 'child1'
 }
 
 resource p2_res2 'Microsoft.Rp2/resource2@2020-06-01' = {
-//@[551:559]       "type": "Microsoft.Rp2/resource2",
+//@    {
+//@      "type": "Microsoft.Rp2/resource2",
+//@      "apiVersion": "2020-06-01",
+//@      "scope": "[format('Microsoft.Rp1/resource1/{0}/child1/{1}', 'res1', 'child1')]",
+//@      "name": "res2",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1')]"
+//@      ]
+//@    },
   scope: p2_res1child
   name: 'res2'
 }
 
 resource p2_res2child 'Microsoft.Rp2/resource2/child2@2020-06-01' = {
-//@[560:568]       "type": "Microsoft.Rp2/resource2/child2",
+//@    {
+//@      "type": "Microsoft.Rp2/resource2/child2",
+//@      "apiVersion": "2020-06-01",
+//@      "scope": "[format('Microsoft.Rp1/resource1/{0}/child1/{1}', 'res1', 'child1')]",
+//@      "name": "[format('{0}/{1}', 'res2', 'child2')]",
+//@      "dependsOn": [
+//@        "[extensionResourceId(resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1'), 'Microsoft.Rp2/resource2', 'res2')]"
+//@      ]
+//@    },
   parent: p2_res2
   name: 'child2'
 }
 
 output p2_res2childprop string = p2_res2child.properties.someProp
-//@[600:603]     "p2_res2childprop": {
+//@    "p2_res2childprop": {
+//@      "type": "string",
+//@      "value": "[reference(extensionResourceId(resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1'), 'Microsoft.Rp2/resource2/child2', 'res2', 'child2'), '2020-06-01').someProp]"
+//@    },
 output p2_res2childname string = p2_res2child.name
-//@[604:607]     "p2_res2childname": {
+//@    "p2_res2childname": {
+//@      "type": "string",
+//@      "value": "child2"
+//@    },
 output p2_res2childtype string = p2_res2child.type
-//@[608:611]     "p2_res2childtype": {
+//@    "p2_res2childtype": {
+//@      "type": "string",
+//@      "value": "Microsoft.Rp2/resource2/child2"
+//@    },
 output p2_res2childid string = p2_res2child.id
-//@[612:615]     "p2_res2childid": {
+//@    "p2_res2childid": {
+//@      "type": "string",
+//@      "value": "[extensionResourceId(resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1'), 'Microsoft.Rp2/resource2/child2', 'res2', 'child2')]"
+//@    },
 
 // parent property with 'existing' resource
 resource p3_res1 'Microsoft.Rp1/resource1@2020-06-01' existing = {
@@ -658,19 +1046,35 @@ resource p3_res1 'Microsoft.Rp1/resource1@2020-06-01' existing = {
 }
 
 resource p3_child1 'Microsoft.Rp1/resource1/child1@2020-06-01' = {
-//@[569:573]       "type": "Microsoft.Rp1/resource1/child1",
+//@    {
+//@      "type": "Microsoft.Rp1/resource1/child1",
+//@      "apiVersion": "2020-06-01",
+//@      "name": "[format('{0}/{1}', 'res1', 'child1')]"
+//@    }
   parent: p3_res1
   name: 'child1'
 }
 
 output p3_res1childprop string = p3_child1.properties.someProp
-//@[616:619]     "p3_res1childprop": {
+//@    "p3_res1childprop": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1'), '2020-06-01').someProp]"
+//@    },
 output p3_res1childname string = p3_child1.name
-//@[620:623]     "p3_res1childname": {
+//@    "p3_res1childname": {
+//@      "type": "string",
+//@      "value": "child1"
+//@    },
 output p3_res1childtype string = p3_child1.type
-//@[624:627]     "p3_res1childtype": {
+//@    "p3_res1childtype": {
+//@      "type": "string",
+//@      "value": "Microsoft.Rp1/resource1/child1"
+//@    },
 output p3_res1childid string = p3_child1.id
-//@[628:631]     "p3_res1childid": {
+//@    "p3_res1childid": {
+//@      "type": "string",
+//@      "value": "[resourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1')]"
+//@    },
 
 // parent & child with 'existing'
 resource p4_res1 'Microsoft.Rp1/resource1@2020-06-01' existing = {
@@ -684,11 +1088,23 @@ resource p4_child1 'Microsoft.Rp1/resource1/child1@2020-06-01' existing = {
 }
 
 output p4_res1childprop string = p4_child1.properties.someProp
-//@[632:635]     "p4_res1childprop": {
+//@    "p4_res1childprop": {
+//@      "type": "string",
+//@      "value": "[reference(tenantResourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1'), '2020-06-01').someProp]"
+//@    },
 output p4_res1childname string = p4_child1.name
-//@[636:639]     "p4_res1childname": {
+//@    "p4_res1childname": {
+//@      "type": "string",
+//@      "value": "child1"
+//@    },
 output p4_res1childtype string = p4_child1.type
-//@[640:643]     "p4_res1childtype": {
+//@    "p4_res1childtype": {
+//@      "type": "string",
+//@      "value": "Microsoft.Rp1/resource1/child1"
+//@    },
 output p4_res1childid string = p4_child1.id
-//@[644:647]     "p4_res1childid": {
+//@    "p4_res1childid": {
+//@      "type": "string",
+//@      "value": "[tenantResourceId('Microsoft.Rp1/resource1/child1', 'res1', 'child1')]"
+//@    }
 

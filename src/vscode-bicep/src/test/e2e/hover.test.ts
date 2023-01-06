@@ -19,7 +19,7 @@ describe("hover", (): void => {
 
     await vscode.window.showTextDocument(document);
 
-    // Give the language server sometime to finish compilation. If this is the first test
+    // Give the language server some time to finish compilation. If this is the first test
     // to run it may take long for the compilation to complete because JIT is not "warmed up".
     await sleep(2000);
   });
@@ -107,7 +107,7 @@ describe("hover", (): void => {
       contents: [
         codeblockWithDescription(
           "function uniqueString(... : string): string",
-          "Creates a deterministic hash string based on the values provided as parameters."
+          "Creates a deterministic hash string based on the values provided as parameters. The returned value is 13 characters long."
         ),
       ],
     });

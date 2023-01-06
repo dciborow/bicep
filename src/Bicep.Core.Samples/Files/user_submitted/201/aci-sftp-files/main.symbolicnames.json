@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "12114583236596559523"
+      "templateHash": "10897613961526376951"
     }
   },
   "parameters": {
@@ -23,7 +23,7 @@
       "type": "string"
     },
     "sftpPassword": {
-      "type": "secureString"
+      "type": "securestring"
     },
     "location": {
       "type": "string",
@@ -83,13 +83,13 @@
       "identity": {
         "type": "UserAssigned",
         "userAssignedIdentities": {
-          "[format('{0}', resourceInfo('managedIdentity').id)]": {}
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')))]": {}
         }
       },
       "properties": {
         "forceUpdateTag": "1",
         "azPowerShellVersion": "3.0",
-        "arguments": "[format(' -storageAccountName {0} -fileShareName {1} -resourceGroupName {2}', resourceInfo('storageAccount').name, parameters('fileShareName'), resourceGroup().name)]",
+        "arguments": "[format(' -storageAccountName {0} -fileShareName {1} -resourceGroupName {2}', variables('storageAccountName'), parameters('fileShareName'), resourceGroup().name)]",
         "scriptContent": "param([string] $storageAccountName, [string] $fileShareName, [string] $resourceGroupName) Get-AzStorageAccount -StorageAccountName $storageAccountName -ResourceGroupName $resourceGroupName | New-AzStorageShare -Name $fileShareName",
         "timeout": "PT5M",
         "cleanupPreference": "OnSuccess",
@@ -155,7 +155,7 @@
             "azureFile": {
               "readOnly": false,
               "shareName": "[parameters('fileShareName')]",
-              "storageAccountName": "[resourceInfo('storageAccount').name]",
+              "storageAccountName": "[variables('storageAccountName')]",
               "storageAccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2020-08-01-preview').keys[0].value]"
             }
           }

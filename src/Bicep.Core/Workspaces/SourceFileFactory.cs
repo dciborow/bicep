@@ -23,7 +23,23 @@ namespace Bicep.Core.Workspaces
             LineInfoHandling = LineInfoHandling.Ignore,
         };
 
-        public static ISourceFile CreateSourceFile(Uri fileUri, string fileContents, ModuleReference? moduleReference = null)
+        public static BicepSourceFile? TryCreateSourceFileByBicepLanguageId(Uri fileUri, string fileContents, string languageId) => languageId switch
+        {
+            LanguageConstants.LanguageId => CreateBicepFile(fileUri, fileContents),
+            LanguageConstants.ParamsLanguageId => CreateBicepParamFile(fileUri, fileContents),
+            _ => null
+        };
+
+
+        public static BicepSourceFile? TryCreateSourceFileByFileKind(Uri fileUri, string fileContents, BicepSourceFileKind? fileKind) => fileKind switch
+        {
+            BicepSourceFileKind.BicepFile => CreateBicepFile(fileUri, fileContents),
+            BicepSourceFileKind.ParamsFile => CreateBicepParamFile(fileUri, fileContents),
+            null => null,
+            _ => throw new NotImplementedException($"Unexpected file kind '{fileKind}'.")
+        };
+
+        public static ISourceFile? TryCreateSourceFile(Uri fileUri, string fileContents, ModuleReference? moduleReference = null)
         {
             if (PathHelper.HasArmTemplateLikeExtension(fileUri))
             {
@@ -32,7 +48,28 @@ namespace Bicep.Core.Workspaces
                     : CreateArmTemplateFile(fileUri, fileContents);
             }
 
-            return CreateBicepFile(fileUri, fileContents);
+            if (PathHelper.HasBicepExtension(fileUri))
+            {
+                return CreateBicepFile(fileUri, fileContents);
+            }
+
+            if (PathHelper.HasBicepparamsExension(fileUri))
+            {
+                return CreateBicepParamFile(fileUri, fileContents);
+            }
+
+            return null;
+        }
+
+        public static ISourceFile CreateSourceFile(Uri fileUri, string fileContents, ModuleReference? moduleReference = null) =>
+            TryCreateSourceFile(fileUri, fileContents, moduleReference) ?? CreateBicepFile(fileUri, fileContents);
+
+        public static BicepParamFile CreateBicepParamFile(Uri fileUri, string fileContents)
+        {
+            var parser = new ParamsParser(fileContents);
+            var lineStarts = TextCoordinateConverter.GetLineStarts(fileContents);
+
+            return new(fileUri, lineStarts, parser.Program());
         }
 
         public static BicepFile CreateBicepFile(Uri fileUri, string fileContents)

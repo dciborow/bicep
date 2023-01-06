@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "5484437357573305551"
+      "templateHash": "2801759771265342509"
     }
   },
   "parameters": {
@@ -33,7 +33,7 @@
       }
     },
     "psk": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "[uniqueString(subscription().id)]",
       "metadata": {
         "description": "Pre-Shared Key used to establish the site to site tunnel between the Virtual Hub and On-Prem VNet"
@@ -107,11 +107,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3943071108607446816"
+              "templateHash": "17353621509052261789"
             }
           },
           "parameters": {
@@ -280,7 +280,7 @@
                     "properties": {
                       "addressPrefix": "[parameters('serversubnetprefix')]",
                       "networkSecurityGroup": {
-                        "id": "[resourceInfo('servernsg').id]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('servernsgname'))]"
                       }
                     }
                   },
@@ -289,7 +289,7 @@
                     "properties": {
                       "addressPrefix": "[parameters('bastionsubnetprefix')]",
                       "networkSecurityGroup": {
-                        "id": "[resourceInfo('bastionnsg').id]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('bastionnsgname'))]"
                       }
                     }
                   },
@@ -316,7 +316,7 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('vnet').id]"
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetname'))]"
             },
             "subnets": {
               "type": "array",
@@ -365,11 +365,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "18212306837198330264"
+              "templateHash": "2943086781191583770"
             }
           },
           "parameters": {
@@ -425,7 +425,7 @@
                         "id": "[parameters('subnetref')]"
                       },
                       "publicIPAddress": {
-                        "id": "[resourceInfo('vpngwpip').id]"
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('vpngwpipname'))]"
                       }
                     }
                   }
@@ -450,7 +450,7 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('vpngw').id]"
+              "value": "[resourceId('Microsoft.Network/virtualNetworkGateways', parameters('vpngwname'))]"
             },
             "vpngwip": {
               "type": "string",
@@ -495,11 +495,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15325289422607085455"
+              "templateHash": "7632131684262106800"
             }
           },
           "parameters": {
@@ -537,7 +537,7 @@
             "platformrcgroup": {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/Platform-Rules', resourceInfo('policy').name)]",
+              "name": "[format('{0}/Platform-Rules', parameters('policyname'))]",
               "properties": {
                 "priority": 100,
                 "ruleCollections": [
@@ -629,11 +629,11 @@
           "outputs": {
             "name": {
               "type": "string",
-              "value": "[resourceInfo('policy').name]"
+              "value": "[parameters('policyname')]"
             },
             "id": {
               "type": "string",
-              "value": "[resourceInfo('policy').id]"
+              "value": "[resourceId('Microsoft.Network/firewallPolicies', parameters('policyname'))]"
             }
           }
         }
@@ -671,11 +671,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "17181936323639575057"
+              "templateHash": "4580692119464669188"
             }
           },
           "parameters": {
@@ -731,7 +731,7 @@
               "properties": {
                 "publicIPAllocationMethod": "Static",
                 "publicIPPrefix": {
-                  "id": "[resourceInfo('fwipprefix').id]"
+                  "id": "[resourceId('Microsoft.Network/publicIPPrefixes', parameters('ipprefixname'))]"
                 }
               },
               "dependsOn": [
@@ -742,7 +742,7 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('fwip').id]"
+              "value": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('pipname'))]"
             }
           }
         }
@@ -786,11 +786,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "14385259627011021943"
+              "templateHash": "760512512960641671"
             }
           },
           "parameters": {
@@ -935,11 +935,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "967997001662366028"
+              "templateHash": "9878070999700807777"
             }
           },
           "parameters": {
@@ -979,7 +979,7 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('wan').id]"
+              "value": "[resourceId('Microsoft.Network/virtualWans', parameters('wanname'))]"
             }
           }
         }
@@ -1017,11 +1017,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15114646317857032390"
+              "templateHash": "10092071195997223235"
             }
           },
           "parameters": {
@@ -1063,11 +1063,11 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('hub').id]"
+              "value": "[resourceId('Microsoft.Network/virtualHubs', parameters('hubname'))]"
             },
             "name": {
               "type": "string",
-              "value": "[resourceInfo('hub').name]"
+              "value": "[parameters('hubname')]"
             },
             "vhubaddress": {
               "type": "string",
@@ -1104,11 +1104,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15325289422607085455"
+              "templateHash": "7632131684262106800"
             }
           },
           "parameters": {
@@ -1146,7 +1146,7 @@
             "platformrcgroup": {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/Platform-Rules', resourceInfo('policy').name)]",
+              "name": "[format('{0}/Platform-Rules', parameters('policyname'))]",
               "properties": {
                 "priority": 100,
                 "ruleCollections": [
@@ -1238,11 +1238,11 @@
           "outputs": {
             "name": {
               "type": "string",
-              "value": "[resourceInfo('policy').name]"
+              "value": "[parameters('policyname')]"
             },
             "id": {
               "type": "string",
-              "value": "[resourceInfo('policy').id]"
+              "value": "[resourceId('Microsoft.Network/firewallPolicies', parameters('policyname'))]"
             }
           }
         }
@@ -1286,11 +1286,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "14385259627011021943"
+              "templateHash": "760512512960641671"
             }
           },
           "parameters": {
@@ -1437,11 +1437,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15441215468607522142"
+              "templateHash": "11538658444195466639"
             }
           },
           "parameters": {
@@ -1484,11 +1484,11 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('hubvpngw').id]"
+              "value": "[resourceId('Microsoft.Network/vpnGateways', parameters('hubvpngwname'))]"
             },
             "name": {
               "type": "string",
-              "value": "[resourceInfo('hubvpngw').name]"
+              "value": "[parameters('hubvpngwname')]"
             },
             "gwpublicip": {
               "type": "string",
@@ -1548,11 +1548,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "5186554569594679500"
+              "templateHash": "2570603069945209398"
             }
           },
           "parameters": {
@@ -1624,7 +1624,7 @@
           "outputs": {
             "id": {
               "type": "string",
-              "value": "[resourceInfo('vpnsite').id]"
+              "value": "[resourceId('Microsoft.Network/vpnSites', parameters('vpnsitename'))]"
             }
           }
         }
@@ -1662,11 +1662,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "1349873311495765855"
+              "templateHash": "16098564941054435846"
             }
           },
           "parameters": {
@@ -1674,7 +1674,7 @@
               "type": "string"
             },
             "psk": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "Specifies the pre-shared key to use for the VPN Connection"
               }
@@ -1755,11 +1755,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7271247560517453672"
+              "templateHash": "15928558416114035813"
             }
           },
           "parameters": {
@@ -1799,7 +1799,7 @@
               }
             },
             "psk": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "Specifies the pre-shared key to use for the VPN Connection"
               }
@@ -1843,7 +1843,7 @@
                 "enableBgp": true,
                 "sharedKey": "[parameters('psk')]",
                 "localNetworkGateway2": {
-                  "id": "[resourceInfo('localnetworkgw').id]",
+                  "id": "[resourceId('Microsoft.Network/localNetworkGateways', parameters('localnetworkgwname'))]",
                   "properties": {}
                 }
               },

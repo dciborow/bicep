@@ -1,10 +1,10 @@
-﻿/* 
+﻿/*
   This is a block comment.
 */
 
 // parameters without default value
 @sys.description('''
-this is my multi line 
+this is my multi line
 description for my myString
 ''')
 param myString string
@@ -72,6 +72,13 @@ param secretObject object
   'Standard_GRS'
 ])
 param storageSku string
+
+@allowed([
+  1
+  2
+  3
+])
+param intEnum int
 
 // length constraint on a string
 @minLength(3)
@@ -165,7 +172,7 @@ param negativeValues int
         123
     ]
 })
-param decoratedBool bool = (true && false) != true
+param decoratedBool bool = /* comment1 */ /* comment2*/      /* comment3 */ /* comment4 */ (true && false) != true
 
 @secure()
 param decoratedObject object = {

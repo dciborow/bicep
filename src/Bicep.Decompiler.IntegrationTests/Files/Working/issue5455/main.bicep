@@ -72,15 +72,15 @@ resource name_resource 'Microsoft.Synapse/workspaces@2021-06-01' = {
   }
   tags: tagValues
   dependsOn: [
-    defaultDataLakeStorageAccountName_resource
-    defaultDataLakeStorageFilesystemName_resource
+    defaultDataLakeStorageAccount
+    defaultDataLakeStorageFilesystem
   ]
 }
 
 resource name_allowAll 'Microsoft.Synapse/workspaces/firewallrules@2021-06-01' = if (allowAllConnections) {
   parent: name_resource
   location: location
-//@[02:010) [BCP187 (Warning)] The property "location" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |location|
+//@[02:010) [BCP187 (Warning)] The property "location" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |location|
   name: 'allowAll'
   properties: {
     startIpAddress: '0.0.0.0'
@@ -121,7 +121,7 @@ module UpdateStorageAccountNetworkingAcls './nested_UpdateStorageAccountNetworki
   ]
 }
 
-resource defaultDataLakeStorageAccountName_resource 'Microsoft.Storage/storageAccounts@2021-01-01' = if (isNewStorageAccount) {
+resource defaultDataLakeStorageAccount 'Microsoft.Storage/storageAccounts@2021-01-01' = if (isNewStorageAccount) {
   name: defaultDataLakeStorageAccountName
   location: storageLocation
   properties: {
@@ -138,17 +138,17 @@ resource defaultDataLakeStorageAccountName_resource 'Microsoft.Storage/storageAc
   }
 }
 
-resource defaultDataLakeStorageAccountName_default_defaultDataLakeStorageFilesystemName 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-01-01' = if (isNewStorageAccount) {
+resource defaultDataLakeStorageAccountName_default_defaultDataLakeStorageFilesystem 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-01-01' = if (isNewStorageAccount) {
   name: '${defaultDataLakeStorageAccountName}/default/${defaultDataLakeStorageFilesystemName}'
   properties: {
     publicAccess: 'None'
   }
   dependsOn: [
-    defaultDataLakeStorageAccountName_resource
+    defaultDataLakeStorageAccount
   ]
 }
 
-module defaultDataLakeStorageFilesystemName_resource './nested_defaultDataLakeStorageFilesystemName_resource.bicep' = if (isNewFileSystemOnly) {
+module defaultDataLakeStorageFilesystem './nested_defaultDataLakeStorageFilesystem.bicep' = if (isNewFileSystemOnly) {
   name: defaultDataLakeStorageFilesystemName
   scope: resourceGroup(storageSubscriptionID, storageResourceGroupName)
   params: {

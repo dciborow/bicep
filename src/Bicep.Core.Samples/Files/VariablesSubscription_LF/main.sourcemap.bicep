@@ -1,13 +1,14 @@
 targetScope='subscription'
 
 var deploymentLocation = deployment().location
-//@[11:11]     "deploymentLocation": "[deployment().location]",
+//@    "deploymentLocation": "[deployment().location]",
 
 var scopesWithArmRepresentation = {
-//@[12:15]     "scopesWithArmRepresentation": {
+//@    "scopesWithArmRepresentation": {
+//@    }
   tenant: tenant()
-//@[13:13]       "tenant": "[tenant()]",
+//@      "tenant": "[tenant()]",
   subscription: subscription()
-//@[14:14]       "subscription": "[subscription()]"
+//@      "subscription": "[subscription()]"
 }
 

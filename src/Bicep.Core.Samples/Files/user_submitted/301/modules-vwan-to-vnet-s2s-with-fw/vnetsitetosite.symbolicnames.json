@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "7271247560517453672"
+      "templateHash": "15928558416114035813"
     }
   },
   "parameters": {
@@ -47,7 +47,7 @@
       }
     },
     "psk": {
-      "type": "secureString",
+      "type": "securestring",
       "metadata": {
         "description": "Specifies the pre-shared key to use for the VPN Connection"
       }
@@ -91,7 +91,7 @@
         "enableBgp": true,
         "sharedKey": "[parameters('psk')]",
         "localNetworkGateway2": {
-          "id": "[resourceInfo('localnetworkgw').id]",
+          "id": "[resourceId('Microsoft.Network/localNetworkGateways', parameters('localnetworkgwname'))]",
           "properties": {}
         }
       },

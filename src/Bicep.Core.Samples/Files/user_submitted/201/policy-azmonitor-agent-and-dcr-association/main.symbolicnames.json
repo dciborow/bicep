@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "6219697027787344860"
+      "templateHash": "5989534997423292376"
     }
   },
   "parameters": {
@@ -43,11 +43,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "2457970379301751180"
+              "templateHash": "10028704102689692286"
             }
           },
           "parameters": {
@@ -369,7 +369,7 @@
                 "parameters": {},
                 "policyDefinitions": [
                   {
-                    "policyDefinitionId": "[resourceInfo('deployAzureMonitorAgentWindowsDCR').id]",
+                    "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', 'deployAzureMonitorAgentWindowsDCR')]",
                     "parameters": {}
                   }
                 ]
@@ -382,7 +382,7 @@
           "outputs": {
             "monitoringGovernanceId": {
               "type": "string",
-              "value": "[resourceInfo('monitoringGovernance').id]"
+              "value": "[subscriptionResourceId('Microsoft.Authorization/policySetDefinitions', 'monitoringGovernance')]"
             }
           }
         }
@@ -414,11 +414,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3313635155036670047"
+              "templateHash": "17856974315146222949"
             }
           },
           "parameters": {
@@ -460,7 +460,7 @@
             "roleAssignment": {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2020-04-01-preview",
-              "name": "[guid(resourceInfo('monitoringGovernanceAssignment').name, resourceInfo('monitoringGovernanceAssignment').type, subscription().subscriptionId)]",
+              "name": "[guid('monitoringGovernance', 'Microsoft.Authorization/policyAssignments', subscription().subscriptionId)]",
               "properties": {
                 "principalId": "[reference('monitoringGovernanceAssignment', '2020-09-01', 'full').identity.principalId]",
                 "roleDefinitionId": "/providers/microsoft.authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"

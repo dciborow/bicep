@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "12810098671821544729"
+      "templateHash": "3761323621114699632"
     }
   },
   "parameters": {
@@ -100,11 +100,11 @@
       "defaultValue": "prodKey"
     },
     "secretName": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "bankAccountPassword"
     },
     "secretValue": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "12345"
     },
     "networkAcls": {
@@ -139,7 +139,7 @@
     "key": {
       "type": "Microsoft.KeyVault/vaults/keys",
       "apiVersion": "2019-09-01",
-      "name": "[format('{0}/{1}', resourceInfo('keyvault').name, parameters('keyName'))]",
+      "name": "[format('{0}/{1}', parameters('vaultName'), parameters('keyName'))]",
       "properties": {
         "kty": "RSA",
         "keyOps": [
@@ -155,7 +155,7 @@
     "secret": {
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2018-02-14",
-      "name": "[format('{0}/{1}', resourceInfo('keyvault').name, parameters('secretName'))]",
+      "name": "[format('{0}/{1}', parameters('vaultName'), parameters('secretName'))]",
       "properties": {
         "value": "[parameters('secretValue')]"
       },

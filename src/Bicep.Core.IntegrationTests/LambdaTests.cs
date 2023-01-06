@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 using System.Diagnostics.CodeAnalysis;
 using Bicep.Core.Diagnostics;
-using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
 using Bicep.Core.UnitTests.Utils;
 using FluentAssertions;
@@ -15,38 +14,6 @@ namespace Bicep.Core.IntegrationTests
     {
         [NotNull]
         public TestContext? TestContext { get; set; }
-
-        [TestMethod]
-        public void Lambdas_cannot_be_used_with_feature_disabled()
-        {
-            var features = BicepTestConstants.Features with { AdvancedListComprehensionEnabled = false };
-            var context = new CompilationHelper.CompilationHelperContext(Features: features);
-
-            CompilationHelper.Compile(context, "var foo = map([123], i => i)")
-                .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP082", DiagnosticLevel.Error, "The name \"map\" does not exist in the current context. Did you mean \"max\"?"),
-                });
-
-            CompilationHelper.Compile(context, "var foo = filter([123], i => true)")
-                .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP057", DiagnosticLevel.Error, "The name \"filter\" does not exist in the current context."),
-                });
-
-            CompilationHelper.Compile(context, "var foo = sort([123], (x, y) => x < y)")
-                .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP057", DiagnosticLevel.Error, "The name \"sort\" does not exist in the current context."),
-                });
-
-            CompilationHelper.Compile(context, "var foo = reduce([123], 1, (x, y) => x + y)")
-                .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP057", DiagnosticLevel.Error, "The name \"reduce\" does not exist in the current context."),
-                });
-
-            CompilationHelper.Compile(context, "var foo = flatten([123], i => i)")
-                .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP057", DiagnosticLevel.Error, "The name \"flatten\" does not exist in the current context."),
-                });
-        }
 
         [TestMethod]
         public void Parentheses_without_arrow_are_not_interpreted_as_lambdas()
@@ -111,7 +78,7 @@ namespace Bicep.Core.IntegrationTests
 
             CompilationHelper.Compile("var asfsasdf = map([1], [i => i])")
                 .ExcludingLinterDiagnostics().Should().HaveDiagnostics(new [] {
-                    ("BCP070", DiagnosticLevel.Error, "Argument of type \"(any => any)[]\" is not assignable to parameter of type \"any => any\"."),
+                    ("BCP070", DiagnosticLevel.Error, "Argument of type \"[any => any]\" is not assignable to parameter of type \"any => any\"."),
                     ("BCP242", DiagnosticLevel.Error, "Lambda functions may only be specified directly as function arguments."),
                 });
         }
@@ -122,17 +89,18 @@ namespace Bicep.Core.IntegrationTests
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = map([123], ab|c => abc)
 var fo|o2 = map([123], a|bc => 'Hello ${abc}')
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             var info = result.GetInfoAtCursors(cursors);
 
             info.Should().SatisfyRespectively(
-                x => x.Type.Name.Should().Be("int[]"),
-                x => x.Type.Name.Should().Be("int"),
+                x => x.Type.Name.Should().Be("123[]"),
+                x => x.Type.Name.Should().Be("123"),
                 x => x.Type.Name.Should().Be("string[]"),
-                x => x.Type.Name.Should().Be("int"));
+                x => x.Type.Name.Should().Be("123"));
         }
 
         [TestMethod]
@@ -141,7 +109,8 @@ var fo|o2 = map([123], a|bc => 'Hello ${abc}')
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = map(['abc', 'def'], ab|c => abc)
 var fo|o2 = map(['abc', 'def'], a|bc => length(abc))
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
@@ -160,15 +129,16 @@ var fo|o2 = map(['abc', 'def'], a|bc => length(abc))
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = map([], ab|c => abc)
 var fo|o2 = map([any('foo')], a|bc => 'Hi ${abc}!')
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             var info = result.GetInfoAtCursors(cursors);
 
             info.Should().SatisfyRespectively(
-                x => x.Type.Name.Should().Be("any[]"),
-                x => x.Type.Name.Should().Be("any"),
+                x => x.Type.Name.Should().Be("never[]"),
+                x => x.Type.Name.Should().Be("never"),
                 x => x.Type.Name.Should().Be("string[]"),
                 x => x.Type.Name.Should().Be("any"));
         }
@@ -179,11 +149,12 @@ var fo|o2 = map([any('foo')], a|bc => 'Hi ${abc}!')
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var foo = map([123], (abc, def) => abc)
 var foo2 = map(['foo'], () => 'Hi!')
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new[] {
-                ("BCP070", DiagnosticLevel.Error, "Argument of type \"(int, any) => int\" is not assignable to parameter of type \"any => any\"."),
+                ("BCP070", DiagnosticLevel.Error, "Argument of type \"(123, any) => 123\" is not assignable to parameter of type \"any => any\"."),
                 ("BCP070", DiagnosticLevel.Error, "Argument of type \"() => 'Hi!'\" is not assignable to parameter of type \"any => any\"."),
             });
         }
@@ -218,15 +189,16 @@ var foo = i => 123
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = filter([123], abc => a|bc == 123)
 var fo|o2 = filter(['abc', 'def'], a|bc => abc == '123')
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             var info = result.GetInfoAtCursors(cursors);
 
             info.Should().SatisfyRespectively(
-                x => x.Type.Name.Should().Be("int[]"),
-                x => x.Type.Name.Should().Be("int"),
+                x => x.Type.Name.Should().Be("123[]"),
+                x => x.Type.Name.Should().Be("123"),
                 x => x.Type.Name.Should().Be("('abc' | 'def')[]"),
                 x => x.Type.Name.Should().Be("'abc' | 'def'"));
         }
@@ -237,15 +209,16 @@ var fo|o2 = filter(['abc', 'def'], a|bc => abc == '123')
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = sort([123], (abc, def) => a|bc < def)
 var fo|o2 = sort(['bar', 'foo'], (abc, def) => abc < d|ef)
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             var info = result.GetInfoAtCursors(cursors);
 
             info.Should().SatisfyRespectively(
-                x => x.Type.Name.Should().Be("int[]"),
-                x => x.Type.Name.Should().Be("int"),
+                x => x.Type.Name.Should().Be("123[]"),
+                x => x.Type.Name.Should().Be("123"),
                 x => x.Type.Name.Should().Be("('bar' | 'foo')[]"),
                 x => x.Type.Name.Should().Be("'bar' | 'foo'"));
         }
@@ -256,15 +229,16 @@ var fo|o2 = sort(['bar', 'foo'], (abc, def) => abc < d|ef)
             var (file, cursors) = ParserHelper.GetFileWithCursors(@"
 var fo|o = reduce([123], 0, (c|ur, next) => cur + next)
 var fo|o2 = reduce(['abc', 'def'], '', (cur, nex|t) => concat(cur, next))
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             var info = result.GetInfoAtCursors(cursors);
 
             info.Should().SatisfyRespectively(
-                x => x.Type.Name.Should().Be("int"),
-                x => x.Type.Name.Should().Be("int"),
+                x => x.Type.Name.Should().Be("246"),
+                x => x.Type.Name.Should().Be("123"),
                 x => x.Type.Name.Should().Be("string"),
                 x => x.Type.Name.Should().Be("'abc' | 'def'"));
         }
@@ -289,7 +263,8 @@ var abc = map(
     )
   )
 )
-");
+",
+                '|');
 
             var result = CompilationHelper.Compile(file);
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();

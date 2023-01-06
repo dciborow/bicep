@@ -4,18 +4,22 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
+using Bicep.Core.Features;
 using Bicep.Core.Semantics.Namespaces;
 using Bicep.Core.Syntax;
 using Bicep.Core.TypeSystem;
 using Bicep.Core.Workspaces;
+using Newtonsoft.Json.Schema;
 
 namespace Bicep.Core.Semantics
 {
-    public sealed class DeclarationVisitor : SyntaxVisitor
+    public sealed class DeclarationVisitor : AstVisitor
     {
         private readonly INamespaceProvider namespaceProvider;
+        private readonly IFeatureProvider features;
         private readonly ResourceScope targetScope;
         private readonly ISymbolContext context;
 
@@ -25,9 +29,10 @@ namespace Bicep.Core.Semantics
 
         private readonly Stack<ScopeInfo> activeScopes = new();
 
-        private DeclarationVisitor(INamespaceProvider namespaceProvider, ResourceScope targetScope, ISymbolContext context, IList<DeclaredSymbol> declarations, IList<ScopeInfo> childScopes)
+        private DeclarationVisitor(INamespaceProvider namespaceProvider, IFeatureProvider features, ResourceScope targetScope, ISymbolContext context, IList<DeclaredSymbol> declarations, IList<ScopeInfo> childScopes)
         {
             this.namespaceProvider = namespaceProvider;
+            this.features = features;
             this.targetScope = targetScope;
             this.context = context;
             this.declarations = declarations;
@@ -35,15 +40,23 @@ namespace Bicep.Core.Semantics
         }
 
         // Returns the list of top level declarations as well as top level scopes.
-        public static (ImmutableArray<DeclaredSymbol>, ImmutableArray<LocalScope>) GetDeclarations(INamespaceProvider namespaceProvider, ResourceScope targetScope, BicepFile bicepFile, ISymbolContext symbolContext)
+        public static (ImmutableArray<DeclaredSymbol>, ImmutableArray<LocalScope>) GetDeclarations(INamespaceProvider namespaceProvider, IFeatureProvider features, ResourceScope targetScope, BicepSourceFile sourceFile, ISymbolContext symbolContext)
         {
             // collect declarations
             var declarations = new List<DeclaredSymbol>();
             var childScopes = new List<ScopeInfo>();
-            var declarationVisitor = new DeclarationVisitor(namespaceProvider, targetScope, symbolContext, declarations, childScopes);
-            declarationVisitor.Visit(bicepFile.ProgramSyntax);
+            var declarationVisitor = new DeclarationVisitor(namespaceProvider, features, targetScope, symbolContext, declarations, childScopes);
+            declarationVisitor.Visit(sourceFile.ProgramSyntax);
 
             return (declarations.ToImmutableArray(), childScopes.Select(MakeImmutable).ToImmutableArray());
+        }
+
+        public override void VisitMetadataDeclarationSyntax(MetadataDeclarationSyntax syntax)
+        {
+            base.VisitMetadataDeclarationSyntax(syntax);
+
+            var symbol = new MetadataSymbol(this.context, syntax.Name.IdentifierName, syntax, syntax.Value);
+            DeclareSymbol(symbol);
         }
 
         public override void VisitParameterDeclarationSyntax(ParameterDeclarationSyntax syntax)
@@ -51,6 +64,14 @@ namespace Bicep.Core.Semantics
             base.VisitParameterDeclarationSyntax(syntax);
 
             var symbol = new ParameterSymbol(this.context, syntax.Name.IdentifierName, syntax);
+            DeclareSymbol(symbol);
+        }
+
+        public override void VisitTypeDeclarationSyntax(TypeDeclarationSyntax syntax)
+        {
+            base.VisitTypeDeclarationSyntax(syntax);
+
+            var symbol = new TypeAliasSymbol(this.context, syntax.Name.IdentifierName, syntax, syntax.Value);
             DeclareSymbol(symbol);
         }
 
@@ -104,27 +125,39 @@ namespace Bicep.Core.Semantics
         {
             base.VisitImportDeclarationSyntax(syntax);
 
-            var alias = syntax.Name.IdentifierName;
             TypeSymbol declaredType;
-            if (!namespaceProvider.AllowImportStatements)
+            if (!features.ExtensibilityEnabled)
             {
                 declaredType = ErrorType.Create(DiagnosticBuilder.ForPosition(syntax).ImportsAreDisabled());
             }
-            else if (!syntax.ProviderName.IsValid)
+            else if (syntax.SpecificationString is StringSyntax specificationString && specificationString.IsInterpolated())
             {
-                // There should be a parse error if the import statement is incomplete
-                declaredType = ErrorType.Empty();
+                declaredType = ErrorType.Create(DiagnosticBuilder.ForPosition(syntax.SpecificationString).ProviderSpecificationInterpolationUnsupported());
             }
-            else if (namespaceProvider.TryGetNamespace(syntax.ProviderName.IdentifierName, alias, targetScope) is not { } namespaceType)
+            else if (!syntax.Specification.IsValid)
             {
-                declaredType = ErrorType.Create(DiagnosticBuilder.ForPosition(syntax).UnrecognizedImportProvider(syntax.ProviderName.IdentifierName));
+                declaredType = syntax.SpecificationString is StringSyntax
+                    ? ErrorType.Create(DiagnosticBuilder.ForPosition(syntax.Specification).InvalidProviderSpecification())
+                    : ErrorType.Empty();
+            }
+            else if (namespaceProvider.TryGetNamespace(syntax.Specification.Name, syntax.Alias?.IdentifierName ?? syntax.Specification.Name, targetScope, features) is not { } namespaceType)
+            {
+                declaredType = ErrorType.Create(DiagnosticBuilder.ForPosition(syntax).UnrecognizedImportProvider(syntax.Specification.Name));
             }
             else
             {
                 declaredType = namespaceType;
             }
 
-            var symbol = new ImportedNamespaceSymbol(this.context, syntax.Name.IdentifierName, declaredType, syntax);
+            var symbol = new ImportedNamespaceSymbol(this.context, syntax, declaredType);
+            DeclareSymbol(symbol);
+        }
+
+        public override void VisitParameterAssignmentSyntax(ParameterAssignmentSyntax syntax)
+        {
+            base.VisitParameterAssignmentSyntax(syntax);
+
+            var symbol = new ParameterAssignmentSymbol(this.context, syntax.Name.IdentifierName, syntax);
             DeclareSymbol(symbol);
         }
 
@@ -245,4 +278,3 @@ namespace Bicep.Core.Semantics
         }
     }
 }
-

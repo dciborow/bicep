@@ -1,7 +1,7 @@
 
 // wrong declaration
 bad
-//@[000:003) [BCP007 (Error)] This declaration type is not recognized. Specify a parameter, variable, resource, or output declaration. (CodeDescription: none) |bad|
+//@[000:003) [BCP007 (Error)] This declaration type is not recognized. Specify a metadata, parameter, variable, resource, or output declaration. (CodeDescription: none) |bad|
 
 // incomplete #completionTest(9) -> empty
 resource 
@@ -207,7 +207,7 @@ resource foo 'Microsoft.Foo/foos@2020-02-02-alpha'= {
   name: 'foo'
 //@[008:013) [BCP121 (Error)] Resources: "foo", "foo", "foo", "foo", "foo", "foo", "foo", "foo", "foo" are defined with this same name in a file. Rename them or split into different modules. (CodeDescription: none) |'foo'|
   location: [
-//@[012:018) [BCP036 (Warning)] The property "location" expected a value of type "string" but the provided value is of type "array". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |[\r\n  ]|
+//@[012:018) [BCP036 (Warning)] The property "location" expected a value of type "string" but the provided value is of type "<empty array>". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |[\r\n  ]|
   ]
   tags: 'tag are not a string?'
 //@[008:031) [BCP036 (Warning)] The property "tags" expected a value of type "Tags" but the provided value is of type "'tag are not a string?'". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |'tag are not a string?'|
@@ -216,19 +216,19 @@ resource foo 'Microsoft.Foo/foos@2020-02-02-alpha'= {
 resource bar 'Microsoft.Foo/foos@2020-02-02-alpha' = {
 //@[013:050) [BCP081 (Warning)] Resource type "Microsoft.Foo/foos@2020-02-02-alpha" does not have types available. (CodeDescription: none) |'Microsoft.Foo/foos@2020-02-02-alpha'|
   name: true ? 's' : 'a' + 1
-//@[021:028) [BCP045 (Error)] Cannot apply operator "+" to operands of type "'a'" and "int". (CodeDescription: none) |'a' + 1|
+//@[021:028) [BCP045 (Error)] Cannot apply operator "+" to operands of type "'a'" and "1". (CodeDescription: none) |'a' + 1|
   properties: {
     x: foo()
 //@[007:010) [BCP059 (Error)] The name "foo" is not a function. (CodeDescription: none) |foo|
     y: true && (null || !4)
-//@[024:026) [BCP044 (Error)] Cannot apply operator "!" to operand of type "int". (CodeDescription: none) |!4|
+//@[024:026) [BCP044 (Error)] Cannot apply operator "!" to operand of type "4". (CodeDescription: none) |!4|
     a: [
       a
 //@[006:007) [BCP057 (Error)] The name "a" does not exist in the current context. (CodeDescription: none) |a|
       !null
 //@[006:011) [BCP044 (Error)] Cannot apply operator "!" to operand of type "null". (CodeDescription: none) |!null|
       true && true || true + -true * 4
-//@[029:034) [BCP044 (Error)] Cannot apply operator "-" to operand of type "bool". (CodeDescription: none) |-true|
+//@[029:034) [BCP044 (Error)] Cannot apply operator "-" to operand of type "true". (CodeDescription: none) |-true|
     ]
   }
 }
@@ -307,7 +307,7 @@ resource badDepends2 'Microsoft.Foo/foos@2020-02-02-alpha' = {
     'hello'
 //@[004:011) [BCP034 (Error)] The enclosing array expected an item of type "module[] | (resource | module) | resource[]", but the provided item was of type "'hello'". (CodeDescription: none) |'hello'|
     true
-//@[004:008) [BCP034 (Error)] The enclosing array expected an item of type "module[] | (resource | module) | resource[]", but the provided item was of type "bool". (CodeDescription: none) |true|
+//@[004:008) [BCP034 (Error)] The enclosing array expected an item of type "module[] | (resource | module) | resource[]", but the provided item was of type "true". (CodeDescription: none) |true|
   ]
 }
 
@@ -451,7 +451,7 @@ resource runtimeInvalidRes10 'Microsoft.Advisor/recommendations/suppressions@202
   name: '${runtimeValidRes3.location}'
 //@[008:038) [simplify-interpolation (Warning)] Remove unnecessary string interpolation. (CodeDescription: bicep core(https://aka.ms/bicep/linter/simplify-interpolation)) |'${runtimeValidRes3.location}'|
 //@[011:036) [BCP120 (Error)] This expression is being used in an assignment to the "name" property of the "Microsoft.Advisor/recommendations/suppressions" type, which requires a value that can be calculated at the start of the deployment. Properties of runtimeValidRes3 which can be calculated at the start include "apiVersion", "id", "name", "type". (CodeDescription: none) |runtimeValidRes3.location|
-//@[028:036) [BCP187 (Warning)] The property "location" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |location|
+//@[028:036) [BCP187 (Warning)] The property "location" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |location|
 }
 
 resource runtimeInvalidRes11 'Microsoft.Advisor/recommendations/suppressions@2020-01-01' = {
@@ -1580,19 +1580,19 @@ resource itemAndIndexSameName 'Microsoft.AAD/domainServices@2020-01-01' = [for (
 
 // errors in the array expression
 resource arrayExpressionErrors 'Microsoft.Storage/storageAccounts@2019-06-01' = [for account in union([], 2): {
-//@[106:107) [BCP070 (Error)] Argument of type "int" is not assignable to parameter of type "array". (CodeDescription: none) |2|
+//@[106:107) [BCP070 (Error)] Argument of type "2" is not assignable to parameter of type "array". (CodeDescription: none) |2|
 }]
 resource arrayExpressionErrors2 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (account,k) in union([], 2): {
-//@[111:112) [BCP070 (Error)] Argument of type "int" is not assignable to parameter of type "array". (CodeDescription: none) |2|
+//@[111:112) [BCP070 (Error)] Argument of type "2" is not assignable to parameter of type "array". (CodeDescription: none) |2|
 }]
 
 // wrong array type
 var notAnArray = true
 resource wrongArrayType 'Microsoft.Storage/storageAccounts@2019-06-01' = [for account in notAnArray: {
-//@[089:099) [BCP137 (Error)] Loop expected an expression of type "array" but the provided value is of type "bool". (CodeDescription: none) |notAnArray|
+//@[089:099) [BCP137 (Error)] Loop expected an expression of type "array" but the provided value is of type "true". (CodeDescription: none) |notAnArray|
 }]
 resource wrongArrayType2 'Microsoft.Storage/storageAccounts@2019-06-01' = [for (account,i) in notAnArray: {
-//@[094:104) [BCP137 (Error)] Loop expected an expression of type "array" but the provided value is of type "bool". (CodeDescription: none) |notAnArray|
+//@[094:104) [BCP137 (Error)] Loop expected an expression of type "array" but the provided value is of type "true". (CodeDescription: none) |notAnArray|
 }]
 
 // wrong filter expression type
@@ -1678,6 +1678,7 @@ resource propertyLoopsCannotNest 'Microsoft.Storage/storageAccounts@2019-06-01' 
     networkAcls: {
       virtualNetworkRules: [for rule in []: {
         id: '${account.name}-${account.location}'
+//@[008:010) [use-resource-id-functions (Warning)] If property "id" represents a resource ID, it must use a symbolic resource reference, be a parameter or start with one of these functions: extensionResourceId, guid, if, reference, resourceId, subscription, subscriptionResourceId, tenantResourceId. (CodeDescription: bicep core(https://aka.ms/bicep/linter/use-resource-id-functions)) |id|
         state: [for lol in []: 4]
 //@[016:019) [BCP142 (Error)] Property value for-expressions cannot be nested. (CodeDescription: none) |for|
       }]
@@ -1698,6 +1699,7 @@ resource propertyLoopsCannotNest2 'Microsoft.Storage/storageAccounts@2019-06-01'
     networkAcls: {
       virtualNetworkRules: [for (rule,j) in []: {
         id: '${account.name}-${account.location}'
+//@[008:010) [use-resource-id-functions (Warning)] If property "id" represents a resource ID, it must use a symbolic resource reference, be a parameter or start with one of these functions: extensionResourceId, guid, if, reference, resourceId, subscription, subscriptionResourceId, tenantResourceId. (CodeDescription: bicep core(https://aka.ms/bicep/linter/use-resource-id-functions)) |id|
         state: [for (lol,k) in []: 4]
 //@[016:019) [BCP142 (Error)] Property value for-expressions cannot be nested. (CodeDescription: none) |for|
       }]
@@ -1720,6 +1722,7 @@ resource propertyLoopsCannotNest2 'Microsoft.Storage/storageAccounts@2019-06-01'
       virtualNetworkRules: [for rule in []: {
         // #completionTest(15,31) -> symbolsPlusRule
         id: '${account.name}-${account.location}'
+//@[008:010) [use-resource-id-functions (Warning)] If property "id" represents a resource ID, it must use a symbolic resource reference, be a parameter or start with one of these functions: extensionResourceId, guid, if, reference, resourceId, subscription, subscriptionResourceId, tenantResourceId. (CodeDescription: bicep core(https://aka.ms/bicep/linter/use-resource-id-functions)) |id|
         state: [for state in []: {
 //@[016:019) [BCP142 (Error)] Property value for-expressions cannot be nested. (CodeDescription: none) |for|
           // #completionTest(38) -> empty #completionTest(16) -> symbolsPlusAccountRuleState
@@ -1745,6 +1748,7 @@ resource stuffs 'Microsoft.Storage/storageAccounts@2019-06-01' = [for account in
       virtualNetworkRules: concat([for lol in []: {
 //@[035:038) [BCP138 (Error)] For-expressions are not supported in this context. For-expressions may be used as values of resource, module, variable, and output declarations, or values of resource and module properties. (CodeDescription: none) |for|
         id: '${account.name}-${account.location}'
+//@[008:010) [use-resource-id-functions (Warning)] If property "id" represents a resource ID, it must use a symbolic resource reference, be a parameter or start with one of these functions: extensionResourceId, guid, if, reference, resourceId, subscription, subscriptionResourceId, tenantResourceId. (CodeDescription: bicep core(https://aka.ms/bicep/linter/use-resource-id-functions)) |id|
       }])
     }
   }
@@ -2128,30 +2132,30 @@ resource issue3000LogicApp1 'Microsoft.Logic/workflows@2019-05-01' = {
     type: 'SystemAssigned'
   }
   extendedLocation: {}
-//@[002:018) [BCP187 (Warning)] The property "extendedLocation" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |extendedLocation|
+//@[002:018) [BCP187 (Warning)] The property "extendedLocation" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |extendedLocation|
 //@[002:018) [BCP035 (Warning)] The specified "object" declaration is missing the following required properties: "type". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |extendedLocation|
   sku: {}
-//@[002:005) [BCP187 (Warning)] The property "sku" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |sku|
+//@[002:005) [BCP187 (Warning)] The property "sku" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |sku|
   kind: 'V1'
-//@[002:006) [BCP187 (Warning)] The property "kind" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |kind|
+//@[002:006) [BCP187 (Warning)] The property "kind" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |kind|
   managedBy: 'string'
-//@[002:011) [BCP187 (Warning)] The property "managedBy" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
+//@[002:011) [BCP187 (Warning)] The property "managedBy" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
   mangedByExtended: [
 //@[002:018) [BCP037 (Error)] The property "mangedByExtended" is not allowed on objects of type "Microsoft.Logic/workflows". Permissible properties include "dependsOn", "tags". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |mangedByExtended|
    'str1'
    'str2'
   ]
   zones: [
-//@[002:007) [BCP187 (Warning)] The property "zones" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |zones|
+//@[002:007) [BCP187 (Warning)] The property "zones" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |zones|
    'str1'
    'str2'
   ]
   plan: {}
-//@[002:006) [BCP187 (Warning)] The property "plan" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |plan|
+//@[002:006) [BCP187 (Warning)] The property "plan" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |plan|
   eTag: ''
-//@[002:006) [BCP187 (Warning)] The property "eTag" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |eTag|
+//@[002:006) [BCP187 (Warning)] The property "eTag" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |eTag|
   scale: {}  
-//@[002:007) [BCP187 (Warning)] The property "scale" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |scale|
+//@[002:007) [BCP187 (Warning)] The property "scale" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |scale|
 //@[002:007) [BCP035 (Warning)] The specified "object" declaration is missing the following required properties: "capacity". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |scale|
 }
 
@@ -2166,18 +2170,18 @@ resource issue3000LogicApp2 'Microsoft.Logic/workflows@2019-05-01' = {
   identity: 'SystemAssigned'
 //@[012:028) [BCP036 (Warning)] The property "identity" expected a value of type "ManagedServiceIdentity | null" but the provided value is of type "'SystemAssigned'". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |'SystemAssigned'|
   extendedLocation: 'eastus'
-//@[002:018) [BCP187 (Warning)] The property "extendedLocation" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |extendedLocation|
+//@[002:018) [BCP187 (Warning)] The property "extendedLocation" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |extendedLocation|
 //@[020:028) [BCP036 (Warning)] The property "extendedLocation" expected a value of type "extendedLocation" but the provided value is of type "'eastus'". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |'eastus'|
   sku: 'Basic'
-//@[002:005) [BCP187 (Warning)] The property "sku" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |sku|
+//@[002:005) [BCP187 (Warning)] The property "sku" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |sku|
 //@[007:014) [BCP036 (Warning)] The property "sku" expected a value of type "sku" but the provided value is of type "'Basic'". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |'Basic'|
   kind: {
-//@[002:006) [BCP187 (Warning)] The property "kind" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |kind|
+//@[002:006) [BCP187 (Warning)] The property "kind" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |kind|
 //@[008:030) [BCP036 (Warning)] The property "kind" expected a value of type "string" but the provided value is of type "object". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |{\r\n    name: 'V1'\r\n  }|
     name: 'V1'
   }
   managedBy: {}
-//@[002:011) [BCP187 (Warning)] The property "managedBy" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
+//@[002:011) [BCP187 (Warning)] The property "managedBy" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
 //@[013:015) [BCP036 (Warning)] The property "managedBy" expected a value of type "string" but the provided value is of type "object". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |{}|
   mangedByExtended: [
 //@[002:018) [BCP037 (Error)] The property "mangedByExtended" is not allowed on objects of type "Microsoft.Logic/workflows". Permissible properties include "dependsOn", "tags". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |mangedByExtended|
@@ -2185,21 +2189,21 @@ resource issue3000LogicApp2 'Microsoft.Logic/workflows@2019-05-01' = {
    {}
   ]
   zones: [
-//@[002:007) [BCP187 (Warning)] The property "zones" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |zones|
+//@[002:007) [BCP187 (Warning)] The property "zones" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |zones|
    {}
 //@[003:005) [BCP034 (Error)] The enclosing array expected an item of type "string", but the provided item was of type "object". (CodeDescription: none) |{}|
    {}
 //@[003:005) [BCP034 (Error)] The enclosing array expected an item of type "string", but the provided item was of type "object". (CodeDescription: none) |{}|
   ]
   plan: ''
-//@[002:006) [BCP187 (Warning)] The property "plan" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |plan|
+//@[002:006) [BCP187 (Warning)] The property "plan" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |plan|
 //@[008:010) [BCP036 (Warning)] The property "plan" expected a value of type "object" but the provided value is of type "''". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |''|
   eTag: {}
-//@[002:006) [BCP187 (Warning)] The property "eTag" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |eTag|
+//@[002:006) [BCP187 (Warning)] The property "eTag" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |eTag|
 //@[008:010) [BCP036 (Warning)] The property "eTag" expected a value of type "string" but the provided value is of type "object". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |{}|
   scale: [
-//@[002:007) [BCP187 (Warning)] The property "scale" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |scale|
-//@[009:021) [BCP036 (Warning)] The property "scale" expected a value of type "scale" but the provided value is of type "object[]". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |[\r\n  {}\r\n  ]|
+//@[002:007) [BCP187 (Warning)] The property "scale" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |scale|
+//@[009:021) [BCP036 (Warning)] The property "scale" expected a value of type "scale" but the provided value is of type "[object]". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |[\r\n  {}\r\n  ]|
   {}
   ]  
 }
@@ -2215,7 +2219,7 @@ resource issue3000stg 'Microsoft.Storage/storageAccounts@2021-04-01' = {
   madeUpProperty: {}
 //@[002:016) [BCP037 (Error)] The property "madeUpProperty" is not allowed on objects of type "Microsoft.Storage/storageAccounts". Permissible properties include "dependsOn", "extendedLocation", "identity", "properties", "tags". If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |madeUpProperty|
   managedByExtended: []
-//@[002:019) [BCP187 (Warning)] The property "managedByExtended" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedByExtended|
+//@[002:019) [BCP187 (Warning)] The property "managedByExtended" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedByExtended|
 }
 
 var issue3000stgMadeUpProperty = issue3000stg.madeUpProperty
@@ -2223,10 +2227,10 @@ var issue3000stgMadeUpProperty = issue3000stg.madeUpProperty
 //@[046:060) [BCP053 (Error)] The type "Microsoft.Storage/storageAccounts" does not contain property "madeUpProperty". Available properties include "apiVersion", "eTag", "extendedLocation", "id", "identity", "kind", "location", "managedBy", "managedByExtended", "name", "plan", "properties", "scale", "sku", "tags", "type", "zones". (CodeDescription: none) |madeUpProperty|
 var issue3000stgManagedBy = issue3000stg.managedBy
 //@[004:025) [no-unused-vars (Warning)] Variable "issue3000stgManagedBy" is declared but never used. (CodeDescription: bicep core(https://aka.ms/bicep/linter/no-unused-vars)) |issue3000stgManagedBy|
-//@[041:050) [BCP187 (Warning)] The property "managedBy" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
+//@[041:050) [BCP187 (Warning)] The property "managedBy" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedBy|
 var issue3000stgManagedByExtended = issue3000stg.managedByExtended
 //@[004:033) [no-unused-vars (Warning)] Variable "issue3000stgManagedByExtended" is declared but never used. (CodeDescription: bicep core(https://aka.ms/bicep/linter/no-unused-vars)) |issue3000stgManagedByExtended|
-//@[049:066) [BCP187 (Warning)] The property "managedByExtended" does not exist in the resource definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedByExtended|
+//@[049:066) [BCP187 (Warning)] The property "managedByExtended" does not exist in the resource or type definition, although it might still be valid. If this is an inaccuracy in the documentation, please report it to the Bicep Team. (CodeDescription: bicep(https://aka.ms/bicep-type-issues)) |managedByExtended|
 
 param dataCollectionRule object
 param tags object
@@ -2297,5 +2301,14 @@ resource issue4668_mainResource 'Microsoft.Resources/deploymentScripts@2020-10-0
 //@[008:022) [BCP225 (Warning)] The discriminator property "kind" value cannot be determined at compilation time. Type checking for this object is disabled. (CodeDescription: none) |issue4668_kind|
   identity: issue4668_identity
   properties: issue4668_properties
+}
+
+// https://github.com/Azure/bicep/issues/8516
+resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' existing = {
+  resource blobServices 'blobServices' existing = {
+    name: $account
+//@[010:011) [BCP009 (Error)] Expected a literal value, an array, an object, a parenthesized expression, or a function call at this location. (CodeDescription: none) |$|
+//@[010:011) [BCP001 (Error)] The following token is not recognized: "$". (CodeDescription: none) |$|
+  }
 }
 

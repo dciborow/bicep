@@ -623,7 +623,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nflatten(... : array[]): array\n\n```\nTakes an array of arrays, and returns an array of sub-array elements, in the original order. Sub-arrays are only flattened once, not recursively.\n"
+      "value": "```bicep\nflatten(array: array[]): array\n\n```\nTakes an array of arrays, and returns an array of sub-array elements, in the original order. Sub-arrays are only flattened once, not recursively.\n"
     },
     "deprecated": false,
     "preselect": false,
@@ -632,7 +632,11 @@
     "insertTextMode": "adjustIndentation",
     "textEdit": {
       "range": {},
-      "newText": "flatten()$0"
+      "newText": "flatten($0)"
+    },
+    "command": {
+      "title": "signature help",
+      "command": "editor.action.triggerParameterHints"
     }
   },
   {
@@ -920,7 +924,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nlength(arg: array | object | string): int\n\n```\nReturns the number of characters in a string, elements in an array, or root-level properties in an object.\n"
+      "value": "```bicep\nlength(arg: object | string): int\nlength(arg: array): int\n\n```\nReturns the number of characters in a string, elements in an array, or root-level properties in an object.\n"
     },
     "deprecated": false,
     "preselect": false,
@@ -1109,7 +1113,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nmax(... : int): int\nmax(intArray: array): int\n\n```\nReturns the maximum value from an array of integers or a comma-separated list of integers.\n"
+      "value": "```bicep\nmax(... : int): int\nmax(intArray: int[]): int\n\n```\nReturns the maximum value from an array of integers or a comma-separated list of integers.\n"
     },
     "deprecated": false,
     "preselect": false,
@@ -1130,7 +1134,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nmin(... : int): int\nmin(intArray: array): int\n\n```\nReturns the minimum value from an array of integers or a comma-separated list of integers.\n"
+      "value": "```bicep\nmin(... : int): int\nmin(intArray: int[]): int\n\n```\nReturns the minimum value from an array of integers or a comma-separated list of integers.\n"
     },
     "deprecated": false,
     "preselect": false,
@@ -1780,7 +1784,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nsplit(inputString: string, delimiter: array | string): array\n\n```\nReturns an array of strings that contains the substrings of the input string that are delimited by the specified delimiters.\n"
+      "value": "```bicep\nsplit(inputString: string, delimiter: array | string): string[]\n\n```\nReturns an array of strings that contains the substrings of the input string that are delimited by the specified delimiters.\n"
     },
     "deprecated": false,
     "preselect": false,
@@ -2000,6 +2004,27 @@
     }
   },
   {
+    "label": "toObject",
+    "kind": "function",
+    "documentation": {
+      "kind": "markdown",
+      "value": "```bicep\ntoObject(array: array, keyPredicate: any => string, [valuePredicate: any => any]): object\n\n```\nConverts an array to an object with a custom key function and optional custom value function.\n"
+    },
+    "deprecated": false,
+    "preselect": false,
+    "sortText": "3_toObject",
+    "insertTextFormat": "snippet",
+    "insertTextMode": "adjustIndentation",
+    "textEdit": {
+      "range": {},
+      "newText": "toObject($0)"
+    },
+    "command": {
+      "title": "signature help",
+      "command": "editor.action.triggerParameterHints"
+    }
+  },
+  {
     "label": "toUpper",
     "kind": "function",
     "documentation": {
@@ -2123,7 +2148,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\nuniqueString(... : string): string\n\n```\nCreates a deterministic hash string based on the values provided as parameters.\n"
+      "value": "```bicep\nuniqueString(... : string): string\n\n```\nCreates a deterministic hash string based on the values provided as parameters. The returned value is 13 characters long.\n"
     },
     "deprecated": false,
     "preselect": false,

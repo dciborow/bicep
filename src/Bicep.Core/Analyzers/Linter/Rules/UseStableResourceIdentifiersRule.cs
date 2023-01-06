@@ -21,7 +21,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
             docUri: new Uri($"https://aka.ms/bicep/linter/{Code}"))
         { }
 
-        public override IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model)
+        public override IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model, DiagnosticLevel diagnosticLevel)
         {
             foreach (var resource in model.DeclaredResources)
             {
@@ -33,7 +33,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                         identifierSyntax.Accept(visitor);
                         foreach (var (path, functionName) in visitor.PathsToNonDeterministicFunctionsUsed)
                         {
-                            yield return CreateDiagnosticForSpan(identifierSyntax.Span, resource.Symbol.Name, identifier, functionName, $"{resource.Symbol.Name}.{identifier} -> {path}");
+                            yield return CreateDiagnosticForSpan(diagnosticLevel, identifierSyntax.Span, resource.Symbol.Name, identifier, functionName, $"{resource.Symbol.Name}.{identifier} -> {path}");
                         }
                     }
                 }
@@ -43,9 +43,9 @@ namespace Bicep.Core.Analyzers.Linter.Rules
         public override string FormatMessage(params object[] values)
             => string.Format(CoreResources.UseStableResourceIdentifiersMessageFormat, values);
 
-        private class Visitor : SyntaxVisitor
+        private class Visitor : AstVisitor
         {
-            private static IReadOnlySet<string> NonDeterministicFunctionNames = new HashSet<string>
+            private static readonly IReadOnlySet<string> NonDeterministicFunctionNames = new HashSet<string>
             {
                 "newGuid",
                 "utcNow",

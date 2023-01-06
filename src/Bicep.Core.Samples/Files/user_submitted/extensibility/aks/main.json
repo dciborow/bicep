@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "15309690455475659537"
+      "templateHash": "18070324715020214399"
     }
   },
   "parameters": {
@@ -60,11 +60,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "14191993925451111251"
+              "templateHash": "14213653433535193735"
             }
           },
           "parameters": {
@@ -160,16 +160,16 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "5983176937371621250"
+              "templateHash": "11915896620322564367"
             }
           },
           "parameters": {
             "kubeConfig": {
-              "type": "secureString"
+              "type": "securestring"
             }
           },
           "variables": {
@@ -179,9 +179,9 @@
             "frontPort": 80
           },
           "imports": {
-            "k8s": {
+            "kubernetes": {
               "provider": "Kubernetes",
-              "version": "1.0",
+              "version": "1.0.0",
               "config": {
                 "kubeConfig": "[parameters('kubeConfig')]",
                 "namespace": "default"
@@ -190,7 +190,7 @@
           },
           "resources": {
             "backDeploy": {
-              "import": "k8s",
+              "import": "kubernetes",
               "type": "apps/Deployment@v1",
               "properties": {
                 "metadata": {
@@ -247,7 +247,7 @@
               }
             },
             "backSvc": {
-              "import": "k8s",
+              "import": "kubernetes",
               "type": "core/Service@v1",
               "properties": {
                 "metadata": {
@@ -269,7 +269,7 @@
               }
             },
             "frontDeploy": {
-              "import": "k8s",
+              "import": "kubernetes",
               "type": "apps/Deployment@v1",
               "properties": {
                 "metadata": {
@@ -328,7 +328,7 @@
               }
             },
             "frontSvc": {
-              "import": "k8s",
+              "import": "kubernetes",
               "type": "core/Service@v1",
               "properties": {
                 "metadata": {

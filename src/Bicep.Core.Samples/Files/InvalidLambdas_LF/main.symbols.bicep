@@ -27,8 +27,8 @@ var filter5 = filter(range(0, 10), i => i)
 //@[35:36) Local i. Type: int. Declaration start char: 35, length: 1
 //@[04:11) Variable filter5. Type: error. Declaration start char: 0, length: 42
 var filter6 = filter([true, 'hello!'], i => i)
-//@[39:40) Local i. Type: any. Declaration start char: 39, length: 1
-//@[04:11) Variable filter6. Type: array. Declaration start char: 0, length: 46
+//@[39:40) Local i. Type: 'hello!' | true. Declaration start char: 39, length: 1
+//@[04:11) Variable filter6. Type: error. Declaration start char: 0, length: 46
 
 var sort1 = sort('abc')
 //@[04:09) Variable sort1. Type: error. Declaration start char: 0, length: 23
@@ -58,6 +58,24 @@ var reduce5 = reduce(range(0, 10), 0, i => i)
 //@[38:39) Local i. Type: int. Declaration start char: 38, length: 1
 //@[04:11) Variable reduce5. Type: error. Declaration start char: 0, length: 45
 
+var toObject1 = toObject('abc')
+//@[04:13) Variable toObject1. Type: error. Declaration start char: 0, length: 31
+var toObject2 = toObject('abc', 'def')
+//@[04:13) Variable toObject2. Type: error. Declaration start char: 0, length: 38
+var toObject3 = toObject(range(0, 10), 'def')
+//@[04:13) Variable toObject3. Type: error. Declaration start char: 0, length: 45
+var toObject4 = toObject(range(0, 10), () => null)
+//@[04:13) Variable toObject4. Type: error. Declaration start char: 0, length: 50
+var toObject5 = toObject(range(0, 10), i => i)
+//@[39:40) Local i. Type: int. Declaration start char: 39, length: 1
+//@[04:13) Variable toObject5. Type: error. Declaration start char: 0, length: 46
+var toObject6 = toObject(range(0, 10), i => '${i}', 'def')
+//@[39:40) Local i. Type: int. Declaration start char: 39, length: 1
+//@[04:13) Variable toObject6. Type: error. Declaration start char: 0, length: 58
+var toObject7 = toObject(range(0, 10), i => '${i}', () => null)
+//@[39:40) Local i. Type: int. Declaration start char: 39, length: 1
+//@[04:13) Variable toObject7. Type: error. Declaration start char: 0, length: 63
+
 var ternary = map([123], true ? i => '${i}' : i => 'hello!')
 //@[32:33) Local i. Type: any. Declaration start char: 32, length: 1
 //@[46:47) Local i. Type: any. Declaration start char: 46, length: 1
@@ -65,7 +83,7 @@ var ternary = map([123], true ? i => '${i}' : i => 'hello!')
 
 var outsideArgs = i => 123
 //@[18:19) Local i. Type: any. Declaration start char: 18, length: 1
-//@[04:15) Variable outsideArgs. Type: any => int. Declaration start char: 0, length: 26
+//@[04:15) Variable outsideArgs. Type: any => 123. Declaration start char: 0, length: 26
 var outsideArgs2 = (x, y, z) => '${x}${y}${z}'
 //@[20:21) Local x. Type: any. Declaration start char: 20, length: 1
 //@[23:24) Local y. Type: any. Declaration start char: 23, length: 1
@@ -83,7 +101,7 @@ var inObject = {
 }
 
 var inArray = [
-//@[04:11) Variable inArray. Type: array. Declaration start char: 0, length: 35
+//@[04:11) Variable inArray. Type: [any => any, any => any]. Declaration start char: 0, length: 35
   i => i
 //@[02:03) Local i. Type: any. Declaration start char: 2, length: 1
   j => j

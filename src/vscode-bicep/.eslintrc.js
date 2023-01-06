@@ -7,6 +7,7 @@ module.exports = {
     ecmaVersion: 2020,
     sourceType: "module",
     ecmaFeature: { jsx: true },
+    project: './tsconfig.json',
   },
   plugins: ["header"],
   settings: {
@@ -15,7 +16,7 @@ module.exports = {
     },
   },
   extends: ["eslint:recommended", "plugin:prettier/recommended"],
-  ignorePatterns: ["/out/**/*"],
+  ignorePatterns: ["/out/**/*", "/enableParams.js"],
   rules: {
     "header/header": [
       2,

@@ -45,6 +45,7 @@ const directive = bounded(`[_a-zA-Z-0-9]+`);
 const ws = `(?:[ \\t\\r\\n]|\\/\\*(?:\\*(?!\\/)|[^*])*\\*\\/)*`;
 
 const keywords = [
+  'metadata',
   'targetScope',
   'resource',
   'module',
@@ -56,7 +57,9 @@ const keywords = [
   'if',
   'existing',
   'import',
-  'from',
+  'as',
+  'type',
+  'with',
 ];
 
 const keywordExpression: MatchRule = {

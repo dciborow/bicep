@@ -6,7 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Bicep.Core.Analyzers.Linter;
+using Bicep.Core;
+using Bicep.Core.Analyzers.Interfaces;
 using Bicep.Core.Analyzers.Linter.ApiVersions;
 using Bicep.Core.Configuration;
 using Bicep.Core.Diagnostics;
@@ -33,28 +34,16 @@ namespace Bicep.LanguageServer.Handlers
     public class BicepGenerateParamsCommandHandler : ExecuteTypedResponseCommandHandlerBase<string, string>
     {
         private readonly ICompilationManager compilationManager;
-        private readonly EmitterSettings emitterSettings;
-        private readonly IFeatureProvider features;
-        private readonly IFileResolver fileResolver;
-        private readonly IModuleDispatcher moduleDispatcher;
-        private readonly INamespaceProvider namespaceProvider;
-        private readonly IConfigurationManager configurationManager;
-        private readonly ApiVersionProvider apiVersionProvider;
+        private readonly BicepCompiler bicepCompiler;
 
-        public BicepGenerateParamsCommandHandler(ICompilationManager compilationManager, ISerializer serializer, IFeatureProvider features, EmitterSettings emitterSettings, INamespaceProvider namespaceProvider, IFileResolver fileResolver, IModuleDispatcher moduleDispatcher, IConfigurationManager configurationManager, ApiVersionProvider apiVersionProvider)
+        public BicepGenerateParamsCommandHandler(ICompilationManager compilationManager, BicepCompiler bicepCompiler, ISerializer serializer)
             : base(LangServerConstants.GenerateParamsCommand, serializer)
         {
             this.compilationManager = compilationManager;
-            this.emitterSettings = emitterSettings;
-            this.features = features;
-            this.namespaceProvider = namespaceProvider;
-            this.fileResolver = fileResolver;
-            this.moduleDispatcher = moduleDispatcher;
-            this.configurationManager = configurationManager;
-            this.apiVersionProvider = apiVersionProvider;
+            this.bicepCompiler = bicepCompiler;
         }
 
-        public override Task<string> Handle(string bicepFilePath, CancellationToken cancellationToken)
+        public override async Task<string> Handle(string bicepFilePath, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(bicepFilePath))
             {
@@ -62,12 +51,12 @@ namespace Bicep.LanguageServer.Handlers
             }
 
             DocumentUri documentUri = DocumentUri.FromFileSystemPath(bicepFilePath);
-            string output = GenerateCompiledParametersFileAndReturnOutputMessage(bicepFilePath, documentUri);
+            string output = await GenerateCompiledParametersFileAndReturnOutputMessage(bicepFilePath, documentUri);
 
-            return Task.FromResult(output);
+            return output;
         }
 
-        private string GenerateCompiledParametersFileAndReturnOutputMessage(string bicepFilePath, DocumentUri documentUri)
+        private async Task<string> GenerateCompiledParametersFileAndReturnOutputMessage(string bicepFilePath, DocumentUri documentUri)
         {
             string compiledFilePath = PathHelper.ResolveParametersFileOutputPath(bicepFilePath);
             string compiledFile = Path.GetFileName(compiledFilePath);
@@ -79,31 +68,8 @@ namespace Bicep.LanguageServer.Handlers
                 return "Generating parameters file failed. The file \"" + compiledFile + "\" already exists but does not contain the schema for a parameters file. If overwriting the file is intended, delete it manually and retry the Generate Parameters command.";
             }
 
+            var compilation = await new CompilationHelper(bicepCompiler, compilationManager).GetCompilation(documentUri);
             var fileUri = documentUri.ToUri();
-            RootConfiguration? configuration = null;
-
-            try
-            {
-                configuration = this.configurationManager.GetConfiguration(fileUri);
-            }
-            catch (ConfigurationException exception)
-            {
-                // Fail the generate params if there's configuration errors.
-                return exception.Message;
-            }
-
-            CompilationContext? context = compilationManager.GetCompilation(fileUri);
-            Compilation compilation;
-
-            if (context is null)
-            {
-                SourceFileGrouping sourceFileGrouping = SourceFileGroupingBuilder.Build(this.fileResolver, this.moduleDispatcher, new Workspace(), fileUri, configuration);
-                compilation = new Compilation(features, namespaceProvider, sourceFileGrouping, configuration, apiVersionProvider, new LinterAnalyzer(configuration));
-            }
-            else
-            {
-                compilation = context.Compilation;
-            }
 
             var diagnosticsByFile = compilation.GetAllDiagnosticsByBicepFile()
                 .FirstOrDefault(x => x.Key.FileUri == fileUri);
@@ -115,7 +81,8 @@ namespace Bicep.LanguageServer.Handlers
 
             var existingContent = File.Exists(compiledFilePath) ? File.ReadAllText(compiledFilePath) : string.Empty;
 
-            var emitter = new TemplateEmitter(compilation.GetEntrypointSemanticModel(), emitterSettings);
+            var model = compilation.GetEntrypointSemanticModel();
+            var emitter = new TemplateEmitter(model);
             using var fileStream = new FileStream(compiledFilePath, FileMode.Create, FileAccess.Write);
             var result = emitter.EmitParametersFile(fileStream, existingContent);
 

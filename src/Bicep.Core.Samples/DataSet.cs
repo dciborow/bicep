@@ -28,7 +28,6 @@ namespace Bicep.Core.Samples
         public const string TestFileMainSourceMap = "main.sourcemap.bicep";
         public const string TestFileMainCompiled = "main.json";
         public const string TestFileMainCompiledWithSymbolicNames = "main.symbolicnames.json";
-        public const string TestFileMainCompiledSourceMap = "main.sourcemap.json";
         public const string TestCompletionsDirectory = "Completions";
         public const string TestCompletionsPrefix = TestCompletionsDirectory + "/";
         public const string TestFunctionsDirectory = "Functions";
@@ -54,8 +53,6 @@ namespace Bicep.Core.Samples
 
         private readonly Lazy<string>? lazyCompiledWithSymbolicNames;
 
-        private readonly Lazy<string>? lazyCompiledSourceMap;
-
         private readonly Lazy<string> lazySyntax;
 
         private readonly Lazy<string> lazySymbols;
@@ -79,7 +76,6 @@ namespace Bicep.Core.Samples
             this.lazyDiagnostics = this.CreateRequired(TestFileMainDiagnostics);
             this.lazyCompiled = this.CreateIffValid(TestFileMainCompiled);
             this.lazyCompiledWithSymbolicNames = this.CreateIffValid(TestFileMainCompiledWithSymbolicNames);
-            this.lazyCompiledSourceMap = this.CreateIffValid(TestFileMainCompiledSourceMap);
             this.lazySymbols = this.CreateRequired(TestFileMainSymbols);
             this.lazySyntax = this.CreateRequired(TestFileMainSyntax);
             this.lazyFormatted = this.CreateRequired(TestFileMainFormatted);
@@ -102,8 +98,6 @@ namespace Bicep.Core.Samples
         public string? Compiled => this.lazyCompiled?.Value;
 
         public string? CompiledWithSymbolicNames => this.lazyCompiledWithSymbolicNames?.Value;
-
-        public string? CompiledSourceMap => this.lazyCompiledSourceMap?.Value;
 
         public string Symbols => this.lazySymbols.Value;
 
@@ -147,31 +141,10 @@ namespace Bicep.Core.Samples
         public string GetStreamPrefix() => $"{Prefix}{this.Name}";
 
         public static string ReadFile(string streamName)
-        {
-            using Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(streamName);
-            stream.Should().NotBeNull($"because stream '{streamName}' should exist");
-
-            using var reader = new StreamReader(stream ?? Stream.Null);
-
-            return reader.ReadToEnd();
-        }
+            => FileHelper.ReadEmbeddedFile(Assembly.GetExecutingAssembly(), streamName);
 
         public static ImmutableDictionary<string, string> ReadDataSetDictionary(string streamNamePrefix)
-        {
-            var matches = Assembly.GetExecutingAssembly()
-                .GetManifestResourceNames()
-                .Where(streamName => streamName.StartsWith(streamNamePrefix, StringComparison.Ordinal))
-                .Select(streamName => (streamName, key: streamName.Substring(streamNamePrefix.Length)));
-
-            var builder = ImmutableDictionary.CreateBuilder<string, string>();
-
-            foreach (var (streamName, key) in matches)
-            {
-                builder.Add(key, ReadFile(streamName));
-            }
-
-            return builder.ToImmutable();
-        }
+            => FileHelper.BuildEmbeddedFileDictionary(Assembly.GetExecutingAssembly(), streamNamePrefix);
 
         public static string AddDiagsToSourceText<T>(DataSet dataSet, IEnumerable<T> items, Func<T, TextSpan> getSpanFunc, Func<T, string> diagsFunc)
             => OutputHelper.AddDiagsToSourceText<T>(dataSet.Bicep, dataSet.HasCrLfNewlines() ? "\r\n" : "\n", items, getSpanFunc, diagsFunc);

@@ -25,6 +25,8 @@ namespace Bicep.Core.Samples
 
         public static DataSet InvalidExpressions_LF => CreateDataSet();
 
+        public static DataSet InvalidMetadata_CRLF => CreateDataSet();
+
         public static DataSet InvalidOutputs_CRLF => CreateDataSet();
 
         public static DataSet InvalidParameters_LF => CreateDataSet();
@@ -32,6 +34,8 @@ namespace Bicep.Core.Samples
         public static DataSet InvalidResources_CRLF => CreateDataSet();
 
         public static DataSet InvalidTargetScopes_LF => CreateDataSet();
+
+        public static DataSet InvalidTypeDeclarations_LF => CreateDataSet();
 
         public static DataSet InvalidVariables_LF => CreateDataSet();
 
@@ -42,6 +46,8 @@ namespace Bicep.Core.Samples
         public static DataSet LoopsIndexed_LF => CreateDataSet();
 
         public static DataSet Outputs_CRLF => CreateDataSet();
+
+        public static DataSet Metadata_CRLF => CreateDataSet();
 
         public static DataSet NestedResources_LF => CreateDataSet();
 
@@ -58,6 +64,8 @@ namespace Bicep.Core.Samples
         public static DataSet ResourcesManagementGroup_CRLF => CreateDataSet();
 
         public static DataSet ResourcesTenant_CRLF => CreateDataSet();
+
+        public static DataSet TypeDeclarations_LF => CreateDataSet();
 
         public static DataSet Unicode_LF => CreateDataSet();
 
@@ -115,4 +123,3 @@ namespace Bicep.Core.Samples
         private static DataSet CreateDataSet([CallerMemberName] string? dataSetName = null) => new DataSet(dataSetName!);
     }
 }
-

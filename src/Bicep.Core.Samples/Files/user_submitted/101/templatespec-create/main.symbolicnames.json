@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "9601535715397097182"
+      "templateHash": "13116823524345776818"
     }
   },
   "parameters": {
@@ -38,7 +38,7 @@
     "templateSpecVersion": {
       "type": "Microsoft.Resources/templateSpecs/versions",
       "apiVersion": "2019-06-01-preview",
-      "name": "[format('{0}/{1}', resourceInfo('templateSpec').name, parameters('templateSpecVersionName'))]",
+      "name": "[format('{0}/{1}', parameters('templateSpecName'), parameters('templateSpecVersionName'))]",
       "location": "[parameters('location')]",
       "properties": {
         "template": {

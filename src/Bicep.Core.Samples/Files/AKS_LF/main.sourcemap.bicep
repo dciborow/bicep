@@ -1,88 +1,127 @@
 // mandatory params
 param dnsPrefix string
-//@[11:13]     "dnsPrefix": {
+//@    "dnsPrefix": {
+//@      "type": "string"
+//@    },
 param linuxAdminUsername string
-//@[14:16]     "linuxAdminUsername": {
+//@    "linuxAdminUsername": {
+//@      "type": "string"
+//@    },
 param sshRSAPublicKey string
-//@[17:19]     "sshRSAPublicKey": {
+//@    "sshRSAPublicKey": {
+//@      "type": "string"
+//@    },
 
 @secure()
 param servcePrincipalClientId string
-//@[20:22]     "servcePrincipalClientId": {
+//@    "servcePrincipalClientId": {
+//@      "type": "securestring"
+//@    },
 
 @secure()
 param servicePrincipalClientSecret string
-//@[23:25]     "servicePrincipalClientSecret": {
+//@    "servicePrincipalClientSecret": {
+//@      "type": "securestring"
+//@    },
 
 // optional params
 param clusterName string = 'aks101cluster'
-//@[26:29]     "clusterName": {
+//@    "clusterName": {
+//@      "type": "string",
+//@      "defaultValue": "aks101cluster"
+//@    },
 param location string = resourceGroup().location
-//@[30:33]     "location": {
+//@    "location": {
+//@      "type": "string",
+//@      "defaultValue": "[resourceGroup().location]"
+//@    },
 
 @minValue(0)
-//@[38:38]       "minValue": 0
+//@      "minValue": 0
 @maxValue(1023)
-//@[37:37]       "maxValue": 1023,
+//@      "maxValue": 1023,
 param osDiskSizeGB int = 0
-//@[34:39]     "osDiskSizeGB": {
+//@    "osDiskSizeGB": {
+//@      "type": "int",
+//@      "defaultValue": 0,
+//@    },
 
 @minValue(1)
-//@[44:44]       "minValue": 1
+//@      "minValue": 1
 @maxValue(50)
-//@[43:43]       "maxValue": 50,
+//@      "maxValue": 50,
 param agentCount int = 3
-//@[40:45]     "agentCount": {
+//@    "agentCount": {
+//@      "type": "int",
+//@      "defaultValue": 3,
+//@    },
 
 param agentVMSize string = 'Standard_DS2_v2'
-//@[46:49]     "agentVMSize": {
+//@    "agentVMSize": {
+//@      "type": "string",
+//@      "defaultValue": "Standard_DS2_v2"
+//@    }
 // osType was a defaultValue with only one allowedValue, which seems strange?, could be a good TTK test
 
 resource aks 'Microsoft.ContainerService/managedClusters@2020-03-01' = {
-//@[52:83]       "type": "Microsoft.ContainerService/managedClusters",
+//@    {
+//@      "type": "Microsoft.ContainerService/managedClusters",
+//@      "apiVersion": "2020-03-01",
+//@      "name": "[parameters('clusterName')]",
+//@    }
     name: clusterName
     location: location
-//@[56:56]       "location": "[parameters('location')]",
+//@      "location": "[parameters('location')]",
     properties: {
-//@[57:82]       "properties": {
+//@      "properties": {
+//@      }
         dnsPrefix: dnsPrefix
-//@[58:58]         "dnsPrefix": "[parameters('dnsPrefix')]",
+//@        "dnsPrefix": "[parameters('dnsPrefix')]",
         agentPoolProfiles: [
-//@[59:67]         "agentPoolProfiles": [
+//@        "agentPoolProfiles": [
+//@        ],
             {
+//@          {
+//@          }
                 name: 'agentpool'
-//@[61:61]             "name": "agentpool",
+//@            "name": "agentpool",
                 osDiskSizeGB: osDiskSizeGB
-//@[62:62]             "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
+//@            "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
                 vmSize: agentVMSize
-//@[63:63]             "vmSize": "[parameters('agentVMSize')]",
+//@            "vmSize": "[parameters('agentVMSize')]",
                 osType: 'Linux'
-//@[64:64]             "osType": "Linux",
+//@            "osType": "Linux",
                 storageProfile: 'ManagedDisks'
-//@[65:65]             "storageProfile": "ManagedDisks"
+//@            "storageProfile": "ManagedDisks"
             }
         ]
         linuxProfile: {
-//@[68:77]         "linuxProfile": {
+//@        "linuxProfile": {
+//@        },
             adminUsername: linuxAdminUsername
-//@[69:69]           "adminUsername": "[parameters('linuxAdminUsername')]",
+//@          "adminUsername": "[parameters('linuxAdminUsername')]",
             ssh: {
-//@[70:76]           "ssh": {
+//@          "ssh": {
+//@          }
                 publicKeys: [
-//@[71:75]             "publicKeys": [
+//@            "publicKeys": [
+//@            ]
                     {
+//@              {
+//@              }
                         keyData: sshRSAPublicKey
-//@[73:73]                 "keyData": "[parameters('sshRSAPublicKey')]"
+//@                "keyData": "[parameters('sshRSAPublicKey')]"
                     }
                 ]
             }
         }
         servicePrincipalProfile: {
-//@[78:81]         "servicePrincipalProfile": {
+//@        "servicePrincipalProfile": {
+//@        }
             clientId: servcePrincipalClientId
-//@[79:79]           "clientId": "[parameters('servcePrincipalClientId')]",
+//@          "clientId": "[parameters('servcePrincipalClientId')]",
             secret: servicePrincipalClientSecret
-//@[80:80]           "secret": "[parameters('servicePrincipalClientSecret')]"
+//@          "secret": "[parameters('servicePrincipalClientSecret')]"
         }
     }
 }

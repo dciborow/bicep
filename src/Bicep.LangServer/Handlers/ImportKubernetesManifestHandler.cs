@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Bicep.Core;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Parsing;
 using Bicep.Core.PrettyPrint;
@@ -18,6 +19,7 @@ using Bicep.LanguageServer.Telemetry;
 using MediatR;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using SharpYaml;
 using SharpYaml.Serialization;
 
 namespace Bicep.LanguageServer.Handlers
@@ -34,7 +36,7 @@ namespace Bicep.LanguageServer.Handlers
 
         public ImportKubernetesManifestHandler(ILanguageServerFacade server, ITelemetryProvider telemetryProvider)
         {
-            this.helper = new TelemetryAndErrorHandlingHelper<ImportKubernetesManifestResponse>(server.Window, telemetryProvider, new(null));
+            this.helper = new TelemetryAndErrorHandlingHelper<ImportKubernetesManifestResponse>(server.Window, telemetryProvider);
         }
 
         public Task<ImportKubernetesManifestResponse> Handle(ImportKubernetesManifestRequest request, CancellationToken cancellationToken)
@@ -42,14 +44,14 @@ namespace Bicep.LanguageServer.Handlers
                 var bicepFilePath = Path.ChangeExtension(request.ManifestFilePath, ".bicep");
                 var manifestContents = await File.ReadAllTextAsync(request.ManifestFilePath);
 
-                var bicepContents = Decompile(manifestContents);
+                var bicepContents = Decompile(manifestContents, this.helper);
 
                 await File.WriteAllTextAsync(bicepFilePath, bicepContents, cancellationToken);
 
                 return new(new(bicepFilePath), BicepTelemetryEvent.ImportKubernetesManifestSuccess());
             });
 
-        public static string Decompile(string manifestContents)
+        public static string Decompile(string manifestContents, TelemetryAndErrorHandlingHelper<ImportKubernetesManifestResponse> telemetryHelper)
         {
             var declarations = new List<SyntaxBase>();
 
@@ -60,21 +62,21 @@ namespace Bicep.LanguageServer.Handlers
                 },
                 SyntaxFactory.CreateToken(Core.Parsing.TokenType.Identifier, "param"),
                 SyntaxFactory.CreateIdentifier("kubeConfig"),
-                new SimpleTypeSyntax(SyntaxFactory.CreateToken(TokenType.Identifier, "string")),
+                new VariableAccessSyntax(new(SyntaxFactory.CreateToken(TokenType.Identifier, "string"))),
                 null));
 
             declarations.Add(new ImportDeclarationSyntax(
                 Enumerable.Empty<SyntaxBase>(),
-                SyntaxFactory.CreateToken(Core.Parsing.TokenType.Identifier, "import"),
-                SyntaxFactory.CreateIdentifier("kubernetes"),
-                SyntaxFactory.CreateToken(Core.Parsing.TokenType.Identifier, "as"),
-                SyntaxFactory.CreateIdentifier("k8s"),
-                SyntaxFactory.CreateObject(new [] {
-                    SyntaxFactory.CreateObjectProperty("namespace", SyntaxFactory.CreateStringLiteral("default")),
-                    SyntaxFactory.CreateObjectProperty("kubeConfig", SyntaxFactory.CreateIdentifier("kubeConfig")),
-                })
-            ));
-
+                SyntaxFactory.CreateToken(TokenType.Identifier, "import"),
+                SyntaxFactory.CreateStringLiteral("kubernetes@1.0.0"),
+                new ImportWithClauseSyntax(
+                    SyntaxFactory.CreateToken(TokenType.WithKeyword, LanguageConstants.WithKeyword), 
+                    SyntaxFactory.CreateObject(new []
+                    {
+                        SyntaxFactory.CreateObjectProperty("namespace", SyntaxFactory.CreateStringLiteral("default")),
+                        SyntaxFactory.CreateObjectProperty("kubeConfig", SyntaxFactory.CreateIdentifier("kubeConfig"))
+                    })),
+                asClause: SyntaxFactory.EmptySkippedTrivia));
 
             try
             {
@@ -84,7 +86,7 @@ namespace Bicep.LanguageServer.Handlers
 
                 foreach (var yamlDocument in yamlStream.Documents)
                 {
-                    var syntax = ProcessResourceYaml(yamlDocument);
+                    var syntax = ProcessResourceYaml(yamlDocument, telemetryHelper);
 
                     declarations.Add(syntax);
                 }
@@ -92,10 +94,10 @@ namespace Bicep.LanguageServer.Handlers
             catch (Exception ex)
             {
                 Trace.TraceError("Exception deserializing manifest: {0}", ex);
-
-                throw new TelemetryAndErrorHandlingException(
-                    $"Failed to deserialize kubernetes manifest YAML.",
-                    BicepTelemetryEvent.ImportKubernetesManifestFailure("DeserializeYamlFailed"));
+                throw telemetryHelper.CreateException(
+                    $"Failed to deserialize kubernetes manifest YAML: {ex.Message}",
+                    BicepTelemetryEvent.ImportKubernetesManifestFailure("DeserializeYamlFailed"),
+                    new ImportKubernetesManifestResponse(null));
             }
 
             var program = new ProgramSyntax(
@@ -106,22 +108,29 @@ namespace Bicep.LanguageServer.Handlers
             return PrettyPrinter.PrintProgram(program, new PrettyPrintOptions(NewlineOption.LF, IndentKindOption.Space, 2, false));
         }
 
-        private static ResourceDeclarationSyntax ProcessResourceYaml(YamlDocument yamlDocument)
+        private static ResourceDeclarationSyntax ProcessResourceYaml(YamlDocument yamlDocument, TelemetryAndErrorHandlingHelper<ImportKubernetesManifestResponse> telemetryHelper)
         {
             if (yamlDocument.RootNode is not YamlMappingNode rootNode)
             {
-                throw new InvalidOperationException($"Unsupported type {yamlDocument.RootNode.GetType()}");
+                throw new YamlException(yamlDocument.RootNode.Start, yamlDocument.RootNode.End, $"Expected dictionary node.");
             }
 
-            var kindNodeKvp = rootNode.Children.FirstOrDefault(x => (x.Key as YamlScalarNode)?.Value == "kind");
-            var apiVersionNodeKvp = rootNode.Children.FirstOrDefault(x => (x.Key as YamlScalarNode)?.Value == "apiVersion");
+            var kindKey = rootNode.Children.Keys.FirstOrDefault(x => x is YamlScalarNode scalar && scalar.Value == "kind");
+            var apiVersionKey = rootNode.Children.Keys.FirstOrDefault(x => x is YamlScalarNode scalar && scalar.Value == "apiVersion");
 
-            if (kindNodeKvp.Value is not YamlScalarNode kindNode ||
-                apiVersionNodeKvp.Value is not YamlScalarNode apiVersionNode)
+            if (kindKey is null || apiVersionKey is null)
             {
-                throw new TelemetryAndErrorHandlingException(
-                    "Failed to process kubernetes manifest. Unable to find 'kind' or 'apiVersion' for resource declaration.",
-                    BicepTelemetryEvent.ImportKubernetesManifestFailure("FindKindAndApiVersionFailed"));
+                throw new YamlException(rootNode.Start, rootNode.End, $"Failed to find 'kind' and 'apiVersion' keys for resource declaration.");
+            }
+
+            if (rootNode.Children[kindKey] is not YamlScalarNode kindNode)
+            {
+                throw new YamlException(kindKey.Start, kindKey.End, "Unable to process 'kind' for resource declaration.");
+            }
+
+            if (rootNode.Children[apiVersionKey] is not YamlScalarNode apiVersionNode)
+            {
+                throw new YamlException(apiVersionKey.Start, apiVersionKey.End, "Unable to process 'apiVersion' for resource declaration.");
             }
 
             var (type, apiVersion) = apiVersionNode.Value.LastIndexOf('/') switch {
@@ -129,7 +138,7 @@ namespace Bicep.LanguageServer.Handlers
                 int x => ($"{apiVersionNode.Value.Substring(0, x)}/{kindNode.Value}", apiVersionNode.Value.Substring(x + 1)),
             };
 
-            var filteredChildren = rootNode.Children.Where(x => x.Key != kindNodeKvp.Key && x.Key != apiVersionNodeKvp.Key);
+            var filteredChildren = rootNode.Children.Where(x => x.Key != kindKey && x.Key != apiVersionKey);
 
             var resourceBody = ConvertObjectChildren(filteredChildren);
             var symbolName = GetResourceSymbolName(type, resourceBody);

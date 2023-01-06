@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "7148125094333647843"
+      "templateHash": "13718786306586873349"
     }
   },
   "parameters": {
@@ -51,7 +51,7 @@
     "subNet": {
       "type": "Microsoft.Network/virtualNetworks/subnets",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/default', resourceInfo('virtualNetwork').name)]",
+      "name": "[format('{0}/default', parameters('virtualNetworkName'))]",
       "properties": {
         "addressPrefix": "172.20.0.0/24",
         "privateEndpointNetworkPolicies": "Disabled",
@@ -111,13 +111,13 @@
       "location": "[parameters('location')]",
       "properties": {
         "subnet": {
-          "id": "[resourceInfo('subNet').id]"
+          "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(format('{0}/default', parameters('virtualNetworkName')), '/')[0], split(format('{0}/default', parameters('virtualNetworkName')), '/')[1])]"
         },
         "privateLinkServiceConnections": [
           {
             "name": "MyConnection",
             "properties": {
-              "privateLinkServiceId": "[resourceInfo('databaseAccount').id]",
+              "privateLinkServiceId": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]",
               "groupIds": [
                 "Sql"
               ]

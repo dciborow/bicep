@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "8399442737704601868"
+      "templateHash": "4655166543508546916"
     }
   },
   "parameters": {
@@ -220,8 +220,8 @@
     "isFalse": "[not(variables('isTrue'))]",
     "someText": "[if(variables('isTrue'), concat('a', concat('b', 'c')), 'someText')]",
     "scopesWithoutArmRepresentation": {
-      "subscription": "[createObject()]",
-      "resourceGroup": "[createObject()]"
+      "subscription": {},
+      "resourceGroup": {}
     },
     "scopesWithArmRepresentation": {
       "tenant": "[tenant()]",
@@ -257,7 +257,9 @@
         }
       ]
     },
-    "joinedString": "[join(createArray('I', 'love', 'Bicep!'), ' ')]"
+    "joinedString": "[join(createArray('I', 'love', 'Bicep!'), ' ')]",
+    "prefix": "[take('food', 3)]",
+    "isPrefixed": "[startsWith('food', 'foo')]"
   },
   "resources": {}
 }

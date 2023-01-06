@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "6916775773978176410"
+      "templateHash": "12588869209004628304"
     }
   },
   "parameters": {
@@ -58,7 +58,7 @@
     "eventHub": {
       "type": "Microsoft.EventHub/namespaces/eventhubs",
       "apiVersion": "2017-04-01",
-      "name": "[format('{0}/{1}', resourceInfo('namespace').name, parameters('eventHubName'))]",
+      "name": "[format('{0}/{1}', parameters('namespaceName'), parameters('eventHubName'))]",
       "properties": {},
       "dependsOn": [
         "namespace"
@@ -67,7 +67,7 @@
     "consumerGroup": {
       "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
       "apiVersion": "2017-04-01",
-      "name": "[format('{0}/{1}', resourceInfo('eventHub').name, parameters('consumerGroupName'))]",
+      "name": "[format('{0}/{1}', format('{0}/{1}', parameters('namespaceName'), parameters('eventHubName')), parameters('consumerGroupName'))]",
       "properties": {},
       "dependsOn": [
         "eventHub"

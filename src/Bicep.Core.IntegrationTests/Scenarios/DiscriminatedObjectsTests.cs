@@ -6,6 +6,7 @@ using Bicep.Core.Diagnostics;
 using Bicep.Core.Parsing;
 using Bicep.Core.Resources;
 using Bicep.Core.TypeSystem;
+using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
 using Bicep.Core.UnitTests.Utils;
 using FluentAssertions;
@@ -287,7 +288,7 @@ resource mainResource 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
         [TestMethod]
         public void Issue_4668_2()
         {
-            var result = CompilationHelper.Compile(new CompilationHelper.CompilationHelperContext(NamespaceProvider: BuiltInTestTypes.Create()), @"
+            var result = CompilationHelper.Compile(new ServiceBuilder().WithAzResources(BuiltInTestTypes.Types), @"
 param properties object
 
 resource mainResource 'Test.Rp/discriminatedPropertiesTests@2020-01-01' = {
@@ -304,7 +305,7 @@ resource mainResource 'Test.Rp/discriminatedPropertiesTests@2020-01-01' = {
         [TestMethod]
         public void Issue_4668_3()
         {
-            var result = CompilationHelper.Compile(new CompilationHelper.CompilationHelperContext(NamespaceProvider: BuiltInTestTypes.Create()), @"
+            var result = CompilationHelper.Compile(new ServiceBuilder().WithAzResources(BuiltInTestTypes.Types), @"
 @allowed([
   'PropertiesA'
   'PropertiesB'
@@ -332,7 +333,7 @@ resource mainResource 'Test.Rp/discriminatedPropertiesTests2@2020-01-01' = {
         [TestMethod]
         public void Issue_4668_4()
         {
-            var result = CompilationHelper.Compile(new CompilationHelper.CompilationHelperContext(NamespaceProvider: BuiltInTestTypes.Create()), @"
+            var result = CompilationHelper.Compile(new ServiceBuilder().WithAzResources(BuiltInTestTypes.Types), @"
 param propType string
 param values object
 

@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "13476748154905990322"
+      "templateHash": "4919674308990176848"
     }
   },
   "parameters": {
@@ -121,7 +121,7 @@
       "scope": "[format('Microsoft.Sql/servers/{0}/databases/{1}', split(format('{0}/{1}', parameters('sqlServerName'), parameters('sqlDatabase').name), '/')[0], split(format('{0}/{1}', parameters('sqlServerName'), parameters('sqlDatabase').name), '/')[1])]",
       "name": "SQLSecurityAuditEvents_3d229c42-c7e7-4c97-9a99-ec0d0d8b86c1",
       "properties": {
-        "workspaceId": "[resourceInfo('logAnalyticsWorkspace').id]",
+        "workspaceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('sqlDatabase').diagnosticLogsAndMetrics.subscriptionId, parameters('sqlDatabase').diagnosticLogsAndMetrics.resourceGroupName), 'Microsoft.OperationalInsights/workspaces', parameters('sqlDatabase').diagnosticLogsAndMetrics.name)]",
         "logs": [
           {
             "category": "SQLSecurityAuditEvents",
@@ -160,7 +160,7 @@
             }
           }
         ],
-        "workspaceId": "[resourceInfo('logAnalyticsWorkspace').id]"
+        "workspaceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('sqlDatabase').diagnosticLogsAndMetrics.subscriptionId, parameters('sqlDatabase').diagnosticLogsAndMetrics.resourceGroupName), 'Microsoft.OperationalInsights/workspaces', parameters('sqlDatabase').diagnosticLogsAndMetrics.name)]"
       },
       "dependsOn": [
         "sqlDb",
@@ -190,11 +190,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7769801267302127981"
+              "templateHash": "16310462587025838121"
             }
           },
           "parameters": {
@@ -244,11 +244,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "12445030355610766196"
+              "templateHash": "6918482051287903640"
             }
           },
           "parameters": {
@@ -301,11 +301,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "12633891391246310751"
+              "templateHash": "5511448292274207219"
             }
           },
           "parameters": {

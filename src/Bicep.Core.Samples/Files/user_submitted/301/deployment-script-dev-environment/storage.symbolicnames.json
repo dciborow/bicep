@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "3979230528101032463"
+      "templateHash": "12811667487854516689"
     }
   },
   "parameters": {
@@ -73,7 +73,7 @@
     "fileshare": {
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
-      "name": "[format('{0}/default/{1}', resourceInfo('storage').name, parameters('fileShareName'))]",
+      "name": "[format('{0}/default/{1}', parameters('name'), parameters('fileShareName'))]",
       "dependsOn": [
         "storage"
       ]
@@ -82,11 +82,11 @@
   "outputs": {
     "resourceId": {
       "type": "string",
-      "value": "[resourceInfo('storage').id]"
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
     },
     "storageName": {
       "type": "string",
-      "value": "[resourceInfo('storage').name]"
+      "value": "[parameters('name')]"
     },
     "fileShareName": {
       "type": "string",

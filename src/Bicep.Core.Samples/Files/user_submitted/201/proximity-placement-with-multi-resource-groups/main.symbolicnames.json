@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "14248644964930594658"
+      "templateHash": "12614717428855112446"
     }
   },
   "parameters": {
@@ -67,11 +67,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3850583703916111889"
+              "templateHash": "5389517954861270855"
             }
           },
           "parameters": {
@@ -151,7 +151,7 @@
                     "properties": {
                       "addressPrefix": "10.0.0.0/24",
                       "networkSecurityGroup": {
-                        "id": "[resourceInfo('nsg').id]"
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'demo-nsg')]"
                       }
                     }
                   }
@@ -165,7 +165,7 @@
           "outputs": {
             "vnetId": {
               "type": "string",
-              "value": "[resourceInfo('vnet').id]"
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', 'demo-vnet')]"
             }
           }
         }
@@ -203,11 +203,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15358292048584713508"
+              "templateHash": "11723375933265431589"
             }
           },
           "parameters": {
@@ -273,7 +273,7 @@
                         "id": "[parameters('subnetId')]"
                       },
                       "publicIPAddress": {
-                        "id": "[resourceInfo('pip').id]"
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('{0}-pip', parameters('vmName')))]"
                       }
                     }
                   }
@@ -295,7 +295,7 @@
                 "networkProfile": {
                   "networkInterfaces": [
                     {
-                      "id": "[resourceInfo('nic').id]"
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
                     }
                   ]
                 },
@@ -315,7 +315,7 @@
                   }
                 },
                 "proximityPlacementGroup": {
-                  "id": "[resourceInfo('ppg').id]"
+                  "id": "[resourceId('Microsoft.Compute/proximityPlacementGroups', format('Zone-{0}', parameters('zone')))]"
                 },
                 "storageProfile": {
                   "imageReference": {
@@ -345,7 +345,7 @@
           "outputs": {
             "ppgId": {
               "type": "string",
-              "value": "[resourceInfo('ppg').id]"
+              "value": "[resourceId('Microsoft.Compute/proximityPlacementGroups', format('Zone-{0}', parameters('zone')))]"
             }
           }
         }
@@ -384,11 +384,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "16490443389180409510"
+              "templateHash": "14746205280723861821"
             }
           },
           "parameters": {
@@ -410,7 +410,7 @@
             }
           },
           "resources": {
-            "as": {
+            "availabilitySets": {
               "type": "Microsoft.Compute/availabilitySets",
               "apiVersion": "2020-06-01",
               "name": "as",
@@ -452,7 +452,7 @@
               "location": "[parameters('location')]",
               "properties": {
                 "availabilitySet": {
-                  "id": "[resourceInfo('as').id]"
+                  "id": "[resourceId('Microsoft.Compute/availabilitySets', 'as')]"
                 },
                 "hardwareProfile": {
                   "vmSize": "Standard_B4ms"
@@ -460,7 +460,7 @@
                 "networkProfile": {
                   "networkInterfaces": [
                     {
-                      "id": "[resourceInfo('nic').id]"
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
                     }
                   ]
                 },
@@ -496,7 +496,7 @@
                 }
               },
               "dependsOn": [
-                "as",
+                "availabilitySets",
                 "nic"
               ]
             }
@@ -538,11 +538,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "16490443389180409510"
+              "templateHash": "14746205280723861821"
             }
           },
           "parameters": {
@@ -564,7 +564,7 @@
             }
           },
           "resources": {
-            "as": {
+            "availabilitySets": {
               "type": "Microsoft.Compute/availabilitySets",
               "apiVersion": "2020-06-01",
               "name": "as",
@@ -606,7 +606,7 @@
               "location": "[parameters('location')]",
               "properties": {
                 "availabilitySet": {
-                  "id": "[resourceInfo('as').id]"
+                  "id": "[resourceId('Microsoft.Compute/availabilitySets', 'as')]"
                 },
                 "hardwareProfile": {
                   "vmSize": "Standard_B4ms"
@@ -614,7 +614,7 @@
                 "networkProfile": {
                   "networkInterfaces": [
                     {
-                      "id": "[resourceInfo('nic').id]"
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
                     }
                   ]
                 },
@@ -650,7 +650,7 @@
                 }
               },
               "dependsOn": [
-                "as",
+                "availabilitySets",
                 "nic"
               ]
             }

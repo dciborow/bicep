@@ -2,7 +2,7 @@
 // int
 @sys.description('an int variable')
 var myInt = 42
-//@[04:09) Variable myInt. Type: int. Declaration start char: 0, length: 50
+//@[04:09) Variable myInt. Type: 42. Declaration start char: 0, length: 50
 
 // string
 @sys.description('a string variable')
@@ -48,14 +48,14 @@ var bracketStringInExpression = concat('[', '\'test\'',']')
 // booleans
 @sys.description('a bool variable')
 var myTruth = true
-//@[04:11) Variable myTruth. Type: bool. Declaration start char: 0, length: 54
+//@[04:11) Variable myTruth. Type: true. Declaration start char: 0, length: 54
 var myFalsehood = false
-//@[04:15) Variable myFalsehood. Type: bool. Declaration start char: 0, length: 23
+//@[04:15) Variable myFalsehood. Type: false. Declaration start char: 0, length: 23
 
 var myEmptyObj = { }
 //@[04:14) Variable myEmptyObj. Type: object. Declaration start char: 0, length: 20
 var myEmptyArray = [ ]
-//@[04:16) Variable myEmptyArray. Type: array. Declaration start char: 0, length: 22
+//@[04:16) Variable myEmptyArray. Type: <empty array>. Declaration start char: 0, length: 22
 
 // object
 @sys.description('a object variable')
@@ -91,7 +91,7 @@ var objWithInterp = {
 
 // array
 var myArr = [
-//@[04:09) Variable myArr. Type: ('arr' | 'pirates' | 'say')[]. Declaration start char: 0, length: 43
+//@[04:09) Variable myArr. Type: ['pirates', 'say', 'arr']. Declaration start char: 0, length: 43
   'pirates'
   'say'
   'arr'
@@ -99,7 +99,7 @@ var myArr = [
 
 // array with objects
 var myArrWithObjects = [
-//@[04:20) Variable myArrWithObjects. Type: array. Declaration start char: 0, length: 138
+//@[04:20) Variable myArrWithObjects. Type: [object, object]. Declaration start char: 0, length: 138
   {
     name: 'one'
     enable: true
@@ -151,7 +151,7 @@ var functionOnIndexer2 = concat([
 ][0], 's')
 
 var functionOnIndexer3 = concat([
-//@[04:22) Variable functionOnIndexer3. Type: any. Declaration start char: 0, length: 49
+//@[04:22) Variable functionOnIndexer3. Type: array. Declaration start char: 0, length: 49
 ][0], any('s'))
 
 var singleQuote = '\''
@@ -166,7 +166,7 @@ var unusedIntermediateRef = unusedIntermediate.secondaryKey
 
 // previously this was not possible to emit correctly
 var previousEmitLimit = [
-//@[04:21) Variable previousEmitLimit. Type: array. Declaration start char: 0, length: 299
+//@[04:21) Variable previousEmitLimit. Type: [string, string, object]. Declaration start char: 0, length: 299
   concat('s')
   '${4}'
   {
@@ -191,7 +191,7 @@ var previousEmitLimit = [
 
 // previously this was not possible to emit correctly
 var previousEmitLimit2 = [
-//@[04:22) Variable previousEmitLimit2. Type: array. Declaration start char: 0, length: 327
+//@[04:22) Variable previousEmitLimit2. Type: [string, string, object]. Declaration start char: 0, length: 327
   concat('s')
   '${4}'
   {
@@ -242,57 +242,57 @@ var myVar3 = any(any({
   something: myVar
 }))
 var myVar4 = length(any(concat('s','a')))
-//@[04:10) Variable myVar4. Type: int. Declaration start char: 0, length: 41
+//@[04:10) Variable myVar4. Type: any. Declaration start char: 0, length: 41
 
 // verify that unqualified banned function identifiers can be used as declaration identifiers
 var variables = true
-//@[04:13) Variable variables. Type: bool. Declaration start char: 0, length: 20
+//@[04:13) Variable variables. Type: true. Declaration start char: 0, length: 20
 param parameters bool = true
 //@[06:16) Parameter parameters. Type: bool. Declaration start char: 0, length: 28
 var if = true
-//@[04:06) Variable if. Type: bool. Declaration start char: 0, length: 13
+//@[04:06) Variable if. Type: true. Declaration start char: 0, length: 13
 var createArray = true
-//@[04:15) Variable createArray. Type: bool. Declaration start char: 0, length: 22
+//@[04:15) Variable createArray. Type: true. Declaration start char: 0, length: 22
 var createObject = true
-//@[04:16) Variable createObject. Type: bool. Declaration start char: 0, length: 23
+//@[04:16) Variable createObject. Type: true. Declaration start char: 0, length: 23
 var add = true
-//@[04:07) Variable add. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable add. Type: true. Declaration start char: 0, length: 14
 var sub = true
-//@[04:07) Variable sub. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable sub. Type: true. Declaration start char: 0, length: 14
 var mul = true
-//@[04:07) Variable mul. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable mul. Type: true. Declaration start char: 0, length: 14
 var div = true
-//@[04:07) Variable div. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable div. Type: true. Declaration start char: 0, length: 14
 param mod bool = true
 //@[06:09) Parameter mod. Type: bool. Declaration start char: 0, length: 21
 var less = true
-//@[04:08) Variable less. Type: bool. Declaration start char: 0, length: 15
+//@[04:08) Variable less. Type: true. Declaration start char: 0, length: 15
 var lessOrEquals = true
-//@[04:16) Variable lessOrEquals. Type: bool. Declaration start char: 0, length: 23
+//@[04:16) Variable lessOrEquals. Type: true. Declaration start char: 0, length: 23
 var greater = true
-//@[04:11) Variable greater. Type: bool. Declaration start char: 0, length: 18
+//@[04:11) Variable greater. Type: true. Declaration start char: 0, length: 18
 var greaterOrEquals = true
-//@[04:19) Variable greaterOrEquals. Type: bool. Declaration start char: 0, length: 26
+//@[04:19) Variable greaterOrEquals. Type: true. Declaration start char: 0, length: 26
 param equals bool = true
 //@[06:12) Parameter equals. Type: bool. Declaration start char: 0, length: 24
 var not = true
-//@[04:07) Variable not. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable not. Type: true. Declaration start char: 0, length: 14
 var and = true
-//@[04:07) Variable and. Type: bool. Declaration start char: 0, length: 14
+//@[04:07) Variable and. Type: true. Declaration start char: 0, length: 14
 var or = true
-//@[04:06) Variable or. Type: bool. Declaration start char: 0, length: 13
+//@[04:06) Variable or. Type: true. Declaration start char: 0, length: 13
 var I_WANT_IT_ALL = variables && parameters && if && createArray && createObject && add && sub && mul && div && mod && less && lessOrEquals && greater && greaterOrEquals && equals && not && and && or
 //@[04:17) Variable I_WANT_IT_ALL. Type: bool. Declaration start char: 0, length: 199
 
 // identifiers can have underscores
 var _ = 3
-//@[04:05) Variable _. Type: int. Declaration start char: 0, length: 9
+//@[04:05) Variable _. Type: 3. Declaration start char: 0, length: 9
 var __ = 10 * _
-//@[04:06) Variable __. Type: int. Declaration start char: 0, length: 15
+//@[04:06) Variable __. Type: 30. Declaration start char: 0, length: 15
 var _0a_1b = true
-//@[04:10) Variable _0a_1b. Type: bool. Declaration start char: 0, length: 17
+//@[04:10) Variable _0a_1b. Type: true. Declaration start char: 0, length: 17
 var _1_ = _0a_1b || (__ + _ % 2 == 0)
-//@[04:07) Variable _1_. Type: bool. Declaration start char: 0, length: 37
+//@[04:07) Variable _1_. Type: true. Declaration start char: 0, length: 37
 
 // fully qualified access
 var resourceGroup = 'something'
@@ -304,9 +304,9 @@ var resourceGroupObject = az.resourceGroup()
 var propertyAccessFromObject = resourceGroupObject.name
 //@[04:28) Variable propertyAccessFromObject. Type: string. Declaration start char: 0, length: 55
 var isTrue = sys.max(1, 2) == 3
-//@[04:10) Variable isTrue. Type: bool. Declaration start char: 0, length: 31
+//@[04:10) Variable isTrue. Type: false. Declaration start char: 0, length: 31
 var isFalse = !isTrue
-//@[04:11) Variable isFalse. Type: bool. Declaration start char: 0, length: 21
+//@[04:11) Variable isFalse. Type: true. Declaration start char: 0, length: 21
 var someText = isTrue ? sys.concat('a', sys.concat('b', 'c')) : 'someText'
 //@[04:12) Variable someText. Type: 'someText' | string. Declaration start char: 0, length: 74
 
@@ -336,11 +336,11 @@ var issue1332 = true ? {
 
 // Issue #486
 var myBigInt = 2199023255552
-//@[04:12) Variable myBigInt. Type: int. Declaration start char: 0, length: 28
+//@[04:12) Variable myBigInt. Type: 2199023255552. Declaration start char: 0, length: 28
 var myIntExpression = 5 * 5
-//@[04:19) Variable myIntExpression. Type: int. Declaration start char: 0, length: 27
+//@[04:19) Variable myIntExpression. Type: 25. Declaration start char: 0, length: 27
 var myBigIntExpression = 2199023255552 * 2
-//@[04:22) Variable myBigIntExpression. Type: int. Declaration start char: 0, length: 42
+//@[04:22) Variable myBigIntExpression. Type: 4398046511104. Declaration start char: 0, length: 42
 var myBigIntExpression2 = 2199023255552 * 2199023255552
 //@[04:23) Variable myBigIntExpression2. Type: int. Declaration start char: 0, length: 55
 
@@ -349,7 +349,7 @@ var incrementingNumbers = [for i in range(0,10) : i]
 //@[31:32) Local i. Type: int. Declaration start char: 31, length: 1
 //@[04:23) Variable incrementingNumbers. Type: int[]. Declaration start char: 0, length: 52
 var loopInput = [
-//@[04:13) Variable loopInput. Type: ('one' | 'two')[]. Declaration start char: 0, length: 35
+//@[04:13) Variable loopInput. Type: ['one', 'two']. Declaration start char: 0, length: 35
   'one'
   'two'
 ]
@@ -368,7 +368,7 @@ var arrayOfObjectsViaLoop = [for (name, i) in loopInput: {
 var arrayOfArraysViaLoop = [for (name, i) in loopInput: [
 //@[33:37) Local name. Type: 'one' | 'two'. Declaration start char: 33, length: 4
 //@[39:40) Local i. Type: int. Declaration start char: 39, length: 1
-//@[04:24) Variable arrayOfArraysViaLoop. Type: array[]. Declaration start char: 0, length: 102
+//@[04:24) Variable arrayOfArraysViaLoop. Type: [int, 'one' | 'two', string][]. Declaration start char: 0, length: 102
   i
   name
   'prefix-${i}-${name}-suffix'
@@ -379,10 +379,10 @@ var arrayOfBooleans = [for (name, i) in loopInput: i % 2 == 0]
 //@[04:19) Variable arrayOfBooleans. Type: bool[]. Declaration start char: 0, length: 62
 var arrayOfHardCodedNumbers = [for i in range(0,10): 3]
 //@[35:36) Local i. Type: int. Declaration start char: 35, length: 1
-//@[04:27) Variable arrayOfHardCodedNumbers. Type: int[]. Declaration start char: 0, length: 55
+//@[04:27) Variable arrayOfHardCodedNumbers. Type: 3[]. Declaration start char: 0, length: 55
 var arrayOfHardCodedBools = [for i in range(0,10): false]
 //@[33:34) Local i. Type: int. Declaration start char: 33, length: 1
-//@[04:25) Variable arrayOfHardCodedBools. Type: bool[]. Declaration start char: 0, length: 57
+//@[04:25) Variable arrayOfHardCodedBools. Type: false[]. Declaration start char: 0, length: 57
 var arrayOfHardCodedStrings = [for i in range(0,3): 'hi']
 //@[35:36) Local i. Type: int. Declaration start char: 35, length: 1
 //@[04:27) Variable arrayOfHardCodedStrings. Type: 'hi'[]. Declaration start char: 0, length: 57
@@ -415,7 +415,7 @@ var multilineSingleLine = '''hello!'''
 //@[04:23) Variable multilineSingleLine. Type: 'hello!'. Declaration start char: 0, length: 38
 
 var multilineFormatted = format('''
-//@[04:22) Variable multilineFormatted. Type: string. Declaration start char: 0, length: 73
+//@[04:22) Variable multilineFormatted. Type: 'Hello,\nmy\nname is\nAnthony\n'. Declaration start char: 0, length: 73
 Hello,
 my
 name is
@@ -459,5 +459,10 @@ var copyBlockInObject = {
 }
 
 var joinedString = join(['I', 'love', 'Bicep!'], ' ')
-//@[04:16) Variable joinedString. Type: string. Declaration start char: 0, length: 53
+//@[04:16) Variable joinedString. Type: 'I love Bicep!'. Declaration start char: 0, length: 53
+
+var prefix = take('food', 3)
+//@[04:10) Variable prefix. Type: 'foo'. Declaration start char: 0, length: 28
+var isPrefixed = startsWith('food', 'foo')
+//@[04:14) Variable isPrefixed. Type: true. Declaration start char: 0, length: 42
 

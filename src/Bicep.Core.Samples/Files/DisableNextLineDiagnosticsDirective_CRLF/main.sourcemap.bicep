@@ -1,38 +1,57 @@
 var vmProperties = {
-//@[29:38]     "vmProperties": {
+//@    "vmProperties": {
+//@    }
   diagnosticsProfile: {
-//@[30:36]       "diagnosticsProfile": {
+//@      "diagnosticsProfile": {
+//@      },
     bootDiagnostics: {
-//@[31:35]         "bootDiagnostics": {
+//@        "bootDiagnostics": {
+//@        }
       enabled: 123
-//@[32:32]           "enabled": 123,
+//@          "enabled": 123,
       storageUri: true
-//@[33:33]           "storageUri": true,
+//@          "storageUri": true,
       unknownProp: 'asdf'
-//@[34:34]           "unknownProp": "asdf"
+//@          "unknownProp": "asdf"
     }
   }
   evictionPolicy: 'Deallocate'
-//@[37:37]       "evictionPolicy": "Deallocate"
+//@      "evictionPolicy": "Deallocate"
 }
 resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
-//@[41:47]       "type": "Microsoft.Compute/virtualMachines",
+//@    {
+//@      "type": "Microsoft.Compute/virtualMachines",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "vm",
+//@    }
   name: 'vm'
   location: 'West US'
-//@[45:45]       "location": "West US",
+//@      "location": "West US",
 #disable-next-line BCP036 BCP037
   properties: vmProperties
-//@[46:46]       "properties": "[variables('vmProperties')]"
+//@      "properties": "[variables('vmProperties')]"
 }
 #disable-next-line no-unused-params
 param storageAccount1 string = 'testStorageAccount'
-//@[11:14]     "storageAccount1": {
+//@    "storageAccount1": {
+//@      "type": "string",
+//@      "defaultValue": "testStorageAccount"
+//@    },
 #disable-next-line          no-unused-params
 param storageAccount2 string = 'testStorageAccount'
-//@[15:18]     "storageAccount2": {
+//@    "storageAccount2": {
+//@      "type": "string",
+//@      "defaultValue": "testStorageAccount"
+//@    },
 #disable-next-line   no-unused-params                /* Test comment 1 */
 param storageAccount3 string = 'testStorageAccount'
-//@[19:22]     "storageAccount3": {
+//@    "storageAccount3": {
+//@      "type": "string",
+//@      "defaultValue": "testStorageAccount"
+//@    },
          #disable-next-line   no-unused-params                // Test comment 2
 param storageAccount5 string = 'testStorageAccount'
-//@[23:26]     "storageAccount5": {
+//@    "storageAccount5": {
+//@      "type": "string",
+//@      "defaultValue": "testStorageAccount"
+//@    }

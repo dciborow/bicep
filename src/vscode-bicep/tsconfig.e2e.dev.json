@@ -2,11 +2,11 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "lib": ["es2016"],
+    "lib": ["es2019"],
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": "out/test",
+    "outDir": "out",
     "sourceMap": true,
     "skipLibCheck": true,
     "strict": true,

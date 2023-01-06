@@ -30,6 +30,7 @@ namespace Bicep.Core.UnitTests.Parsing
         [DataRow("var mvVar = 'hello'", typeof(VariableDeclarationSyntax))]
         [DataRow("resource myRes 'My.Provider/someResource@2020-08-01' = { \n }", typeof(ResourceDeclarationSyntax))]
         [DataRow("output string myOutput = 'hello'", typeof(OutputDeclarationSyntax))]
+        [DataRow("type arraysOfArraysOfArraysOfStrings = string[][][]", typeof(TypeDeclarationSyntax))]
         public void NewLinesForDeclarationsShouldBeOptionalAtEof(string text, Type expectedType)
         {
             var validFiles = new (int statementCount, string file)[]
@@ -357,6 +358,106 @@ namespace Bicep.Core.UnitTests.Parsing
             RunExpressionTest(text, expected, typeof(BinaryOperationSyntax));
         }
 
+        [TestMethod]
+        public void ObjectTypeLiteralsShouldParseSuccessfully()
+        {
+            var typeDeclaration = @"
+@description('The foo type')
+@sealed()
+type foo = {
+    @minLength(3)
+    @maxLength(10)
+    stringProp: string
+
+    objectProp: {
+        @minValue(1)
+        intProp: int
+        arrayProp: int[][][]
+    }
+
+    unionProp: 'several'|'string'|'literals'
+}";
+
+            var parsed = ParserHelper.Parse(typeDeclaration);
+            parsed.Should().BeOfType<ProgramSyntax>();
+            (parsed as ProgramSyntax).Declarations.Should().HaveCount(1);
+            (parsed as ProgramSyntax).Declarations.Single().Should().BeOfType<TypeDeclarationSyntax>();
+            var declaration = (TypeDeclarationSyntax) (parsed as ProgramSyntax).Declarations.Single();
+            declaration.Decorators.Should().HaveCount(2);
+
+            declaration.Value.Should().BeOfType<ObjectTypeSyntax>();
+            var declaredObject = (ObjectTypeSyntax) declaration.Value;
+            declaredObject.Properties.Should().HaveCount(3);
+            declaredObject.Properties.First().Decorators.Should().HaveCount(2);
+            declaredObject.Properties.First().Value.Should().BeOfType<VariableAccessSyntax>();
+            declaredObject.Properties.Skip(1).First().Value.Should().BeOfType<ObjectTypeSyntax>();
+
+            var objectProp = (ObjectTypeSyntax) declaredObject.Properties.Skip(1).First().Value;
+            objectProp.Properties.Should().HaveCount(2);
+            objectProp.Properties.Last().Value.Should().BeOfType<ArrayTypeSyntax>();
+
+            var arrayProp = (ArrayTypeSyntax) objectProp.Properties.Last().Value;
+            arrayProp.Item.Value.Should().BeOfType<ArrayTypeSyntax>();
+            var intermediateArray = (ArrayTypeSyntax) arrayProp.Item.Value;
+            intermediateArray.Item.Value.Should().BeOfType<ArrayTypeSyntax>();
+            var innerArray = (ArrayTypeSyntax) intermediateArray.Item.Value;
+            innerArray.Item.Value.Should().BeOfType<VariableAccessSyntax>();
+        }
+
+        [TestMethod]
+        public void TupleTypeLiteralsShouldParseSuccessfully()
+        {
+            var typeDeclaration = @"
+type aTuple = [
+    @description('First element')
+    @minLength(10)
+    string
+
+    @description('Second element')
+    -37|0|37
+]";
+
+            var parsed = ParserHelper.Parse(typeDeclaration);
+            parsed.Declarations.Should().HaveCount(1);
+            parsed.Declarations.Single().Should().BeOfType<TypeDeclarationSyntax>();
+            var declaration = (TypeDeclarationSyntax) parsed.Declarations.Single();
+
+            declaration.Value.Should().BeOfType<TupleTypeSyntax>();
+            var declaredTuple = (TupleTypeSyntax) declaration.Value;
+            declaredTuple.Items.Should().HaveCount(2);
+            declaredTuple.Items.First().Decorators.Should().HaveCount(2);
+            declaredTuple.Items.First().Value.Should().BeOfType<VariableAccessSyntax>();
+            declaredTuple.Items.Last().Decorators.Should().HaveCount(1);
+            declaredTuple.Items.Last().Value.Should().BeOfType<UnionTypeSyntax>();
+        }
+
+        [TestMethod]
+        public void MultilineUnionTypeLiteralsShouldParseSuccessfully()
+        {
+            var typeDeclaration = @"
+type multilineUnion = 'a'
+  | 'multiline'
+  | 'union'
+";
+
+            var parsed = ParserHelper.Parse(typeDeclaration);
+            parsed.Declarations.Should().HaveCount(1);
+            parsed.Declarations.Single().Should().BeOfType<TypeDeclarationSyntax>();
+            var declaration = (TypeDeclarationSyntax) parsed.Declarations.Single();
+
+            declaration.Value.Should().BeOfType<UnionTypeSyntax>();
+
+            var expectedMemberValues = new[] { "a", "multiline", "union" };
+            var actualMembers = declaration.Value.As<UnionTypeSyntax>().Members.ToArray();
+            actualMembers.Should().HaveCount(expectedMemberValues.Length);
+
+            for (int i = 0; i < expectedMemberValues.Length; i++)
+            {
+                actualMembers[i].Value.Should().BeOfType<StringSyntax>();
+                actualMembers[i].Value.As<StringSyntax>().TryGetLiteralValue().Should().Be(expectedMemberValues[i]);
+            }
+        }
+
         private static SyntaxBase RunExpressionTest(string text, string expected, Type expectedRootType)
         {
             SyntaxBase expression = ParserHelper.ParseExpression(text);
@@ -386,4 +487,3 @@ namespace Bicep.Core.UnitTests.Parsing
         }
     }
 }
-

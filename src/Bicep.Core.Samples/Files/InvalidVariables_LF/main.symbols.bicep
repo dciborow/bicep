@@ -28,9 +28,9 @@ var missingValue =
 var 2 
 //@[04:05) Variable <error>. Type: error. Declaration start char: 0, length: 6
 var $ = 23
-//@[04:05) Variable <error>. Type: int. Declaration start char: 0, length: 10
+//@[04:05) Variable <error>. Type: 23. Declaration start char: 0, length: 10
 var # 33 = 43
-//@[04:08) Variable <error>. Type: int. Declaration start char: 0, length: 13
+//@[04:08) Variable <error>. Type: 43. Declaration start char: 0, length: 13
 
 // no value assigned
 var foo =
@@ -119,6 +119,11 @@ var resourceGroup = ''
 var rgName = resourceGroup().name
 //@[04:10) Variable rgName. Type: error. Declaration start char: 0, length: 33
 
+var subscription = ''
+//@[04:16) Variable subscription. Type: ''. Declaration start char: 0, length: 21
+var subName = subscription().name
+//@[04:11) Variable subName. Type: error. Declaration start char: 0, length: 33
+
 // this does not work at the resource group scope
 var invalidLocationVar = deployment().location
 //@[04:22) Variable invalidLocationVar. Type: error. Declaration start char: 0, length: 46
@@ -130,11 +135,11 @@ var invalidEnvAuthVar = environment().authentication.asdgdsag
 
 // invalid use of reserved namespace
 var az = 1
-//@[04:06) Variable az. Type: int. Declaration start char: 0, length: 10
+//@[04:06) Variable az. Type: 1. Declaration start char: 0, length: 10
 
 // cannot assign a variable to a namespace
 var invalidNamespaceAssignment = az
-//@[04:30) Variable invalidNamespaceAssignment. Type: error. Declaration start char: 0, length: 35
+//@[04:30) Variable invalidNamespaceAssignment. Type: 1. Declaration start char: 0, length: 35
 
 var objectLiteralType = {
 //@[04:21) Variable objectLiteralType. Type: object. Declaration start char: 0, length: 199
@@ -194,18 +199,18 @@ var myFloat = 3.14
 // secure cannot be used as a variable decorator
 @sys.secure()
 var something = 1
-//@[04:13) Variable something. Type: int. Declaration start char: 0, length: 31
+//@[04:13) Variable something. Type: 1. Declaration start char: 0, length: 31
 
 // #completionTest(1) -> sysAndDescription
 @
 // #completionTest(5) -> description
 @sys.
 var anotherThing = true
-//@[04:16) Variable anotherThing. Type: bool. Declaration start char: 0, length: 68
+//@[04:16) Variable anotherThing. Type: true. Declaration start char: 0, length: 68
 
 // invalid identifier character classes
 var ☕ = true
-//@[04:05) Variable <error>. Type: bool. Declaration start char: 0, length: 12
+//@[04:05) Variable <error>. Type: true. Declaration start char: 0, length: 12
 var a☕ = true
 //@[04:05) Variable a. Type: error. Declaration start char: 0, length: 13
 
@@ -230,7 +235,7 @@ var noNestedVariableLoopsEither = [for thing in stuff: {
 //@[39:44) Local thing. Type: any. Declaration start char: 39, length: 5
 //@[04:31) Variable noNestedVariableLoopsEither. Type: error. Declaration start char: 0, length: 89
   hello: [for thing in []: 4]
-//@[14:19) Local thing. Type: any. Declaration start char: 14, length: 5
+//@[14:19) Local thing. Type: never. Declaration start char: 14, length: 5
 }]
 
 // loops in inner properties of a variable are also not supported
@@ -254,7 +259,7 @@ var indirection = keys
 //@[04:15) Variable indirection. Type: any. Declaration start char: 0, length: 22
 
 var runtimeLoop = [for (item, index) in []: indirection]
-//@[24:28) Local item. Type: any. Declaration start char: 24, length: 4
+//@[24:28) Local item. Type: never. Declaration start char: 24, length: 4
 //@[30:35) Local index. Type: int. Declaration start char: 30, length: 5
 //@[04:15) Variable runtimeLoop. Type: any[]. Declaration start char: 0, length: 56
 var runtimeLoop2 = [for (item, index) in indirection.keys: 's']
@@ -263,9 +268,9 @@ var runtimeLoop2 = [for (item, index) in indirection.keys: 's']
 //@[04:16) Variable runtimeLoop2. Type: 's'[]. Declaration start char: 0, length: 63
 
 var zoneInput = []
-//@[04:13) Variable zoneInput. Type: array. Declaration start char: 0, length: 18
+//@[04:13) Variable zoneInput. Type: <empty array>. Declaration start char: 0, length: 18
 resource zones 'Microsoft.Network/dnsZones@2018-05-01' = [for (zone, i) in zoneInput: {
-//@[63:67) Local zone. Type: any. Declaration start char: 63, length: 4
+//@[63:67) Local zone. Type: never. Declaration start char: 63, length: 4
 //@[69:70) Local i. Type: int. Declaration start char: 69, length: 1
 //@[09:14) Resource zones. Type: Microsoft.Network/dnsZones@2018-05-01[]. Declaration start char: 0, length: 143
   name: zone
@@ -275,7 +280,7 @@ var inlinedVariable = zones[0].properties.zoneType
 //@[04:19) Variable inlinedVariable. Type: 'Private' | 'Public'. Declaration start char: 0, length: 50
 
 var runtimeLoop3 = [for (zone, i) in zoneInput: {
-//@[25:29) Local zone. Type: any. Declaration start char: 25, length: 4
+//@[25:29) Local zone. Type: never. Declaration start char: 25, length: 4
 //@[31:32) Local i. Type: int. Declaration start char: 31, length: 1
 //@[04:16) Variable runtimeLoop3. Type: object[]. Declaration start char: 0, length: 73
   a: inlinedVariable
@@ -296,7 +301,7 @@ var moreIndirection = reference('s','s', 'Full')
 //@[04:19) Variable moreIndirection. Type: object. Declaration start char: 0, length: 48
 
 var myRef = [
-//@[04:09) Variable myRef. Type: string[]. Declaration start char: 0, length: 37
+//@[04:09) Variable myRef. Type: [string]. Declaration start char: 0, length: 37
   evenMoreIndirection
 ]
 var runtimeLoop5 = [for (item, index) in myRef: 's']
@@ -312,7 +317,7 @@ var loopExpression = union([for thing in stuff: 4], [for thing in stuff: true])
 
 @batchSize(1)
 var batchSizeMakesNoSenseHere = false
-//@[04:29) Variable batchSizeMakesNoSenseHere. Type: bool. Declaration start char: 0, length: 51
+//@[04:29) Variable batchSizeMakesNoSenseHere. Type: false. Declaration start char: 0, length: 51
 
 
 //KeyVault Secret Reference
@@ -330,19 +335,25 @@ var keyVaultSecretObjectVar = {
   secret: kv.getSecret('mySecret')
 }
 var keyVaultSecretArrayVar = [
-//@[04:26) Variable keyVaultSecretArrayVar. Type: string[]. Declaration start char: 0, length: 59
+//@[04:26) Variable keyVaultSecretArrayVar. Type: [string]. Declaration start char: 0, length: 59
   kv.getSecret('mySecret')
 ]
 var keyVaultSecretArrayInterpolatedVar = [
-//@[04:38) Variable keyVaultSecretArrayInterpolatedVar. Type: string[]. Declaration start char: 0, length: 76
+//@[04:38) Variable keyVaultSecretArrayInterpolatedVar. Type: [string]. Declaration start char: 0, length: 76
   '${kv.getSecret('mySecret')}'
 ]
 
+var listSecrets= ''
+//@[04:15) Variable listSecrets. Type: ''. Declaration start char: 0, length: 19
+var listSecretsVar = listSecrets()
+//@[04:18) Variable listSecretsVar. Type: error. Declaration start char: 0, length: 34
+
 var copy = [
-//@[04:08) Variable copy. Type: object[]. Declaration start char: 0, length: 82
+//@[04:08) Variable copy. Type: [object]. Declaration start char: 0, length: 82
   {
     name: 'one'
     count: '[notAFunction()]'
     input: {}
   }
 ]
+

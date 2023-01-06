@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bicep.Core;
+using Bicep.Core.FileSystem;
 using Bicep.LanguageServer.CompilationManager;
 using Bicep.LanguageServer.Configuration;
 using Bicep.LanguageServer.Utils;
@@ -21,7 +22,7 @@ namespace Bicep.LanguageServer.Handlers
         private readonly ICompilationManager compilationManager;
         private readonly IBicepConfigChangeHandler bicepConfigChangeHandler;
 
-        public BicepTextDocumentSyncHandler(ICompilationManager compilationManager, IBicepConfigChangeHandler bicepConfigChangeHandler)
+        public BicepTextDocumentSyncHandler(ICompilationManager compilationManager, IBicepConfigChangeHandler bicepConfigChangeHandler) 
         {
             this.bicepConfigChangeHandler = bicepConfigChangeHandler;
             this.compilationManager = compilationManager;
@@ -29,6 +30,16 @@ namespace Bicep.LanguageServer.Handlers
 
         public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri)
         {
+            if(ConfigurationHelper.IsBicepConfigFile(uri))
+            {
+                return new TextDocumentAttributes(uri, LanguageConstants.JsoncLanguageId);
+            }
+
+            if(PathHelper.HasBicepparamsExension(uri.ToUri()))
+            {
+                return new TextDocumentAttributes(uri, LanguageConstants.ParamsLanguageId);
+            }
+
             return new TextDocumentAttributes(uri, LanguageConstants.LanguageId);
         }
 
@@ -39,7 +50,7 @@ namespace Bicep.LanguageServer.Handlers
 
             var documentUri = request.TextDocument.Uri;
 
-            this.compilationManager.UpsertCompilation(documentUri, request.TextDocument.Version, contents);
+            this.compilationManager.UpdateCompilation(documentUri, request.TextDocument.Version, contents);
 
             // Handle scenario where the bicepconfig.json file was opened prior to
             // language service activation. If the config file was opened before the language server
@@ -58,12 +69,12 @@ namespace Bicep.LanguageServer.Handlers
             var documentUri = request.TextDocument.Uri;
 
             // If the documentUri corresponds to bicepconfig.json, we'll add an entry to activeBicepConfigCache.
-            if (ConfigurationHelper.IsBicepConfigFile(documentUri))
+            if (ConfigurationHelper.IsBicepConfigFile(documentUri)) //potentialy copy this for bicep params
             {
                 bicepConfigChangeHandler.HandleBicepConfigOpenEvent(documentUri);
             }
 
-            this.compilationManager.UpsertCompilation(documentUri, request.TextDocument.Version, request.TextDocument.Text, request.TextDocument.LanguageId, triggeredByFileOpenEvent: true);
+            this.compilationManager.OpenCompilation(documentUri, request.TextDocument.Version, request.TextDocument.Text, request.TextDocument.LanguageId);
 
             return Unit.Task;
         }
@@ -95,6 +106,7 @@ namespace Bicep.LanguageServer.Handlers
             }
 
             this.compilationManager.CloseCompilation(request.TextDocument.Uri);
+
             return Unit.Task;
         }
 

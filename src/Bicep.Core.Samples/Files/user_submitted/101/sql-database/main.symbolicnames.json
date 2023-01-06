@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "12818580016231391461"
+      "templateHash": "4195185749894704979"
     }
   },
   "parameters": {
@@ -27,7 +27,7 @@
       "type": "string"
     },
     "administratorLoginPassword": {
-      "type": "secureString"
+      "type": "securestring"
     }
   },
   "resources": {
@@ -44,7 +44,7 @@
     "sqlDB": {
       "type": "Microsoft.Sql/servers/databases",
       "apiVersion": "2020-08-01-preview",
-      "name": "[format('{0}/{1}', resourceInfo('server').name, parameters('sqlDBName'))]",
+      "name": "[format('{0}/{1}', parameters('serverName'), parameters('sqlDBName'))]",
       "location": "[parameters('location')]",
       "sku": {
         "name": "Standard",

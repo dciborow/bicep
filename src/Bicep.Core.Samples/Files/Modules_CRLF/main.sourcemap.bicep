@@ -1,137 +1,651 @@
 
 @sys.description('this is deployTimeSuffix param')
-//@[15:15]         "description": "this is deployTimeSuffix param"
+//@        "description": "this is deployTimeSuffix param"
 param deployTimeSuffix string = newGuid()
-//@[11:17]     "deployTimeSuffix": {
+//@    "deployTimeSuffix": {
+//@      "type": "string",
+//@      "defaultValue": "[newGuid()]",
+//@      "metadata": {
+//@      }
+//@    }
 
 @sys.description('this module a')
-//@[175:175]         "description": "this module a"
+//@        "description": "this module a"
 module modATest './modulea.bicep' = {
-//@[85:177]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "stringParamB": {
+//@          },
+//@          "objParam": {
+//@          },
+//@          "arrayParam": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "metadata": {
+//@      }
+//@    },
   name: 'modATest'
-//@[88:88]       "name": "modATest",
+//@      "name": "modATest",
   params: {
     stringParamB: 'hello!'
-//@[96:96]             "value": "hello!"
+//@            "value": "hello!"
     objParam: {
-//@[99:101]             "value": {
+//@            "value": {
+//@            }
       a: 'b'
-//@[100:100]               "a": "b"
+//@              "a": "b"
     }
     arrayParam: [
-//@[104:109]             "value": [
+//@            "value": [
+//@            ]
       {
+//@              {
+//@              },
         a: 'b'
-//@[106:106]                 "a": "b"
+//@                "a": "b"
       }
       'abc'
-//@[108:108]               "abc"
+//@              "abc"
     ]
   }
 }
 
 
 @sys.description('this module b')
-//@[224:224]         "description": "this module b"
+//@        "description": "this module b"
 module modB './child/moduleb.bicep' = {
-//@[178:226]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "location": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "13693869390953445824"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "mockResource",
+//@              "location": "[parameters('location')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "myResourceId": {
+//@              "type": "string",
+//@              "value": "[resourceId('Mock.Rp/mockResource', 'mockResource')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "metadata": {
+//@      }
+//@    },
   name: 'modB'
-//@[181:181]       "name": "modB",
+//@      "name": "modB",
   params: {
     location: 'West US'
-//@[189:189]             "value": "West US"
+//@            "value": "West US"
   }
 }
 
 @sys.description('this is just module b with a condition')
-//@[274:274]         "description": "this is just module b with a condition"
+//@        "description": "this is just module b with a condition"
 module modBWithCondition './child/moduleb.bicep' = if (1 + 1 == 2) {
-//@[227:276]       "condition": "[equals(add(1, 1), 2)]",
+//@    {
+//@      "condition": "[equals(add(1, 1), 2)]",
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "location": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "13693869390953445824"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "mockResource",
+//@              "location": "[parameters('location')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "myResourceId": {
+//@              "type": "string",
+//@              "value": "[resourceId('Mock.Rp/mockResource', 'mockResource')]"
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "metadata": {
+//@      }
+//@    },
   name: 'modBWithCondition'
-//@[231:231]       "name": "modBWithCondition",
+//@      "name": "modBWithCondition",
   params: {
     location: 'East US'
-//@[239:239]             "value": "East US"
+//@            "value": "East US"
   }
 }
 
 module modC './child/modulec.json' = {
-//@[277:316]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "location": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "variables": {},
+//@          "resources": [
+//@            {
+//@              "name": "myResource",
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "location": "[parameters('location')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "myResourceId": {
+//@              "type": "string",
+//@              "value": "[resourceId('Mock.Rp/mockResource', 'myResource')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'modC'
-//@[280:280]       "name": "modC",
+//@      "name": "modC",
   params: {
     location: 'West US'
-//@[288:288]             "value": "West US"
+//@            "value": "West US"
   }
 }
 
 module modCWithCondition './child/modulec.json' = if (2 - 1 == 1) {
-//@[317:357]       "condition": "[equals(sub(2, 1), 1)]",
+//@    {
+//@      "condition": "[equals(sub(2, 1), 1)]",
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "location": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string"
+//@            }
+//@          },
+//@          "variables": {},
+//@          "resources": [
+//@            {
+//@              "name": "myResource",
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "location": "[parameters('location')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "myResourceId": {
+//@              "type": "string",
+//@              "value": "[resourceId('Mock.Rp/mockResource', 'myResource')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'modCWithCondition'
-//@[321:321]       "name": "modCWithCondition",
+//@      "name": "modCWithCondition",
   params: {
     location: 'East US'
-//@[329:329]             "value": "East US"
+//@            "value": "East US"
   }
 }
 
 module optionalWithNoParams1 './child/optionalParams.bicep'= {
-//@[358:415]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'optionalWithNoParams1'
-//@[361:361]       "name": "optionalWithNoParams1",
+//@      "name": "optionalWithNoParams1",
 }
 
 module optionalWithNoParams2 './child/optionalParams.bicep'= {
-//@[416:474]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {},
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'optionalWithNoParams2'
-//@[419:419]       "name": "optionalWithNoParams2",
+//@      "name": "optionalWithNoParams2",
   params: {
   }
 }
 
 module optionalWithAllParams './child/optionalParams.bicep'= {
-//@[475:546]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "optionalString": {
+//@          },
+//@          "optionalInt": {
+//@          },
+//@          "optionalObj": {
+//@          },
+//@          "optionalArray": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'optionalWithNoParams3'
-//@[478:478]       "name": "optionalWithNoParams3",
+//@      "name": "optionalWithNoParams3",
   params: {
     optionalString: 'abc'
-//@[486:486]             "value": "abc"
+//@            "value": "abc"
     optionalInt: 42
-//@[489:489]             "value": 42
+//@            "value": 42
     optionalObj: { }
-//@[492:492]             "value": {}
+//@            "value": {}
     optionalArray: [ ]
-//@[495:495]             "value": []
+//@            "value": []
   }
 }
 
 resource resWithDependencies 'Mock.Rp/mockResource@2020-01-01' = {
-//@[58:72]       "type": "Mock.Rp/mockResource",
+//@    {
+//@      "type": "Mock.Rp/mockResource",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "harry",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'modATest')]",
+//@        "[resourceId('Microsoft.Resources/deployments', 'modB')]",
+//@        "[resourceId('Microsoft.Resources/deployments', 'modC')]"
+//@      ]
+//@    },
   name: 'harry'
   properties: {
-//@[62:66]       "properties": {
+//@      "properties": {
+//@      },
     modADep: modATest.outputs.stringOutputA
-//@[63:63]         "modADep": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest')).outputs.stringOutputA.value]",
+//@        "modADep": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest'), '2020-10-01').outputs.stringOutputA.value]",
     modBDep: modB.outputs.myResourceId
-//@[64:64]         "modBDep": "[reference(resourceId('Microsoft.Resources/deployments', 'modB')).outputs.myResourceId.value]",
+//@        "modBDep": "[reference(resourceId('Microsoft.Resources/deployments', 'modB'), '2020-10-01').outputs.myResourceId.value]",
     modCDep: modC.outputs.myResourceId
-//@[65:65]         "modCDep": "[reference(resourceId('Microsoft.Resources/deployments', 'modC')).outputs.myResourceId.value]"
+//@        "modCDep": "[reference(resourceId('Microsoft.Resources/deployments', 'modC'), '2020-10-01').outputs.myResourceId.value]"
   }
 }
 
 module optionalWithAllParamsAndManualDependency './child/optionalParams.bicep'= {
-//@[547:622]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "optionalString": {
+//@          },
+//@          "optionalInt": {
+//@          },
+//@          "optionalObj": {
+//@          },
+//@          "optionalArray": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'optionalWithNoParams3')]",
+//@        "[resourceId('Mock.Rp/mockResource', 'harry')]"
+//@      ]
+//@    },
   name: 'optionalWithAllParamsAndManualDependency'
-//@[550:550]       "name": "optionalWithAllParamsAndManualDependency",
+//@      "name": "optionalWithAllParamsAndManualDependency",
   params: {
     optionalString: 'abc'
-//@[558:558]             "value": "abc"
+//@            "value": "abc"
     optionalInt: 42
-//@[561:561]             "value": 42
+//@            "value": 42
     optionalObj: { }
-//@[564:564]             "value": {}
+//@            "value": {}
     optionalArray: [ ]
-//@[567:567]             "value": []
+//@            "value": []
   }
   dependsOn: [
     resWithDependencies
@@ -140,285 +654,1311 @@ module optionalWithAllParamsAndManualDependency './child/optionalParams.bicep'= 
 }
 
 module optionalWithImplicitDependency './child/optionalParams.bicep'= {
-//@[623:698]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "optionalString": {
+//@          },
+//@          "optionalInt": {
+//@          },
+//@          "optionalObj": {
+//@          },
+//@          "optionalArray": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'optionalWithAllParamsAndManualDependency')]",
+//@        "[resourceId('Mock.Rp/mockResource', 'harry')]"
+//@      ]
+//@    },
   name: 'optionalWithImplicitDependency'
-//@[626:626]       "name": "optionalWithImplicitDependency",
+//@      "name": "optionalWithImplicitDependency",
   params: {
     optionalString: concat(resWithDependencies.id, optionalWithAllParamsAndManualDependency.name)
-//@[634:634]             "value": "[concat(resourceId('Mock.Rp/mockResource', 'harry'), 'optionalWithAllParamsAndManualDependency')]"
+//@            "value": "[concat(resourceId('Mock.Rp/mockResource', 'harry'), 'optionalWithAllParamsAndManualDependency')]"
     optionalInt: 42
-//@[637:637]             "value": 42
+//@            "value": 42
     optionalObj: { }
-//@[640:640]             "value": {}
+//@            "value": {}
     optionalArray: [ ]
-//@[643:643]             "value": []
+//@            "value": []
   }
 }
 
 module moduleWithCalculatedName './child/optionalParams.bicep'= {
-//@[699:774]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "optionalString": {
+//@          },
+//@          "optionalInt": {
+//@          },
+//@          "optionalObj": {
+//@          },
+//@          "optionalArray": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "4191259681487754679"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "optionalString": {
+//@              "type": "string",
+//@              "defaultValue": "abc"
+//@            },
+//@            "optionalInt": {
+//@              "type": "int",
+//@              "defaultValue": 42
+//@            },
+//@            "optionalObj": {
+//@              "type": "object",
+//@              "defaultValue": {
+//@                "a": "b"
+//@              }
+//@            },
+//@            "optionalArray": {
+//@              "type": "array",
+//@              "defaultValue": [
+//@                1,
+//@                2,
+//@                3
+//@              ]
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "outputObj": {
+//@              "type": "object",
+//@              "value": {
+//@                "optionalString": "[parameters('optionalString')]",
+//@                "optionalInt": "[parameters('optionalInt')]",
+//@                "optionalObj": "[parameters('optionalObj')]",
+//@                "optionalArray": "[parameters('optionalArray')]"
+//@              }
+//@            }
+//@          }
+//@        }
+//@      },
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', 'optionalWithAllParamsAndManualDependency')]",
+//@        "[resourceId('Mock.Rp/mockResource', 'harry')]"
+//@      ]
+//@    },
   name: '${optionalWithAllParamsAndManualDependency.name}${deployTimeSuffix}'
-//@[702:702]       "name": "[format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix'))]",
+//@      "name": "[format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix'))]",
   params: {
     optionalString: concat(resWithDependencies.id, optionalWithAllParamsAndManualDependency.name)
-//@[710:710]             "value": "[concat(resourceId('Mock.Rp/mockResource', 'harry'), 'optionalWithAllParamsAndManualDependency')]"
+//@            "value": "[concat(resourceId('Mock.Rp/mockResource', 'harry'), 'optionalWithAllParamsAndManualDependency')]"
     optionalInt: 42
-//@[713:713]             "value": 42
+//@            "value": 42
     optionalObj: { }
-//@[716:716]             "value": {}
+//@            "value": {}
     optionalArray: [ ]
-//@[719:719]             "value": []
+//@            "value": []
   }
 }
 
 resource resWithCalculatedNameDependencies 'Mock.Rp/mockResource@2020-01-01' = {
-//@[73:84]       "type": "Mock.Rp/mockResource",
+//@    {
+//@      "type": "Mock.Rp/mockResource",
+//@      "apiVersion": "2020-01-01",
+//@      "name": "[format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix'))]",
+//@      "dependsOn": [
+//@        "[resourceId('Microsoft.Resources/deployments', format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix')))]",
+//@        "[resourceId('Microsoft.Resources/deployments', 'optionalWithAllParamsAndManualDependency')]"
+//@      ]
+//@    },
   name: '${optionalWithAllParamsAndManualDependency.name}${deployTimeSuffix}'
   properties: {
-//@[77:79]       "properties": {
+//@      "properties": {
+//@      },
     modADep: moduleWithCalculatedName.outputs.outputObj
-//@[78:78]         "modADep": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix')))).outputs.outputObj.value]"
+//@        "modADep": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix'))), '2020-10-01').outputs.outputObj.value]"
   }
 }
 
 output stringOutputA string = modATest.outputs.stringOutputA
-//@[1950:1953]     "stringOutputA": {
+//@    "stringOutputA": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest'), '2020-10-01').outputs.stringOutputA.value]"
+//@    },
 output stringOutputB string = modATest.outputs.stringOutputB
-//@[1954:1957]     "stringOutputB": {
+//@    "stringOutputB": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest'), '2020-10-01').outputs.stringOutputB.value]"
+//@    },
 output objOutput object = modATest.outputs.objOutput
-//@[1958:1961]     "objOutput": {
+//@    "objOutput": {
+//@      "type": "object",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest'), '2020-10-01').outputs.objOutput.value]"
+//@    },
 output arrayOutput array = modATest.outputs.arrayOutput
-//@[1962:1965]     "arrayOutput": {
+//@    "arrayOutput": {
+//@      "type": "array",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'modATest'), '2020-10-01').outputs.arrayOutput.value]"
+//@    },
 output modCalculatedNameOutput object = moduleWithCalculatedName.outputs.outputObj
-//@[1966:1969]     "modCalculatedNameOutput": {
+//@    "modCalculatedNameOutput": {
+//@      "type": "object",
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}{1}', 'optionalWithAllParamsAndManualDependency', parameters('deployTimeSuffix'))), '2020-10-01').outputs.outputObj.value]"
+//@    }
 
 /*
   valid loop cases
-*/ 
+*/
 
 @sys.description('this is myModules')
 var myModules = [
-//@[20:29]     "myModules": [
+//@    "myModules": [
+//@    ],
   {
+//@      {
+//@      },
     name: 'one'
-//@[22:22]         "name": "one",
+//@        "name": "one",
     location: 'eastus2'
-//@[23:23]         "location": "eastus2"
+//@        "location": "eastus2"
   }
   {
+//@      {
+//@      }
     name: 'two'
-//@[26:26]         "name": "two",
+//@        "name": "two",
     location: 'westus'
-//@[27:27]         "location": "westus"
+//@        "location": "westus"
   }
 ]
 
 var emptyArray = []
-//@[30:30]     "emptyArray": [],
+//@    "emptyArray": [],
 
 // simple module loop
 module storageResources 'modulea.bicep' = [for module in myModules: {
-//@[775:861]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageResources",
+//@        "count": "[length(variables('myModules'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "arrayParam": {
+//@          },
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: module.name
-//@[782:782]       "name": "[variables('myModules')[copyIndex()].name]",
+//@      "name": "[variables('myModules')[copyIndex()].name]",
   params: {
     arrayParam: []
-//@[790:790]             "value": []
+//@            "value": []
     objParam: module
-//@[793:793]             "value": "[variables('myModules')[copyIndex()]]"
+//@            "value": "[variables('myModules')[copyIndex()]]"
     stringParamB: module.location
-//@[796:796]             "value": "[variables('myModules')[copyIndex()].location]"
+//@            "value": "[variables('myModules')[copyIndex()].location]"
   }
 }]
 
 // simple indexed module loop
 module storageResourcesWithIndex 'modulea.bicep' = [for (module, i) in myModules: {
-//@[862:953]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "storageResourcesWithIndex",
+//@        "count": "[length(variables('myModules'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "arrayParam": {
+//@          },
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "stringParamA": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: module.name
-//@[869:869]       "name": "[variables('myModules')[copyIndex()].name]",
+//@      "name": "[variables('myModules')[copyIndex()].name]",
   params: {
     arrayParam: [
-//@[877:879]             "value": [
+//@            "value": [
+//@            ]
       i + 1
-//@[878:878]               "[add(copyIndex(), 1)]"
+//@              "[add(copyIndex(), 1)]"
     ]
     objParam: module
-//@[882:882]             "value": "[variables('myModules')[copyIndex()]]"
+//@            "value": "[variables('myModules')[copyIndex()]]"
     stringParamB: module.location
-//@[885:885]             "value": "[variables('myModules')[copyIndex()].location]"
+//@            "value": "[variables('myModules')[copyIndex()].location]"
     stringParamA: concat('a', i)
-//@[888:888]             "value": "[concat('a', copyIndex())]"
+//@            "value": "[concat('a', copyIndex())]"
   }
 }]
 
 // nested module loop
 module nestedModuleLoop 'modulea.bicep' = [for module in myModules: {
-//@[954:1046]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "nestedModuleLoop",
+//@        "count": "[length(variables('myModules'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "arrayParam": {
+//@            "copy": [
+//@            ]
+//@          },
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: module.name
-//@[961:961]       "name": "[variables('myModules')[copyIndex()].name]",
+//@      "name": "[variables('myModules')[copyIndex()].name]",
   params: {
     arrayParam: [for i in range(0,3): concat('test-', i, '-', module.name)]
-//@[970:974]                 "name": "value",
+//@              {
+//@                "name": "value",
+//@                "count": "[length(range(0, 3))]",
+//@                "input": "[concat('test-', range(0, 3)[copyIndex('value')], '-', variables('myModules')[copyIndex()].name)]"
+//@              }
     objParam: module
-//@[978:978]             "value": "[variables('myModules')[copyIndex()]]"
+//@            "value": "[variables('myModules')[copyIndex()]]"
     stringParamB: module.location
-//@[981:981]             "value": "[variables('myModules')[copyIndex()].location]"
+//@            "value": "[variables('myModules')[copyIndex()].location]"
   }
 }]
 
 // duplicate identifiers across scopes are allowed (inner hides the outer)
 module duplicateIdentifiersWithinLoop 'modulea.bicep' = [for x in emptyArray:{
-//@[1047:1142]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicateIdentifiersWithinLoop",
+//@        "count": "[length(variables('emptyArray'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamA": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@            "copy": [
+//@            ]
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'hello-${x}'
-//@[1054:1054]       "name": "[format('hello-{0}', variables('emptyArray')[copyIndex()])]",
+//@      "name": "[format('hello-{0}', variables('emptyArray')[copyIndex()])]",
   params: {
     objParam: {}
-//@[1062:1062]             "value": {}
+//@            "value": {}
     stringParamA: 'test'
-//@[1065:1065]             "value": "test"
+//@            "value": "test"
     stringParamB: 'test'
-//@[1068:1068]             "value": "test"
+//@            "value": "test"
     arrayParam: [for x in emptyArray: x]
-//@[1072:1076]                 "name": "value",
+//@              {
+//@                "name": "value",
+//@                "count": "[length(variables('emptyArray'))]",
+//@                "input": "[variables('emptyArray')[copyIndex('value')]]"
+//@              }
   }
 }]
 
 // duplicate identifiers across scopes are allowed (inner hides the outer)
 var duplicateAcrossScopes = 'hello'
-//@[31:31]     "duplicateAcrossScopes": "hello",
+//@    "duplicateAcrossScopes": "hello",
 module duplicateInGlobalAndOneLoop 'modulea.bicep' = [for duplicateAcrossScopes in []: {
-//@[1143:1238]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicateInGlobalAndOneLoop",
+//@        "count": "[length(createArray())]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamA": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@            "copy": [
+//@            ]
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'hello-${duplicateAcrossScopes}'
-//@[1150:1150]       "name": "[format('hello-{0}', createArray()[copyIndex()])]",
+//@      "name": "[format('hello-{0}', createArray()[copyIndex()])]",
   params: {
     objParam: {}
-//@[1158:1158]             "value": {}
+//@            "value": {}
     stringParamA: 'test'
-//@[1161:1161]             "value": "test"
+//@            "value": "test"
     stringParamB: 'test'
-//@[1164:1164]             "value": "test"
+//@            "value": "test"
     arrayParam: [for x in emptyArray: x]
-//@[1168:1172]                 "name": "value",
+//@              {
+//@                "name": "value",
+//@                "count": "[length(variables('emptyArray'))]",
+//@                "input": "[variables('emptyArray')[copyIndex('value')]]"
+//@              }
   }
 }]
 
 var someDuplicate = true
-//@[32:32]     "someDuplicate": true,
+//@    "someDuplicate": true,
 var otherDuplicate = false
-//@[33:33]     "otherDuplicate": false,
+//@    "otherDuplicate": false,
 module duplicatesEverywhere 'modulea.bicep' = [for someDuplicate in []: {
-//@[1239:1331]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "duplicatesEverywhere",
+//@        "count": "[length(createArray())]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@            "copy": [
+//@            ]
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'hello-${someDuplicate}'
-//@[1246:1246]       "name": "[format('hello-{0}', createArray()[copyIndex()])]",
+//@      "name": "[format('hello-{0}', createArray()[copyIndex()])]",
   params: {
     objParam: {}
-//@[1254:1254]             "value": {}
+//@            "value": {}
     stringParamB: 'test'
-//@[1257:1257]             "value": "test"
+//@            "value": "test"
     arrayParam: [for otherDuplicate in emptyArray: '${someDuplicate}-${otherDuplicate}']
-//@[1261:1265]                 "name": "value",
+//@              {
+//@                "name": "value",
+//@                "count": "[length(variables('emptyArray'))]",
+//@                "input": "[format('{0}-{1}', createArray()[copyIndex()], variables('emptyArray')[copyIndex('value')])]"
+//@              }
   }
 }]
 
 module propertyLoopInsideParameterValue 'modulea.bicep' = {
-//@[1332:1453]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'propertyLoopInsideParameterValue'
-//@[1335:1335]       "name": "propertyLoopInsideParameterValue",
+//@      "name": "propertyLoopInsideParameterValue",
   params: {
     objParam: {
-//@[1343:1372]             "value": {
+//@            "value": {
+//@              "copy": [
+//@              ],
+//@            }
       a: [for i in range(0,10): i]
-//@[1345:1349]                   "name": "a",
+//@                {
+//@                  "name": "a",
+//@                  "count": "[length(range(0, 10))]",
+//@                  "input": "[range(0, 10)[copyIndex('a')]]"
+//@                },
       b: [for i in range(1,2): i]
-//@[1350:1354]                   "name": "b",
+//@                {
+//@                  "name": "b",
+//@                  "count": "[length(range(1, 2))]",
+//@                  "input": "[range(1, 2)[copyIndex('b')]]"
+//@                },
       c: {
-//@[1363:1371]               "c": {
+//@              "c": {
+//@                "copy": [
+//@                ]
+//@              }
         d: [for j in range(2,3): j]
-//@[1365:1369]                     "name": "d",
+//@                  {
+//@                    "name": "d",
+//@                    "count": "[length(range(2, 3))]",
+//@                    "input": "[range(2, 3)[copyIndex('d')]]"
+//@                  }
       }
       e: [for k in range(4,4): {
-//@[1355:1361]                   "name": "e",
+//@                {
+//@                  "name": "e",
+//@                  "count": "[length(range(4, 4))]",
+//@                  "input": {
+//@                  }
+//@                }
         f: k
-//@[1359:1359]                     "f": "[range(4, 4)[copyIndex('e')]]"
+//@                    "f": "[range(4, 4)[copyIndex('e')]]"
       }]
     }
     stringParamB: ''
-//@[1375:1375]             "value": ""
+//@            "value": ""
     arrayParam: [
-//@[1378:1388]             "value": [
+//@            "value": [
+//@            ]
       {
+//@              {
+//@                "copy": [
+//@                ]
+//@              }
         e: [for j in range(7,7): j]
-//@[1381:1385]                     "name": "e",
+//@                  {
+//@                    "name": "e",
+//@                    "count": "[length(range(7, 7))]",
+//@                    "input": "[range(7, 7)[copyIndex('e')]]"
+//@                  }
       }
     ]
   }
 }
 
 module propertyLoopInsideParameterValueWithIndexes 'modulea.bicep' = {
-//@[1454:1576]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'propertyLoopInsideParameterValueWithIndexes'
-//@[1457:1457]       "name": "propertyLoopInsideParameterValueWithIndexes",
+//@      "name": "propertyLoopInsideParameterValueWithIndexes",
   params: {
     objParam: {
-//@[1465:1495]             "value": {
+//@            "value": {
+//@              "copy": [
+//@              ],
+//@            }
       a: [for (i, i2) in range(0,10): i + i2]
-//@[1467:1471]                   "name": "a",
+//@                {
+//@                  "name": "a",
+//@                  "count": "[length(range(0, 10))]",
+//@                  "input": "[add(range(0, 10)[copyIndex('a')], copyIndex('a'))]"
+//@                },
       b: [for (i, i2) in range(1,2): i / i2]
-//@[1472:1476]                   "name": "b",
+//@                {
+//@                  "name": "b",
+//@                  "count": "[length(range(1, 2))]",
+//@                  "input": "[div(range(1, 2)[copyIndex('b')], copyIndex('b'))]"
+//@                },
       c: {
-//@[1486:1494]               "c": {
+//@              "c": {
+//@                "copy": [
+//@                ]
+//@              }
         d: [for (j, j2) in range(2,3): j * j2]
-//@[1488:1492]                     "name": "d",
+//@                  {
+//@                    "name": "d",
+//@                    "count": "[length(range(2, 3))]",
+//@                    "input": "[mul(range(2, 3)[copyIndex('d')], copyIndex('d'))]"
+//@                  }
       }
       e: [for (k, k2) in range(4,4): {
-//@[1477:1484]                   "name": "e",
+//@                {
+//@                  "name": "e",
+//@                  "count": "[length(range(4, 4))]",
+//@                  "input": {
+//@                  }
+//@                }
         f: k
-//@[1481:1481]                     "f": "[range(4, 4)[copyIndex('e')]]",
+//@                    "f": "[range(4, 4)[copyIndex('e')]]",
         g: k2
-//@[1482:1482]                     "g": "[copyIndex('e')]"
+//@                    "g": "[copyIndex('e')]"
       }]
     }
     stringParamB: ''
-//@[1498:1498]             "value": ""
+//@            "value": ""
     arrayParam: [
-//@[1501:1511]             "value": [
+//@            "value": [
+//@            ]
       {
+//@              {
+//@                "copy": [
+//@                ]
+//@              }
         e: [for j in range(7,7): j]
-//@[1504:1508]                     "name": "e",
+//@                  {
+//@                    "name": "e",
+//@                    "count": "[length(range(7, 7))]",
+//@                    "input": "[range(7, 7)[copyIndex('e')]]"
+//@                  }
       }
     ]
   }
 }
 
 module propertyLoopInsideParameterValueInsideModuleLoop 'modulea.bicep' = [for thing in range(0,1): {
-//@[1577:1702]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "propertyLoopInsideParameterValueInsideModuleLoop",
+//@        "count": "[length(range(0, 1))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "objParam": {
+//@          },
+//@          "stringParamB": {
+//@          },
+//@          "arrayParam": {
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "8300391961099598421"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "stringParamA": {
+//@              "type": "string",
+//@              "defaultValue": "test"
+//@            },
+//@            "stringParamB": {
+//@              "type": "string"
+//@            },
+//@            "objParam": {
+//@              "type": "object"
+//@            },
+//@            "arrayParam": {
+//@              "type": "array"
+//@            }
+//@          },
+//@          "resources": [
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "basicblobs",
+//@              "location": "[parameters('stringParamA')]"
+//@            },
+//@            {
+//@              "type": "Mock.Rp/mockResource",
+//@              "apiVersion": "2020-01-01",
+//@              "name": "myZone",
+//@              "location": "[parameters('stringParamB')]"
+//@            }
+//@          ],
+//@          "outputs": {
+//@            "stringOutputA": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamA')]"
+//@            },
+//@            "stringOutputB": {
+//@              "type": "string",
+//@              "value": "[parameters('stringParamB')]"
+//@            },
+//@            "objOutput": {
+//@              "type": "object",
+//@              "value": "[reference(resourceId('Mock.Rp/mockResource', 'basicblobs'), '2020-01-01')]"
+//@            },
+//@            "arrayOutput": {
+//@              "type": "array",
+//@              "value": [
+//@                "[resourceId('Mock.Rp/mockResource', 'basicblobs')]",
+//@                "[resourceId('Mock.Rp/mockResource', 'myZone')]"
+//@              ]
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'propertyLoopInsideParameterValueInsideModuleLoop'
-//@[1584:1584]       "name": "propertyLoopInsideParameterValueInsideModuleLoop",
+//@      "name": "propertyLoopInsideParameterValueInsideModuleLoop",
   params: {
     objParam: {
-//@[1592:1621]             "value": {
+//@            "value": {
+//@              "copy": [
+//@              ],
+//@            }
       a: [for i in range(0,10): i + thing]
-//@[1594:1598]                   "name": "a",
+//@                {
+//@                  "name": "a",
+//@                  "count": "[length(range(0, 10))]",
+//@                  "input": "[add(range(0, 10)[copyIndex('a')], range(0, 1)[copyIndex()])]"
+//@                },
       b: [for i in range(1,2): i * thing]
-//@[1599:1603]                   "name": "b",
+//@                {
+//@                  "name": "b",
+//@                  "count": "[length(range(1, 2))]",
+//@                  "input": "[mul(range(1, 2)[copyIndex('b')], range(0, 1)[copyIndex()])]"
+//@                },
       c: {
-//@[1612:1620]               "c": {
+//@              "c": {
+//@                "copy": [
+//@                ]
+//@              }
         d: [for j in range(2,3): j]
-//@[1614:1618]                     "name": "d",
+//@                  {
+//@                    "name": "d",
+//@                    "count": "[length(range(2, 3))]",
+//@                    "input": "[range(2, 3)[copyIndex('d')]]"
+//@                  }
       }
       e: [for k in range(4,4): {
-//@[1604:1610]                   "name": "e",
+//@                {
+//@                  "name": "e",
+//@                  "count": "[length(range(4, 4))]",
+//@                  "input": {
+//@                  }
+//@                }
         f: k - thing
-//@[1608:1608]                     "f": "[sub(range(4, 4)[copyIndex('e')], range(0, 1)[copyIndex()])]"
+//@                    "f": "[sub(range(4, 4)[copyIndex('e')], range(0, 1)[copyIndex()])]"
       }]
     }
     stringParamB: ''
-//@[1624:1624]             "value": ""
+//@            "value": ""
     arrayParam: [
-//@[1627:1637]             "value": [
+//@            "value": [
+//@            ]
       {
+//@              {
+//@                "copy": [
+//@                ]
+//@              }
         e: [for j in range(7,7): j % thing]
-//@[1630:1634]                     "name": "e",
+//@                  {
+//@                    "name": "e",
+//@                    "count": "[length(range(7, 7))]",
+//@                    "input": "[mod(range(7, 7)[copyIndex('e')], range(0, 1)[copyIndex()])]"
+//@                  }
       }
     ]
   }
@@ -432,9 +1972,64 @@ resource kv 'Microsoft.KeyVault/vaults@2019-09-01' existing = {
 }
 
 module secureModule1 'child/secureParams.bicep' = {
-//@[1703:1759]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "secureStringParam1": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[resourceId('Microsoft.KeyVault/vaults', 'testkeyvault')]"
+//@              },
+//@              "secretName": "mySecret"
+//@            }
+//@          },
+//@          "secureStringParam2": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[resourceId('Microsoft.KeyVault/vaults', 'testkeyvault')]"
+//@              },
+//@              "secretName": "mySecret",
+//@              "secretVersion": "secretVersion"
+//@            }
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "15522334618541518671"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "secureStringParam1": {
+//@              "type": "securestring"
+//@            },
+//@            "secureStringParam2": {
+//@              "type": "securestring",
+//@              "defaultValue": ""
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "exposedSecureString": {
+//@              "type": "string",
+//@              "value": "[parameters('secureStringParam1')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'secureModule1'
-//@[1706:1706]       "name": "secureModule1",
+//@      "name": "secureModule1",
   params: {
     secureStringParam1: kv.getSecret('mySecret')
     secureStringParam2: kv.getSecret('mySecret','secretVersion')
@@ -447,9 +2042,64 @@ resource scopedKv 'Microsoft.KeyVault/vaults@2019-09-01' existing = {
 }
 
 module secureModule2 'child/secureParams.bicep' = {
-//@[1760:1816]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "secureStringParam1": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'otherGroup'), 'Microsoft.KeyVault/vaults', 'testkeyvault')]"
+//@              },
+//@              "secretName": "mySecret"
+//@            }
+//@          },
+//@          "secureStringParam2": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'otherGroup'), 'Microsoft.KeyVault/vaults', 'testkeyvault')]"
+//@              },
+//@              "secretName": "mySecret",
+//@              "secretVersion": "secretVersion"
+//@            }
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "15522334618541518671"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "secureStringParam1": {
+//@              "type": "securestring"
+//@            },
+//@            "secureStringParam2": {
+//@              "type": "securestring",
+//@              "defaultValue": ""
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "exposedSecureString": {
+//@              "type": "string",
+//@              "value": "[parameters('secureStringParam1')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'secureModule2'
-//@[1763:1763]       "name": "secureModule2",
+//@      "name": "secureModule2",
   params: {
     secureStringParam1: scopedKv.getSecret('mySecret')
     secureStringParam2: scopedKv.getSecret('mySecret','secretVersion')
@@ -458,37 +2108,47 @@ module secureModule2 'child/secureParams.bicep' = {
 
 //looped module with looped existing resource (Issue #2862)
 var vaults = [
-//@[34:45]     "vaults": [
+//@    "vaults": [
+//@    ],
   {
+//@      {
+//@      },
     vaultName: 'test-1-kv'
-//@[36:36]         "vaultName": "test-1-kv",
+//@        "vaultName": "test-1-kv",
     vaultRG: 'test-1-rg'
-//@[37:37]         "vaultRG": "test-1-rg",
+//@        "vaultRG": "test-1-rg",
     vaultSub: 'abcd-efgh'
-//@[38:38]         "vaultSub": "abcd-efgh"
+//@        "vaultSub": "abcd-efgh"
   }
   {
+//@      {
+//@      }
     vaultName: 'test-2-kv'
-//@[41:41]         "vaultName": "test-2-kv",
+//@        "vaultName": "test-2-kv",
     vaultRG: 'test-2-rg'
-//@[42:42]         "vaultRG": "test-2-rg",
+//@        "vaultRG": "test-2-rg",
     vaultSub: 'ijkl-1adg1'
-//@[43:43]         "vaultSub": "ijkl-1adg1"
+//@        "vaultSub": "ijkl-1adg1"
   }
 ]
 var secrets = [
-//@[46:55]     "secrets": [
+//@    "secrets": [
+//@    ]
   {
+//@      {
+//@      },
     name: 'secret01'
-//@[48:48]         "name": "secret01",
+//@        "name": "secret01",
     version: 'versionA'
-//@[49:49]         "version": "versionA"
+//@        "version": "versionA"
   }
   {
+//@      {
+//@      }
     name: 'secret02'
-//@[52:52]         "name": "secret02",
+//@        "name": "secret02",
     version: 'versionB'
-//@[53:53]         "version": "versionB"
+//@        "version": "versionB"
   }
 ]
 
@@ -498,27 +2158,240 @@ resource loopedKv 'Microsoft.KeyVault/vaults@2019-09-01' existing = [for vault i
 }]
 
 module secureModuleLooped 'child/secureParams.bicep' = [for (secret, i) in secrets: {
-//@[1817:1877]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "secureModuleLooped",
+//@        "count": "[length(variables('secrets'))]"
+//@      },
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "secureStringParam1": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('vaults')[copyIndex()].vaultSub, variables('vaults')[copyIndex()].vaultRG), 'Microsoft.KeyVault/vaults', variables('vaults')[copyIndex()].vaultName)]"
+//@              },
+//@              "secretName": "[variables('secrets')[copyIndex()].name]"
+//@            }
+//@          },
+//@          "secureStringParam2": {
+//@            "reference": {
+//@              "keyVault": {
+//@                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('vaults')[copyIndex()].vaultSub, variables('vaults')[copyIndex()].vaultRG), 'Microsoft.KeyVault/vaults', variables('vaults')[copyIndex()].vaultName)]"
+//@              },
+//@              "secretName": "[variables('secrets')[copyIndex()].name]",
+//@              "secretVersion": "[variables('secrets')[copyIndex()].version]"
+//@            }
+//@          }
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "15522334618541518671"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "secureStringParam1": {
+//@              "type": "securestring"
+//@            },
+//@            "secureStringParam2": {
+//@              "type": "securestring",
+//@              "defaultValue": ""
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "exposedSecureString": {
+//@              "type": "string",
+//@              "value": "[parameters('secureStringParam1')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'secureModuleLooped-${i}'
-//@[1824:1824]       "name": "[format('secureModuleLooped-{0}', copyIndex())]",
+//@      "name": "[format('secureModuleLooped-{0}', copyIndex())]",
   params: {
     secureStringParam1: loopedKv[i].getSecret(secret.name)
     secureStringParam2: loopedKv[i].getSecret(secret.name, secret.version)
   }
 }]
 
+module secureModuleCondition 'child/secureParams.bicep' = {
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "parameters": {
+//@          "secureStringParam1": "[if(true(), createObject('reference', createObject('keyVault', createObject('id', resourceId('Microsoft.KeyVault/vaults', 'testkeyvault')), 'secretName', 'mySecret')), createObject('value', 'notTrue'))]",
+//@          "secureStringParam2": "[if(true(), if(false(), createObject('value', 'false'), createObject('reference', createObject('keyVault', createObject('id', resourceId('Microsoft.KeyVault/vaults', 'testkeyvault')), 'secretName', 'mySecret', 'secretVersion', 'secretVersion'))), createObject('value', 'notTrue'))]"
+//@        },
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "15522334618541518671"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "secureStringParam1": {
+//@              "type": "securestring"
+//@            },
+//@            "secureStringParam2": {
+//@              "type": "securestring",
+//@              "defaultValue": ""
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "exposedSecureString": {
+//@              "type": "string",
+//@              "value": "[parameters('secureStringParam1')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
+  name: 'secureModuleCondition'
+//@      "name": "secureModuleCondition",
+  params: {
+    secureStringParam1: true ? kv.getSecret('mySecret') : 'notTrue'
+    secureStringParam2: true ? false ? 'false' : kv.getSecret('mySecret','secretVersion') : 'notTrue'
+  }
+}
 
 // END: Key Vault Secret Reference
 
 module withSpace 'module with space.bicep' = {
-//@[1878:1912]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "1347091426241151379"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string",
+//@              "defaultValue": "westus"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "loc": {
+//@              "type": "string",
+//@              "value": "[parameters('location')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'withSpace'
-//@[1881:1881]       "name": "withSpace",
+//@      "name": "withSpace",
 }
 
 module folderWithSpace 'child/folder with space/child with space.bicep' = {
-//@[1913:1947]       "type": "Microsoft.Resources/deployments",
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "1347091426241151379"
+//@            }
+//@          },
+//@          "parameters": {
+//@            "location": {
+//@              "type": "string",
+//@              "defaultValue": "westus"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "loc": {
+//@              "type": "string",
+//@              "value": "[parameters('location')]"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    },
   name: 'childWithSpace'
-//@[1916:1916]       "name": "childWithSpace",
+//@      "name": "childWithSpace",
+}
+
+module withSeparateConfig './child/folder with separate config/moduleWithAzImport.bicep' = {
+//@    {
+//@      "type": "Microsoft.Resources/deployments",
+//@      "apiVersion": "2020-10-01",
+//@      "properties": {
+//@        "expressionEvaluationOptions": {
+//@          "scope": "inner"
+//@        },
+//@        "mode": "Incremental",
+//@        "template": {
+//@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+//@          "contentVersion": "1.0.0.0",
+//@          "metadata": {
+//@            "_generator": {
+//@              "name": "bicep",
+//@              "version": "dev",
+//@              "templateHash": "16208829896531593582"
+//@            }
+//@          },
+//@          "imports": {
+//@            "az": {
+//@              "provider": "AzureResourceManager",
+//@              "version": "1.0.0"
+//@            }
+//@          },
+//@          "resources": [],
+//@          "outputs": {
+//@            "str": {
+//@              "type": "string",
+//@              "value": "foo"
+//@            }
+//@          }
+//@        }
+//@      }
+//@    }
+  name: 'withSeparateConfig'
+//@      "name": "withSeparateConfig",
 }
 

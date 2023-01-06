@@ -27,11 +27,14 @@ namespace Bicep.LanguageServer.Handlers
         string token,
         string expiresOnTimestamp,
         string deployId,
+        string deploymentName,
         string portalUrl,
         bool parametersFileExists,
         string parametersFileName,
         ParametersFileUpdateOption parametersFileUpdateOption,
-        List<BicepUpdatedDeploymentParameter> updatedDeploymentParameters) : IRequest<string>;
+        List<BicepUpdatedDeploymentParameter> updatedDeploymentParameters,
+        string resourceManagerEndpointUrl,
+        string audience) : IRequest<string>;
 
     public record BicepDeploymentStartResponse(bool isSuccess, string outputMessage, string? viewDeploymentInPortalMessage);
 
@@ -55,11 +58,10 @@ namespace Bicep.LanguageServer.Handlers
 
             var options = new ArmClientOptions();
             options.Diagnostics.ApplySharedResourceManagerSettings();
+            options.Environment = new ArmEnvironment(new Uri(request.resourceManagerEndpointUrl), request.audience);
 
             var credential = new CredentialFromTokenAndTimeStamp(request.token, request.expiresOnTimestamp);
             var armClient = new ArmClient(credential, default, options);
-
-            string deploymentName = "bicep_deployment_" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
             var bicepDeploymentStartResponse = await DeploymentHelper.StartDeploymentAsync(
                 deploymentCollectionProvider,
@@ -75,7 +77,7 @@ namespace Bicep.LanguageServer.Handlers
                 request.parametersFileUpdateOption,
                 request.updatedDeploymentParameters,
                 request.portalUrl,
-                deploymentName,
+                request.deploymentName,
                 deploymentOperationsCache);
 
             PostDeployStartResultTelemetryEvent(request.deployId, bicepDeploymentStartResponse.isSuccess);

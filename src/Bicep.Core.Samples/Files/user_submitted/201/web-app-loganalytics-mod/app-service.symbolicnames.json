@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "16621618591576177853"
+      "templateHash": "3819470834506068566"
     }
   },
   "parameters": {
@@ -52,7 +52,7 @@
     "appServiceLogging": {
       "type": "Microsoft.Web/sites/config",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/logs', resourceInfo('appService').name)]",
+      "name": "[format('{0}/logs', variables('webSiteName'))]",
       "properties": {
         "applicationLogs": {
           "fileSystem": {
@@ -79,7 +79,7 @@
     "appServiceAppSettings": {
       "type": "Microsoft.Web/sites/config",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/appsettings', resourceInfo('appService').name)]",
+      "name": "[format('{0}/appsettings', variables('webSiteName'))]",
       "properties": {
         "APPINSIGHTS_INSTRUMENTATIONKEY": "[parameters('APPINSIGHTS_INSTRUMENTATIONKEY')]"
       },
@@ -90,7 +90,7 @@
     "appServiceSiteExtension": {
       "type": "Microsoft.Web/sites/siteextensions",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/Microsoft.ApplicationInsights.AzureWebsites', resourceInfo('appService').name)]",
+      "name": "[format('{0}/Microsoft.ApplicationInsights.AzureWebsites', variables('webSiteName'))]",
       "dependsOn": [
         "appService"
       ]

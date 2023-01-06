@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Bicep.Core;
 using Bicep.Core.CodeAction;
 using Bicep.Core.CodeAction.Fixes;
 using Bicep.Core.Diagnostics;
@@ -38,6 +39,8 @@ namespace Bicep.LangServer.IntegrationTests
     [TestClass]
     public class CodeActionTests
     {
+        private static ServiceBuilder Services => new ServiceBuilder();
+
         private const string SecureTitle = "Add @secure";
         private const string DescriptionTitle = "Add @description";
         private const string AllowedTitle = "Add @allowed";
@@ -65,11 +68,11 @@ namespace Bicep.LangServer.IntegrationTests
         {
             DefaultServer.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
 
-            ServerWithFileResolver.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, new Server.CreationOptions(FileResolver: new FileResolver())));
+            ServerWithFileResolver.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
 
-            ServerWithBuiltInTypes.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, new Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create())));
+            ServerWithBuiltInTypes.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, services => services.WithNamespaceProvider(BuiltInTestTypes.Create())));
 
-            ServerWithNamespaceProvider.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, new Server.CreationOptions(NamespaceProvider: BicepTestConstants.NamespaceProvider)));
+            ServerWithNamespaceProvider.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext,services => services.WithNamespaceProvider(BicepTestConstants.NamespaceProvider)));
         }
 
         [ClassCleanup]
@@ -236,7 +239,7 @@ namespace Bicep.LangServer.IntegrationTests
             var bicepConfigUri = DocumentUri.FromFileSystemPath(bicepConfigFilePath);
             fileSystemDict[bicepConfigUri.ToUri()] = bicepConfigFileContents;
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(fileSystemDict, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(fileSystemDict, uri);
             var diagnostics = compilation.GetEntrypointSemanticModel().GetAllDiagnostics();
 
             diagnostics.Should().HaveCount(1);
@@ -275,7 +278,7 @@ resource test";
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
             var diagnostics = compilation.GetEntrypointSemanticModel().GetAllDiagnostics();
 
             diagnostics.Should().HaveCount(2);
@@ -291,11 +294,11 @@ resource test";
                     x.Code.Should().Be("BCP029");
                 });
 
-            using var helper = await LanguageServerHelper.StartServerWithTextAsync(
+            using var helper = await LanguageServerHelper.StartServerWithText(
                 this.TestContext,
                 bicepFileContents,
                 documentUri,
-                creationOptions: new Server.CreationOptions(NamespaceProvider: BuiltInTestTypes.Create()));
+                services => services.WithNamespaceProvider(BuiltInTestTypes.Create()));
             ILanguageClient client = helper.Client;
 
             var lineStarts = compilation.SourceFileGrouping.EntryPoint.LineStarts;
@@ -337,7 +340,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
             var diagnostics = compilation.GetEntrypointSemanticModel().GetAllDiagnostics();
 
             diagnostics.Should().HaveCount(3);
@@ -490,7 +493,7 @@ resource ap|p2 'Microsoft.Web/sites@2021-03-01' existing = {
         [DataTestMethod]
         public async Task Unused_existing_resource_actions_are_suggested(string fileWithCursors, string expectedText)
         {
-            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors);
+            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().Contain(x => x.Title.StartsWith(RemoveUnusedExistingResourceTitle));
             codeActions.First(x => x.Title.StartsWith(RemoveUnusedExistingResourceTitle)).Kind.Should().Be(CodeActionKind.QuickFix);
 
@@ -525,7 +528,7 @@ var bar = 'asdf'", "var bar = 'asdf'")]
         [DataTestMethod]
         public async Task Unused_variable_actions_are_suggested(string fileWithCursors, string expectedText)
         {
-            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors);
+            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().Contain(x => x.Title.StartsWith(RemoveUnusedVariableTitle));
             codeActions.First(x => x.Title.StartsWith(RemoveUnusedVariableTitle)).Kind.Should().Be(CodeActionKind.QuickFix);
 
@@ -544,7 +547,7 @@ param foo2 string", "param foo2 string")]
         [DataTestMethod]
         public async Task Unused_parameter_actions_are_suggested(string fileWithCursors, string expectedText)
         {
-            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors);
+            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().Contain(x => x.Title.StartsWith(RemoveUnusedParameterTitle));
             codeActions.First(x => x.Title.StartsWith(RemoveUnusedParameterTitle)).Kind.Should().Be(CodeActionKind.QuickFix);
 
@@ -557,7 +560,7 @@ param foo2 string", "param foo2 string")]
         [DataTestMethod]
         public async Task Unused_variable_actions_are_not_suggested_for_invalid_variables(string fileWithCursors)
         {
-            var (codeActions, _) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, _) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().NotContain(x => x.Title.StartsWith(RemoveUnusedVariableTitle));
         }
 
@@ -566,7 +569,7 @@ param foo2 string", "param foo2 string")]
         [DataTestMethod]
         public async Task Unused_parameter_actions_are_not_suggested_for_invalid_parameters(string fileWithCursors)
         {
-            var (codeActions, _) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, _) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().NotContain(x => x.Title.StartsWith(RemoveUnusedParameterTitle));
         }
 
@@ -630,7 +633,7 @@ var nested = [
         [DataTestMethod]
         public async Task Single_line_object_and_arrays_have_multi_line_format_codefix(string fileWithCursors, string result)
         {
-            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().Contain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToMultiLineDescription);
             codeActions.First(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToMultiLineDescription).Kind.Should().Be(CodeActionKind.Refactor);
 
@@ -653,7 +656,7 @@ var foo = [
         [DataTestMethod]
         public async Task Multi_line_object_and_arrays_should_not_show_multi_line_format_codefix(string fileWithCursors)
         {
-            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().NotContain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToMultiLineDescription);
         }
 
@@ -698,7 +701,7 @@ var nested = [
         [DataTestMethod]
         public async Task Multi_line_object_and_arrays_have_single_line_format_codefix(string fileWithCursors, string result)
         {
-            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().Contain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToSingleLineDescription);
             codeActions.First(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToSingleLineDescription).Kind.Should().Be(CodeActionKind.Refactor);
 
@@ -715,7 +718,7 @@ var foo = [|'abc', 'def',]
         [DataTestMethod]
         public async Task Single_line_object_and_arrays_should_not_show_single_line_format_codefix(string fileWithCursors)
         {
-            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().NotContain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToSingleLineDescription);
         }
 
@@ -743,7 +746,7 @@ var foo = [ |abc def ]
         [DataTestMethod]
         public async Task Incomplete_declarations_should_not_show_codefixes(string fileWithCursors)
         {
-            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors);
+            var (codeActions, bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
             codeActions.Should().NotContain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToSingleLineDescription);
             codeActions.Should().NotContain(x => x.Title == MultilineObjectsAndArraysCodeFixProvider.ConvertToMultiLineDescription);
         }
@@ -775,7 +778,7 @@ var foo = [ |abc def ]
 ")]
         public async Task Single_and_multi_line_actions_should_indent_to_match_the_formatter(string codeActionName, string fileWithCursors)
         {
-            var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
             bicepFile.Should().NotHaveParseErrors("this test is only designed for valid Bicep files");
 
@@ -813,12 +816,12 @@ param fo|o {paramType}
 param fo|o {paramType}
 ";
             }
-            return await RunSyntaxTest(fileWithCursors);
+            return await RunSyntaxTest(fileWithCursors, '|');
         }
 
-        private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors)
+        private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor)
         {
-            var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors);
+            var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
 
             var helper = await DefaultServer.GetAsync();

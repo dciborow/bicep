@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "3142187188898322244"
+      "templateHash": "12447608717883445454"
     }
   },
   "parameters": {
@@ -61,7 +61,7 @@
         "name": "[parameters('aseName')]",
         "workerPools": [],
         "virtualNetwork": {
-          "id": "[resourceInfo('subNet').id]"
+          "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(parameters('subnetName'), '/')[0], split(parameters('subnetName'), '/')[1])]"
         }
       },
       "dependsOn": [

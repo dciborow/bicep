@@ -463,18 +463,20 @@
   {
     "name": "flatten",
     "description": "Takes an array of arrays, and returns an array of sub-array elements, in the original order. Sub-arrays are only flattened once, not recursively.",
-    "fixedParameters": [],
-    "minimumArgumentCount": 0,
-    "variableParameter": {
-      "namePrefix": "array",
-      "description": "The array of sub-arrays to flatten.",
-      "type": "array[]",
-      "minimumCount": 0
-    },
+    "fixedParameters": [
+      {
+        "name": "array",
+        "description": "The array of sub-arrays to flatten.",
+        "type": "array[]",
+        "required": true
+      }
+    ],
+    "minimumArgumentCount": 1,
+    "maximumArgumentCount": 1,
     "flags": "default",
-    "typeSignature": "(... : array[]): array",
+    "typeSignature": "(array: array[]): array",
     "parameterTypeSignatures": [
-      "... : array[]"
+      "array: array[]"
     ]
   },
   {
@@ -784,17 +786,36 @@
     "fixedParameters": [
       {
         "name": "arg",
-        "description": "The array to use for getting the number of elements, the string to use for getting the number of characters, or the object to use for getting the number of root-level properties.",
-        "type": "array | object | string",
+        "description": "The string to use for getting the number of characters or the object to use for getting the number of root-level properties.",
+        "type": "object | string",
         "required": true
       }
     ],
     "minimumArgumentCount": 1,
     "maximumArgumentCount": 1,
     "flags": "default",
-    "typeSignature": "(arg: array | object | string): int",
+    "typeSignature": "(arg: object | string): int",
     "parameterTypeSignatures": [
-      "arg: array | object | string"
+      "arg: object | string"
+    ]
+  },
+  {
+    "name": "length",
+    "description": "Returns the number of characters in a string, elements in an array, or root-level properties in an object.",
+    "fixedParameters": [
+      {
+        "name": "arg",
+        "description": "The array to use for getting the number of elements.",
+        "type": "array",
+        "required": true
+      }
+    ],
+    "minimumArgumentCount": 1,
+    "maximumArgumentCount": 1,
+    "flags": "default",
+    "typeSignature": "(arg: array): int",
+    "parameterTypeSignatures": [
+      "arg: array"
     ]
   },
   {
@@ -925,16 +946,16 @@
       {
         "name": "intArray",
         "description": "The array of integers.",
-        "type": "array",
+        "type": "int[]",
         "required": true
       }
     ],
     "minimumArgumentCount": 1,
     "maximumArgumentCount": 1,
     "flags": "default",
-    "typeSignature": "(intArray: array): int",
+    "typeSignature": "(intArray: int[]): int",
     "parameterTypeSignatures": [
-      "intArray: array"
+      "intArray: int[]"
     ]
   },
   {
@@ -961,16 +982,16 @@
       {
         "name": "intArray",
         "description": "The array of integers.",
-        "type": "array",
+        "type": "int[]",
         "required": true
       }
     ],
     "minimumArgumentCount": 1,
     "maximumArgumentCount": 1,
     "flags": "default",
-    "typeSignature": "(intArray: array): int",
+    "typeSignature": "(intArray: int[]): int",
     "parameterTypeSignatures": [
-      "intArray: array"
+      "intArray: int[]"
     ]
   },
   {
@@ -1206,7 +1227,7 @@
     "minimumArgumentCount": 2,
     "maximumArgumentCount": 2,
     "flags": "default",
-    "typeSignature": "(inputString: string, delimiter: array | string): array",
+    "typeSignature": "(inputString: string, delimiter: array | string): string[]",
     "parameterTypeSignatures": [
       "inputString: string",
       "delimiter: array | string"
@@ -1362,6 +1383,39 @@
     ]
   },
   {
+    "name": "toObject",
+    "description": "Converts an array to an object with a custom key function and optional custom value function.",
+    "fixedParameters": [
+      {
+        "name": "array",
+        "description": "The array to map to an object.",
+        "type": "array",
+        "required": true
+      },
+      {
+        "name": "keyPredicate",
+        "description": "The predicate applied to each input array element to return the object key.",
+        "type": "any => string",
+        "required": true
+      },
+      {
+        "name": "valuePredicate",
+        "description": "The optional predicate applied to each input array element to return the object value.",
+        "type": "any => any",
+        "required": false
+      }
+    ],
+    "minimumArgumentCount": 2,
+    "maximumArgumentCount": 3,
+    "flags": "default",
+    "typeSignature": "(array: array, keyPredicate: any => string, [valuePredicate: any => any]): object",
+    "parameterTypeSignatures": [
+      "array: array",
+      "keyPredicate: any => string",
+      "[valuePredicate: any => any]"
+    ]
+  },
+  {
     "name": "toUpper",
     "description": "Converts the specified string to upper case.",
     "fixedParameters": [
@@ -1435,7 +1489,7 @@
   },
   {
     "name": "uniqueString",
-    "description": "Creates a deterministic hash string based on the values provided as parameters.",
+    "description": "Creates a deterministic hash string based on the values provided as parameters. The returned value is 13 characters long.",
     "fixedParameters": [],
     "minimumArgumentCount": 1,
     "variableParameter": {

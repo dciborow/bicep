@@ -9,6 +9,7 @@ using Bicep.Core.Syntax.Visitors;
 using Bicep.Core.Text;
 using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
+using Bicep.Core.UnitTests.Syntax;
 using Bicep.Core.UnitTests.Utils;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,6 +28,8 @@ namespace Bicep.Core.IntegrationTests.Semantics
     {
         [NotNull]
         public TestContext? TestContext { get; set; }
+
+        private static ServiceBuilder Services => new ServiceBuilder();
 
         // NOTE: Uses the linter analyzers specified in BicepTestConstants.BuiltInConfigurationWithProblematicAnalyzersDisabled
         //   Problematic ones that should be disabled in this and most other tests by default can be added to BicepTestConstants.AnalyzerRulesToDisableInTests
@@ -58,7 +61,7 @@ namespace Bicep.Core.IntegrationTests.Semantics
         [TestMethod]
         public void EndOfFileFollowingSpaceAfterParameterKeyWordShouldNotThrow()
         {
-            var compilation = new Compilation(BicepTestConstants.Features, TestTypeHelper.CreateEmptyProvider(), SourceFileGroupingFactory.CreateFromText("parameter ", BicepTestConstants.FileResolver), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation("parameter ");
 
             FluentActions.Invoking(() => compilation.GetEntrypointSemanticModel().GetAllDiagnostics()).Should().NotThrow();
         }
@@ -83,7 +86,7 @@ namespace Bicep.Core.IntegrationTests.Semantics
                 return $"{symbol.Kind} {symbol.Name}. Type: {symbol.Type}. Declaration start char: {startChar}, length: {symbol.DeclaringSyntax.Span.Length}";
             }
 
-            var sourceTextWithDiags = DataSet.AddDiagsToSourceText(dataSet, symbols, symb => symb.NameSyntax.Span, getLoggingString);
+            var sourceTextWithDiags = DataSet.AddDiagsToSourceText(dataSet, symbols, symb => symb.NameSource.Span, getLoggingString);
             var resultsFile = Path.Combine(outputDirectory, DataSet.TestFileMainDiagnostics);
             File.WriteAllText(resultsFile, sourceTextWithDiags);
 
@@ -115,7 +118,10 @@ namespace Bicep.Core.IntegrationTests.Semantics
                     // valid cases should not return error symbols for any symbol reference node
                     symbol.Should().NotBeOfType<ErrorSymbol>();
                     symbol.Should().Match(s =>
+                        s is MetadataSymbol ||
                         s is ParameterSymbol ||
+                        s is TypeAliasSymbol ||
+                        s is AmbientTypeSymbol ||
                         s is VariableSymbol ||
                         s is ResourceSymbol ||
                         s is ModuleSymbol ||
@@ -130,7 +136,10 @@ namespace Bicep.Core.IntegrationTests.Semantics
                     // invalid files may return errors
                     symbol.Should().Match(s =>
                         s is ErrorSymbol ||
+                        s is MetadataSymbol ||
                         s is ParameterSymbol ||
+                        s is TypeAliasSymbol ||
+                        s is AmbientTypeSymbol ||
                         s is VariableSymbol ||
                         s is ResourceSymbol ||
                         s is ModuleSymbol ||
@@ -189,7 +198,7 @@ resource test";
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
             var diagnostics = compilation.GetEntrypointSemanticModel().GetAllDiagnostics();
 
             diagnostics.Count().Should().Be(2);
@@ -235,7 +244,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
 
             compilation.GetEntrypointSemanticModel().GetAllDiagnostics().Should().BeEmpty();
         }
@@ -254,7 +263,7 @@ param storageAccount string = 'testStorageAccount'";
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
 
             compilation.GetEntrypointSemanticModel().GetAllDiagnostics().Should().BeEmpty();
         }
@@ -274,9 +283,30 @@ param storageAccount string = 'testStorageAccount'";
                 [uri] = bicepFileContents,
             };
 
-            var compilation = new Compilation(BicepTestConstants.Features, BicepTestConstants.NamespaceProvider, SourceFileGroupingFactory.CreateForFiles(files, uri, BicepTestConstants.FileResolver, BicepTestConstants.BuiltInConfiguration), BicepTestConstants.BuiltInConfiguration, BicepTestConstants.ApiVersionProvider, BicepTestConstants.LinterAnalyzer);
+            var compilation = Services.BuildCompilation(files, uri);
 
             compilation.GetEntrypointSemanticModel().GetAllDiagnostics().Count().Should().Be(1);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(GetData), DynamicDataSourceType.Method, DynamicDataDisplayNameDeclaringType = typeof(DataSet), DynamicDataDisplayName = nameof(DataSet.GetDisplayName))]
+        public async Task All_nodes_should_be_parented(DataSet dataSet)
+        {
+            var (compilation, outputDirectory, _) = await dataSet.SetupPrerequisitesAndCreateCompilation(TestContext);
+            var model = compilation.GetEntrypointSemanticModel();
+
+            var allNodes = SyntaxCollectorVisitor.Build(model.Root.Syntax);
+            foreach (var node in allNodes)
+            {
+                if (node.Syntax == model.Root.Syntax)
+                {
+                    model.Binder.GetParent(node.Syntax).Should().BeNull();
+                }
+                else
+                {
+                    model.Binder.GetParent(node.Syntax).Should().NotBeNull();
+                }
+            }
         }
 
         private static List<SyntaxBase> GetAllBoundSymbolReferences(ProgramSyntax program)
@@ -299,4 +329,3 @@ param storageAccount string = 'testStorageAccount'";
         private static IEnumerable<object[]> GetData() => DataSets.AllDataSets.ToDynamicTestData();
     }
 }
-

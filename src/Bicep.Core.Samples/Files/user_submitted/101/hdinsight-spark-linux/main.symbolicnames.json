@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "6998554863925629628"
+      "templateHash": "14621610686863918372"
     }
   },
   "parameters": {
@@ -26,7 +26,7 @@
       }
     },
     "clusterLoginPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "minLength": 10,
       "metadata": {
         "description": "The password must be at least 10 characters in length and must contain at least one digit, one upper case letter, one lower case letter, and one non-alphanumeric character except (single-quote, double-quote, backslash, right-bracket, full-stop). Also, the password must not contain 3 consecutive characters from the cluster username or SSH username."
@@ -40,7 +40,7 @@
       }
     },
     "sshPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "maxLength": 72,
       "minLength": 6,
       "metadata": {

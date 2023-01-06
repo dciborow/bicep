@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "3876533941227178498"
+      "templateHash": "12157837096239928675"
     }
   },
   "parameters": {
@@ -108,8 +108,8 @@
     }
   },
   "variables": {
-    "lockName": "[format('{0}-lck', resourceInfo('automationAccount').name)]",
-    "diagnosticsName": "[format('{0}-dgs', resourceInfo('automationAccount').name)]"
+    "lockName": "[format('{0}-lck', parameters('name'))]",
+    "diagnosticsName": "[format('{0}-dgs', parameters('name'))]"
   },
   "resources": {
     "automationAccount": {

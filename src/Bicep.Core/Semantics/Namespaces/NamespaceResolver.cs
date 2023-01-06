@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using Bicep.Core.Extensions;
+using Bicep.Core.Features;
 using Bicep.Core.Resources;
 using Bicep.Core.Syntax;
 using Bicep.Core.TypeSystem;
@@ -21,7 +22,7 @@ namespace Bicep.Core.Semantics.Namespaces
             this.BuiltIns = builtIns;
         }
 
-        public static NamespaceResolver Create(INamespaceProvider namespaceProvider, ResourceScope targetScope, IEnumerable<ImportedNamespaceSymbol> importedNamespaces)
+        public static NamespaceResolver Create(IFeatureProvider features, INamespaceProvider namespaceProvider, ResourceScope targetScope, IEnumerable<ImportedNamespaceSymbol> importedNamespaces)
         {
             var builtInNamespaceSymbols = new Dictionary<string, BuiltInNamespaceSymbol>(LanguageConstants.IdentifierComparer);
             var namespaceTypes = importedNamespaces
@@ -31,13 +32,7 @@ namespace Bicep.Core.Semantics.Namespaces
 
             void TryAddBuiltInNamespace(string @namespace)
             {
-                if (namespaceTypes.ContainsKey(@namespace))
-                {
-                    // we already have an imported namespace with this symbolic name
-                    return;
-                }
-
-                if (namespaceProvider.TryGetNamespace(@namespace, @namespace, targetScope) is not { } namespaceType)
+                if (namespaceProvider.TryGetNamespace(@namespace, @namespace, targetScope, features) is not { } namespaceType)
                 {
                     // this namespace doesn't match a known built-in namespace
                     return;
@@ -51,7 +46,14 @@ namespace Bicep.Core.Semantics.Namespaces
 
                 var symbol = new BuiltInNamespaceSymbol(@namespace, namespaceType);
                 builtInNamespaceSymbols[@namespace] = symbol;
-                namespaceTypes = namespaceTypes.Add(@namespace, namespaceType);
+
+                // If we've already imported a namespace with this symbolic name, don't add the builtin namespace to the
+                // dictionary of active namespaces. It will still be listed in the BuiltIns dictionary for error reporting,
+                // as it is masking a namespace that would otherwise be loaded and bound by default.
+                if (!namespaceTypes.ContainsKey(@namespace))
+                {
+                    namespaceTypes = namespaceTypes.Add(@namespace, namespaceType);
+                }
             }
 
             TryAddBuiltInNamespace(SystemNamespaceType.BuiltInName);
@@ -80,6 +82,20 @@ namespace Bicep.Core.Semantics.Namespaces
             }
         }
 
+        /// <summary>
+        /// Attempt to find ambient type in all imported namespaces. As Namespaces are themselves ObjectTypes, their properties can only be types, not values.
+        /// </summary>
+        public IEnumerable<AmbientTypeSymbol> ResolveUnqualifiedTypeSymbol(IdentifierSyntax identifierSyntax) => this.namespaceTypes.Values
+            .Select(@namespace => @namespace.Properties.TryGetValue(identifierSyntax.IdentifierName, out var found)
+                ? new AmbientTypeSymbol(identifierSyntax.IdentifierName, found.TypeReference.Type, @namespace, found.Description)
+                : null)
+            .WhereNotNull();
+
+        public IEnumerable<FunctionSymbol> GetKnownFunctions(string functionName)
+            => this.namespaceTypes.Values
+                .Select(type => type.MethodResolver.TryGetFunctionSymbol(functionName))
+                .OfType<FunctionSymbol>();
+
         public IEnumerable<string> GetKnownFunctionNames(bool includeDecorators)
             => this.namespaceTypes.Values
                 .SelectMany(type => includeDecorators
@@ -89,29 +105,33 @@ namespace Bicep.Core.Semantics.Namespaces
         public IEnumerable<string> GetKnownPropertyNames()
             => this.namespaceTypes.Values.SelectMany(type => type.Properties.Keys);
 
+        public IEnumerable<AmbientTypeSymbol> GetKnownTypes() => this.namespaceTypes.Values
+            .SelectMany(@namespace => @namespace.Properties.Select(p => new AmbientTypeSymbol(p.Key, p.Value.TypeReference.Type, @namespace, p.Value.Description)));
+
         public IEnumerable<string> GetNamespaceNames()
             => this.namespaceTypes.Keys;
 
         public NamespaceType? TryGetNamespace(string name)
             => this.namespaceTypes.TryGetValue(name);
 
-        public ResourceType? TryGetResourceType(ResourceTypeReference typeReference, ResourceTypeGenerationFlags flags)
+        public ImmutableArray<ResourceType> GetMatchingResourceTypes(ResourceTypeReference typeReference, ResourceTypeGenerationFlags flags)
         {
-            // TODO should we return an array of matching types here?
             var definedTypes = namespaceTypes.Values
                 .Select(type => type.ResourceTypeProvider.TryGetDefinedType(type, typeReference, flags))
-                .WhereNotNull();
+                .WhereNotNull()
+                .ToImmutableArray();
 
-            if (definedTypes.FirstOrDefault() is { } definedType)
+            if (definedTypes.Any())
             {
-                return definedType;
+                return definedTypes;
             }
 
-            var generatedTypes = namespaceTypes.Values
+            var fallbackTypes = namespaceTypes.Values
                 .Select(type => type.ResourceTypeProvider.TryGenerateFallbackType(type, typeReference, flags))
-                .WhereNotNull();
+                .WhereNotNull()
+                .ToImmutableArray();
 
-            return generatedTypes.FirstOrDefault();
+            return fallbackTypes;
         }
 
         public IEnumerable<ResourceTypeReference> GetAvailableResourceTypes()

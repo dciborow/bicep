@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "8748774500298793821"
+      "templateHash": "3102022256267994560"
     }
   },
   "parameters": {
@@ -36,7 +36,7 @@
     "serviceBusQueue": {
       "type": "Microsoft.ServiceBus/namespaces/queues",
       "apiVersion": "2017-04-01",
-      "name": "[format('{0}/{1}', resourceInfo('serviceBusNamespace').name, parameters('serviceBusQueueName'))]",
+      "name": "[format('{0}/{1}', parameters('serviceBusNamespaceName'), parameters('serviceBusQueueName'))]",
       "properties": {
         "lockDuration": "PT5M",
         "maxSizeInMegabytes": 1024,

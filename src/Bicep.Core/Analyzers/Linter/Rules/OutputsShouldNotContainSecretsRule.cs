@@ -32,24 +32,26 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                 values.First());
         }
 
-        public override IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model)
+        public override IEnumerable<IDiagnostic> AnalyzeInternal(SemanticModel model, DiagnosticLevel diagnosticLevel)
         {
-            var visitor = new OutputVisitor(this, model);
+            var visitor = new OutputVisitor(this, model, diagnosticLevel);
             visitor.Visit(model.SourceFile.ProgramSyntax);
             return visitor.diagnostics;
         }
 
-        private class OutputVisitor : SyntaxVisitor
+        private class OutputVisitor : AstVisitor
         {
             public List<IDiagnostic> diagnostics = new();
 
             private readonly OutputsShouldNotContainSecretsRule parent;
             private readonly SemanticModel model;
+            private readonly DiagnosticLevel diagnosticLevel;
 
-            public OutputVisitor(OutputsShouldNotContainSecretsRule parent, SemanticModel model)
+            public OutputVisitor(OutputsShouldNotContainSecretsRule parent, SemanticModel model, DiagnosticLevel diagnosticLevel)
             {
                 this.parent = parent;
                 this.model = model;
+                this.diagnosticLevel = diagnosticLevel;
             }
 
             public override void VisitOutputDeclarationSyntax(OutputDeclarationSyntax syntax)
@@ -58,28 +60,30 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                 if (syntax.Name.IdentifierName.Contains("password", StringComparison.OrdinalIgnoreCase))
                 {
                     string foundMessage = string.Format(CoreResources.OutputsShouldNotContainSecretsOutputName, syntax.Name.IdentifierName);
-                    this.diagnostics.Add(parent.CreateDiagnosticForSpan(syntax.Span, foundMessage));
+                    this.diagnostics.Add(parent.CreateDiagnosticForSpan(diagnosticLevel, syntax.Span, foundMessage));
                 }
 
-                var visitor = new OutputValueVisitor(this.parent, diagnostics, model);
+                var visitor = new OutputValueVisitor(this.parent, diagnostics, model, diagnosticLevel);
                 visitor.Visit(syntax);
 
                 // Note: No need to navigate deeper, don't call base
             }
         }
 
-        private class OutputValueVisitor : SyntaxVisitor
+        private class OutputValueVisitor : AstVisitor
         {
             private readonly List<IDiagnostic> diagnostics;
 
             private readonly OutputsShouldNotContainSecretsRule parent;
             private readonly SemanticModel model;
+            private readonly DiagnosticLevel diagnosticLevel;
 
-            public OutputValueVisitor(OutputsShouldNotContainSecretsRule parent, List<IDiagnostic> diagnostics, SemanticModel model)
+            public OutputValueVisitor(OutputsShouldNotContainSecretsRule parent, List<IDiagnostic> diagnostics, SemanticModel model, DiagnosticLevel diagnosticLevel)
             {
                 this.parent = parent;
                 this.model = model;
                 this.diagnostics = diagnostics;
+                this.diagnosticLevel = diagnosticLevel;
             }
 
             public override void VisitVariableAccessSyntax(VariableAccessSyntax syntax)
@@ -96,7 +100,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                     if (param.IsSecure())
                     {
                         string foundMessage = string.Format(CoreResources.OutputsShouldNotContainSecretsSecureParam, syntax.Name.IdentifierName);
-                        this.diagnostics.Add(parent.CreateDiagnosticForSpan(syntax.Name.Span, foundMessage));
+                        this.diagnostics.Add(parent.CreateDiagnosticForSpan(diagnosticLevel, syntax.Name.Span, foundMessage));
                     }
                 }
 
@@ -114,7 +118,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                     && listFunction.Name.IdentifierName.StartsWithOrdinalInsensitively(LanguageConstants.ListFunctionPrefix))
                 {
                     string foundMessage = string.Format(CoreResources.OutputsShouldNotContainSecretsFunction, syntax.Name.IdentifierName);
-                    this.diagnostics.Add(parent.CreateDiagnosticForSpan(syntax.Span, foundMessage));
+                    this.diagnostics.Add(parent.CreateDiagnosticForSpan(diagnosticLevel, syntax.Span, foundMessage));
                 }
 
                 base.VisitFunctionCallSyntax(syntax);
@@ -146,7 +150,7 @@ namespace Bicep.Core.Analyzers.Linter.Rules
                     if (isFailure)
                     {
                         string foundMessage = string.Format(CoreResources.OutputsShouldNotContainSecretsFunction, syntax.Name.IdentifierName);
-                        this.diagnostics.Add(parent.CreateDiagnosticForSpan(syntax.Span, foundMessage));
+                        this.diagnostics.Add(parent.CreateDiagnosticForSpan(diagnosticLevel, syntax.Span, foundMessage));
                     }
                 }
 

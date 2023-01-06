@@ -5,7 +5,7 @@
     "detail": "fifth",
     "documentation": {
       "kind": "markdown",
-      "value": "Type: `array`  \n"
+      "value": "Type: `[object, object]`  \n"
     },
     "deprecated": false,
     "preselect": false,
@@ -26,7 +26,7 @@
     "detail": "first",
     "documentation": {
       "kind": "markdown",
-      "value": "Type: `bool`  \n"
+      "value": "Type: `true`  \n"
     },
     "deprecated": false,
     "preselect": false,
@@ -68,7 +68,7 @@
     "detail": "second",
     "documentation": {
       "kind": "markdown",
-      "value": "Type: `bool`  \n"
+      "value": "Type: `false`  \n"
     },
     "deprecated": false,
     "preselect": false,
@@ -89,7 +89,7 @@
     "detail": "sixth",
     "documentation": {
       "kind": "markdown",
-      "value": "Type: `object[]`  \n"
+      "value": "Type: `[object]`  \n"
     },
     "deprecated": false,
     "preselect": false,
@@ -110,7 +110,7 @@
     "detail": "third",
     "documentation": {
       "kind": "markdown",
-      "value": "Type: `int`  \n"
+      "value": "Type: `42`  \n"
     },
     "deprecated": false,
     "preselect": false,

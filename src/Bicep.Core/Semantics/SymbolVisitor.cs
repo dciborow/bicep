@@ -21,6 +21,16 @@ namespace Bicep.Core.Semantics
             VisitDescendants(symbol);
         }
 
+        public virtual void VisitMetadataSymbol(MetadataSymbol symbol)
+        {
+            VisitDescendants(symbol);
+        }
+
+        public virtual void VisitParamAssignmentSymbol(ParameterAssignmentSymbol symbol)
+        {
+            VisitDescendants(symbol);
+        }
+
         public virtual void VisitParameterSymbol(ParameterSymbol symbol)
         {
             VisitDescendants(symbol);
@@ -47,6 +57,16 @@ namespace Bicep.Core.Semantics
         }
 
         public virtual void VisitTypeSymbol(TypeSymbol symbol)
+        {
+            VisitDescendants(symbol);
+        }
+
+        public virtual void VisitTypeAliasSymbol(TypeAliasSymbol symbol)
+        {
+            VisitDescendants(symbol);
+        }
+
+        public virtual void VisitAmbientTypeSymbol(AmbientTypeSymbol symbol)
         {
             VisitDescendants(symbol);
         }
@@ -95,4 +115,3 @@ namespace Bicep.Core.Semantics
         }
     }
 }
-

@@ -1,34 +1,57 @@
 targetScope = 'managementGroup'
 
 param ownerPrincipalId string
-//@[11:13]     "ownerPrincipalId": {
+//@    "ownerPrincipalId": {
+//@      "type": "string"
+//@    },
 
 param contributorPrincipals array
-//@[14:16]     "contributorPrincipals": {
+//@    "contributorPrincipals": {
+//@      "type": "array"
+//@    },
 param readerPrincipals array
-//@[17:19]     "readerPrincipals": {
+//@    "readerPrincipals": {
+//@      "type": "array"
+//@    }
 
 resource owner 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-//@[22:30]       "type": "Microsoft.Authorization/roleAssignments",
+//@    {
+//@      "type": "Microsoft.Authorization/roleAssignments",
+//@      "apiVersion": "2020-04-01-preview",
+//@      "name": "[guid('owner', parameters('ownerPrincipalId'))]",
+//@    },
   name: guid('owner', ownerPrincipalId)
   properties: {
-//@[26:29]       "properties": {
+//@      "properties": {
+//@      }
     principalId: ownerPrincipalId
-//@[27:27]         "principalId": "[parameters('ownerPrincipalId')]",
+//@        "principalId": "[parameters('ownerPrincipalId')]",
     roleDefinitionId: '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
-//@[28:28]         "roleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+//@        "roleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
   }
 }
 
 resource contributors 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [for contributor in contributorPrincipals: {
-//@[31:46]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "contributors",
+//@        "count": "[length(parameters('contributorPrincipals'))]"
+//@      },
+//@      "type": "Microsoft.Authorization/roleAssignments",
+//@      "apiVersion": "2020-04-01-preview",
+//@      "name": "[guid('contributor', parameters('contributorPrincipals')[copyIndex()])]",
+//@      "dependsOn": [
+//@        "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/roleAssignments', guid('owner', parameters('ownerPrincipalId')))]"
+//@      ]
+//@    },
   name: guid('contributor', contributor)
   properties: {
-//@[39:42]       "properties": {
+//@      "properties": {
+//@      },
     principalId: contributor
-//@[40:40]         "principalId": "[parameters('contributorPrincipals')[copyIndex()]]",
+//@        "principalId": "[parameters('contributorPrincipals')[copyIndex()]]",
     roleDefinitionId: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
-//@[41:41]         "roleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c"
+//@        "roleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c"
   }
   dependsOn: [
     owner
@@ -36,14 +59,27 @@ resource contributors 'Microsoft.Authorization/roleAssignments@2020-04-01-previe
 }]
 
 resource readers 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = [for reader in readerPrincipals: {
-//@[47:63]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "readers",
+//@        "count": "[length(parameters('readerPrincipals'))]"
+//@      },
+//@      "type": "Microsoft.Authorization/roleAssignments",
+//@      "apiVersion": "2020-04-01-preview",
+//@      "name": "[guid('reader', parameters('readerPrincipals')[copyIndex()])]",
+//@      "dependsOn": [
+//@        "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/roleAssignments', guid('contributor', parameters('contributorPrincipals')[0]))]",
+//@        "[extensionResourceId(managementGroup().id, 'Microsoft.Authorization/roleAssignments', guid('owner', parameters('ownerPrincipalId')))]"
+//@      ]
+//@    },
   name: guid('reader', reader)
   properties: {
-//@[55:58]       "properties": {
+//@      "properties": {
+//@      },
     principalId: reader
-//@[56:56]         "principalId": "[parameters('readerPrincipals')[copyIndex()]]",
+//@        "principalId": "[parameters('readerPrincipals')[copyIndex()]]",
     roleDefinitionId: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
-//@[57:57]         "roleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c"
+//@        "roleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c"
   }
   dependsOn: [
     owner
@@ -52,24 +88,38 @@ resource readers 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = 
 }]
 
 resource single_mg 'Microsoft.Management/managementGroups@2020-05-01' = {
-//@[64:69]       "type": "Microsoft.Management/managementGroups",
+//@    {
+//@      "type": "Microsoft.Management/managementGroups",
+//@      "apiVersion": "2020-05-01",
+//@      "scope": "/",
+//@      "name": "one-mg"
+//@    },
   scope: tenant()
   name: 'one-mg'
 }
 
 // Blueprints are read-only at tenant Scope, but it's a convenient example to use to validate this.
 resource tenant_blueprint 'Microsoft.Blueprint/blueprints@2018-11-01-preview' = {
-//@[70:76]       "type": "Microsoft.Blueprint/blueprints",
+//@    {
+//@      "type": "Microsoft.Blueprint/blueprints",
+//@      "apiVersion": "2018-11-01-preview",
+//@      "scope": "/",
+//@      "name": "tenant-blueprint",
+//@    },
   name: 'tenant-blueprint'
   properties: {}
-//@[75:75]       "properties": {}
+//@      "properties": {}
   scope: tenant()
 }
 
 resource mg_blueprint 'Microsoft.Blueprint/blueprints@2018-11-01-preview' = {
-//@[77:82]       "type": "Microsoft.Blueprint/blueprints",
+//@    {
+//@      "type": "Microsoft.Blueprint/blueprints",
+//@      "apiVersion": "2018-11-01-preview",
+//@      "name": "mg-blueprint",
+//@    }
   name: 'mg-blueprint'
   properties: {}
-//@[81:81]       "properties": {}
+//@      "properties": {}
 }
 

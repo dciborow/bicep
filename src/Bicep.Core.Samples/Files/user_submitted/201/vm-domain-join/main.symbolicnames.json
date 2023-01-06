@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "12346330178046526255"
+      "templateHash": "13957027872942036651"
     }
   },
   "parameters": {
@@ -33,7 +33,7 @@
       "type": "string"
     },
     "domainPassword": {
-      "type": "secureString"
+      "type": "securestring"
     },
     "ouPath": {
       "type": "string"
@@ -49,7 +49,7 @@
       "type": "string"
     },
     "vmAdminPassword": {
-      "type": "secureString"
+      "type": "securestring"
     },
     "location": {
       "type": "string",
@@ -100,7 +100,7 @@
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
-                "id": "[resourceInfo('publicIp').id]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
               },
               "subnet": {
                 "id": "[variables('subnetId')]"
@@ -152,7 +152,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceInfo('nic').id]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
             }
           ]
         },
@@ -171,7 +171,7 @@
     "virtualMachineExtension": {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/joindomain', resourceInfo('virtualMachine').name)]",
+      "name": "[format('{0}/joindomain', parameters('dnsLabelPrefix'))]",
       "location": "[parameters('location')]",
       "properties": {
         "publisher": "Microsoft.Compute",

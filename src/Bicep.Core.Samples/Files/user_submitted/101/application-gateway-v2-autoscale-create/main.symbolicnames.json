@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "7320352502346646232"
+      "templateHash": "2784423628703921716"
     }
   },
   "parameters": {
@@ -184,7 +184,7 @@
             "name": "appGatewayIpConfig",
             "properties": {
               "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', resourceInfo('virtualNetwork').name, parameters('subnetName'))]"
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('subnetName'))]"
               }
             }
           }
@@ -194,7 +194,7 @@
             "name": "appGatewayFrontendIP",
             "properties": {
               "publicIPAddress": {
-                "id": "[resourceInfo('publicIP').id]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIpName'))]"
               }
             }
           }

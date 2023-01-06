@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "13172056939225995862"
+      "templateHash": "14122572110426561589"
     }
   },
   "parameters": {
@@ -60,7 +60,7 @@
     "subnet": {
       "type": "Microsoft.Network/virtualNetworks/subnets",
       "apiVersion": "2020-06-01",
-      "name": "[format('{0}/{1}', resourceInfo('virtualNetwork').name, variables('azureFirewallSubnetName'))]",
+      "name": "[format('{0}/{1}', parameters('virtualNetworkName'), variables('azureFirewallSubnetName'))]",
       "properties": {
         "addressPrefix": "[parameters('azureFirewallSubnetAddressPrefix')]"
       },
@@ -93,10 +93,10 @@
             "name": "IpConf1",
             "properties": {
               "subnet": {
-                "id": "[resourceInfo('subnet').id]"
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(format('{0}/{1}', parameters('virtualNetworkName'), variables('azureFirewallSubnetName')), '/')[0], split(format('{0}/{1}', parameters('virtualNetworkName'), variables('azureFirewallSubnetName')), '/')[1])]"
               },
               "publicIPAddress": {
-                "id": "[resourceInfo('publicIP').id]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'publicIp1')]"
               }
             }
           }

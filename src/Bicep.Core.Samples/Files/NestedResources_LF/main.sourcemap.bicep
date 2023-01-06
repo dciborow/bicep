@@ -1,54 +1,90 @@
 resource basicParent 'My.Rp/parentType@2020-12-01' = {
-//@[108:115]       "type": "My.Rp/parentType",
+//@    {
+//@      "type": "My.Rp/parentType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "basicParent",
+//@    },
   name: 'basicParent'
   properties: {
-//@[112:114]       "properties": {
+//@      "properties": {
+//@      }
     size: 'large'
-//@[113:113]         "size": "large"
+//@        "size": "large"
   }
 
   resource basicChild 'childType' = {
-//@[40:51]       "type": "My.Rp/parentType/childType",
+//@    {
+//@      "type": "My.Rp/parentType/childType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}', 'basicParent', 'basicChild')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType', 'basicParent')]"
+//@      ]
+//@    },
     name: 'basicChild'
     properties: {
-//@[44:47]       "properties": {
+//@      "properties": {
+//@      },
       size: basicParent.properties.large
-//@[45:45]         "size": "[reference(resourceId('My.Rp/parentType', 'basicParent')).large]",
+//@        "size": "[reference(resourceId('My.Rp/parentType', 'basicParent'), '2020-12-01').large]",
       style: 'cool'
-//@[46:46]         "style": "cool"
+//@        "style": "cool"
     }
 
     resource basicGrandchild 'grandchildType' = {
-//@[28:39]       "type": "My.Rp/parentType/childType/grandchildType",
+//@    {
+//@      "type": "My.Rp/parentType/childType/grandchildType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}/{2}', 'basicParent', 'basicChild', 'basicGrandchild')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType/childType', 'basicParent', 'basicChild')]"
+//@      ]
+//@    },
       name: 'basicGrandchild'
       properties: {
-//@[32:35]       "properties": {
+//@      "properties": {
+//@      },
         size: basicParent.properties.size
-//@[33:33]         "size": "[reference(resourceId('My.Rp/parentType', 'basicParent')).size]",
+//@        "size": "[reference(resourceId('My.Rp/parentType', 'basicParent'), '2020-12-01').size]",
         style: basicChild.properties.style
-//@[34:34]         "style": "[reference(resourceId('My.Rp/parentType/childType', 'basicParent', 'basicChild')).style]"
+//@        "style": "[reference(resourceId('My.Rp/parentType/childType', 'basicParent', 'basicChild'), '2020-12-01').style]"
       }
     }
   }
 
   resource basicSibling 'childType' = {
-//@[52:64]       "type": "My.Rp/parentType/childType",
+//@    {
+//@      "type": "My.Rp/parentType/childType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}', 'basicParent', 'basicSibling')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType/childType/grandchildType', 'basicParent', 'basicChild', 'basicGrandchild')]",
+//@        "[resourceId('My.Rp/parentType', 'basicParent')]"
+//@      ]
+//@    },
     name: 'basicSibling'
     properties: {
-//@[56:59]       "properties": {
+//@      "properties": {
+//@      },
       size: basicParent.properties.size
-//@[57:57]         "size": "[reference(resourceId('My.Rp/parentType', 'basicParent')).size]",
+//@        "size": "[reference(resourceId('My.Rp/parentType', 'basicParent'), '2020-12-01').size]",
       style: basicChild::basicGrandchild.properties.style
-//@[58:58]         "style": "[reference(resourceId('My.Rp/parentType/childType/grandchildType', 'basicParent', 'basicChild', 'basicGrandchild')).style]"
+//@        "style": "[reference(resourceId('My.Rp/parentType/childType/grandchildType', 'basicParent', 'basicChild', 'basicGrandchild'), '2020-12-01').style]"
     }
   }
 }
 // #completionTest(50) -> childResources
 output referenceBasicChild string = basicParent::basicChild.properties.size
-//@[129:132]     "referenceBasicChild": {
+//@    "referenceBasicChild": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('My.Rp/parentType/childType', 'basicParent', 'basicChild'), '2020-12-01').size]"
+//@    },
 // #completionTest(67) -> grandChildResources
 output referenceBasicGrandchild string = basicParent::basicChild::basicGrandchild.properties.style
-//@[133:136]     "referenceBasicGrandchild": {
+//@    "referenceBasicGrandchild": {
+//@      "type": "string",
+//@      "value": "[reference(resourceId('My.Rp/parentType/childType/grandchildType', 'basicParent', 'basicChild', 'basicGrandchild'), '2020-12-01').style]"
+//@    },
 
 resource existingParent 'My.Rp/parentType@2020-12-01' existing = {
   name: 'existingParent'
@@ -57,63 +93,115 @@ resource existingParent 'My.Rp/parentType@2020-12-01' existing = {
     name: 'existingChild'
 
     resource existingGrandchild 'grandchildType' = {
-//@[65:73]       "type": "My.Rp/parentType/childType/grandchildType",
+//@    {
+//@      "type": "My.Rp/parentType/childType/grandchildType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}/{2}', 'existingParent', 'existingChild', 'existingGrandchild')]",
+//@    },
       name: 'existingGrandchild'
       properties: {
-//@[69:72]       "properties": {
+//@      "properties": {
+//@      }
         size: existingParent.properties.size
-//@[70:70]         "size": "[reference(resourceId('My.Rp/parentType', 'existingParent'), '2020-12-01').size]",
+//@        "size": "[reference(resourceId('My.Rp/parentType', 'existingParent'), '2020-12-01').size]",
         style: existingChild.properties.style
-//@[71:71]         "style": "[reference(resourceId('My.Rp/parentType/childType', 'existingParent', 'existingChild'), '2020-12-01').style]"
+//@        "style": "[reference(resourceId('My.Rp/parentType/childType', 'existingParent', 'existingChild'), '2020-12-01').style]"
       }
     }
   }
 }
 
 param createParent bool
-//@[11:13]     "createParent": {
+//@    "createParent": {
+//@      "type": "bool"
+//@    },
 param createChild bool
-//@[14:16]     "createChild": {
+//@    "createChild": {
+//@      "type": "bool"
+//@    },
 param createGrandchild bool
-//@[17:19]     "createGrandchild": {
+//@    "createGrandchild": {
+//@      "type": "bool"
+//@    }
 resource conditionParent 'My.Rp/parentType@2020-12-01' = if (createParent) {
-//@[75:121]       "condition": "[and(and(parameters('createParent'), parameters('createChild')), parameters('createGrandchild'))]",
+//@      "condition": "[and(and(parameters('createParent'), parameters('createChild')), parameters('createGrandchild'))]",
+//@      "condition": "[and(parameters('createParent'), parameters('createChild'))]",
+//@    {
+//@      "condition": "[parameters('createParent')]",
+//@      "type": "My.Rp/parentType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "conditionParent"
+//@    },
   name: 'conditionParent'
 
   resource conditionChild 'childType' = if (createChild) {
-//@[87:95]       "condition": "[and(parameters('createParent'), parameters('createChild'))]",
+//@    {
+//@      "type": "My.Rp/parentType/childType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}', 'conditionParent', 'conditionChild')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType', 'conditionParent')]"
+//@      ]
+//@    },
     name: 'conditionChild'
 
     resource conditionGrandchild 'grandchildType' = if (createGrandchild) {
-//@[74:86]       "condition": "[and(and(parameters('createParent'), parameters('createChild')), parameters('createGrandchild'))]",
+//@    {
+//@      "type": "My.Rp/parentType/childType/grandchildType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}/{2}', 'conditionParent', 'conditionChild', 'conditionGrandchild')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType/childType', 'conditionParent', 'conditionChild')]"
+//@      ]
+//@    },
       name: 'conditionGrandchild'
       properties: {
-//@[79:82]       "properties": {
+//@      "properties": {
+//@      },
         size: conditionParent.properties.size
-//@[80:80]         "size": "[reference(resourceId('My.Rp/parentType', 'conditionParent'), '2020-12-01').size]",
+//@        "size": "[reference(resourceId('My.Rp/parentType', 'conditionParent'), '2020-12-01').size]",
         style: conditionChild.properties.style
-//@[81:81]         "style": "[reference(resourceId('My.Rp/parentType/childType', 'conditionParent', 'conditionChild'), '2020-12-01').style]"
+//@        "style": "[reference(resourceId('My.Rp/parentType/childType', 'conditionParent', 'conditionChild'), '2020-12-01').style]"
       }
     }
   }
 }
 
 var items = [
-//@[22:25]     "items": [
+//@    "items": [
+//@    ]
   'a'
-//@[23:23]       "a",
+//@      "a",
   'b'
-//@[24:24]       "b"
+//@      "b"
 ]
 resource loopParent 'My.Rp/parentType@2020-12-01' = {
-//@[122:126]       "type": "My.Rp/parentType",
+//@    {
+//@      "type": "My.Rp/parentType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "loopParent"
+//@    }
   name: 'loopParent'
 
   resource loopChild 'childType' = [for item in items: {
-//@[96:107]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "loopChild",
+//@        "count": "[length(variables('items'))]"
+//@      },
+//@      "type": "My.Rp/parentType/childType",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "[format('{0}/{1}', 'loopParent', 'loopChild')]",
+//@      "dependsOn": [
+//@        "[resourceId('My.Rp/parentType', 'loopParent')]"
+//@      ]
+//@    },
     name: 'loopChild'
   }]
 }
 
 output loopChildOutput string = loopParent::loopChild[0].name
-//@[137:140]     "loopChildOutput": {
+//@    "loopChildOutput": {
+//@      "type": "string",
+//@      "value": "loopChild"
+//@    }

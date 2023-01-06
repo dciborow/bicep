@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "4175233103735518485"
+      "templateHash": "17427596913802988305"
     }
   },
   "parameters": {
@@ -25,7 +25,7 @@
       }
     },
     "administratorLoginPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "maxLength": 128,
       "minLength": 8,
       "metadata": {
@@ -138,7 +138,7 @@
       "name": "[parameters('siteName')]",
       "location": "[parameters('location')]",
       "properties": {
-        "serverFarmId": "[resourceInfo('hostingPlan').id]"
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
       },
       "dependsOn": [
         "hostingPlan"

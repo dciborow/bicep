@@ -15,6 +15,8 @@ namespace Bicep.Core.Analyzers.Interfaces
     /// constructor which can be discoverd through
     /// reflection
     /// </summary>
+    /// <remarks>Do not rename or move this type to a different namespace.
+    /// We are using a source generator that requires the fully qualified type name of this interface to not change.</remarks>
     public interface IBicepAnalyzerRule
     {
         string AnalyzerName { get; }
@@ -23,13 +25,11 @@ namespace Bicep.Core.Analyzers.Interfaces
 
         string Description { get; }
 
-        DiagnosticLevel DiagnosticLevel { get; }
+        DiagnosticLevel DefaultDiagnosticLevel { get; }
 
         DiagnosticStyling DiagnosticStyling { get; }
 
         Uri? Uri { get; }
-
-        void Configure(AnalyzersConfiguration configuration);
 
         IEnumerable<IDiagnostic> Analyze(SemanticModel model);
     }

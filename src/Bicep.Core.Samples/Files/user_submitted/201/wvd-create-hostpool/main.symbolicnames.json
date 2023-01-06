@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "6570365507497931924"
+      "templateHash": "4259362336117477743"
     }
   },
   "parameters": {
@@ -86,7 +86,7 @@
       }
     },
     "administratorAccountPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "",
       "metadata": {
         "description": "The password that corresponds to the existing domain username."
@@ -100,7 +100,7 @@
       }
     },
     "vmAdministratorAccountPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "defaultValue": "",
       "metadata": {
         "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
@@ -562,7 +562,7 @@
       "location": "[parameters('location')]",
       "tags": "[parameters('applicationGroupTags')]",
       "properties": {
-        "hostPoolArmPath": "[resourceInfo('hostpool').id]",
+        "hostPoolArmPath": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('hostpoolName'))]",
         "friendlyName": "Default Desktop",
         "description": "Desktop Application Group created through the Hostpool Wizard",
         "applicationGroupType": "Desktop"
@@ -598,11 +598,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "5180923156111509853"
+              "templateHash": "3519962476518881134"
             }
           },
           "parameters": {
@@ -666,11 +666,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "13597904005241275944"
+              "templateHash": "7826305157177586661"
             }
           },
           "parameters": {
@@ -841,11 +841,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7582544658857588922"
+              "templateHash": "8529385440411645806"
             }
           },
           "parameters": {
@@ -965,7 +965,7 @@
               }
             },
             "administratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "The password that corresponds to the existing domain username."
               }
@@ -978,7 +978,7 @@
               }
             },
             "vmAdministratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "defaultValue": "",
               "metadata": {
                 "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
@@ -1203,7 +1203,7 @@
                     }
                   },
                   "imageReference": {
-                    "id": "[resourceInfo('imageName').id]"
+                    "id": "[resourceId('Microsoft.Compute/images', variables('imageName_var'))]"
                   }
                 },
                 "networkProfile": {
@@ -1358,11 +1358,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "18233818777227830375"
+                      "templateHash": "13628187446363699436"
                     }
                   },
                   "parameters": {
@@ -1531,11 +1531,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "14524098034320383856"
+              "templateHash": "9357298842282880538"
             }
           },
           "parameters": {
@@ -1655,7 +1655,7 @@
               }
             },
             "administratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "The password that corresponds to the existing domain username."
               }
@@ -1668,7 +1668,7 @@
               }
             },
             "vmAdministratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "defaultValue": "",
               "metadata": {
                 "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
@@ -2033,11 +2033,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "18233818777227830375"
+                      "templateHash": "13628187446363699436"
                     }
                   },
                   "parameters": {
@@ -2206,11 +2206,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3843857765550258576"
+              "templateHash": "12880138032970427321"
             }
           },
           "parameters": {
@@ -2330,7 +2330,7 @@
               }
             },
             "administratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "The password that corresponds to the existing domain username."
               }
@@ -2343,7 +2343,7 @@
               }
             },
             "vmAdministratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "defaultValue": "",
               "metadata": {
                 "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
@@ -2704,11 +2704,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "18233818777227830375"
+                      "templateHash": "13628187446363699436"
                     }
                   },
                   "parameters": {
@@ -2877,11 +2877,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "8226053396290136045"
+              "templateHash": "17069599427407558853"
             }
           },
           "parameters": {
@@ -3001,7 +3001,7 @@
               }
             },
             "administratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "metadata": {
                 "description": "The password that corresponds to the existing domain username."
               }
@@ -3014,7 +3014,7 @@
               }
             },
             "vmAdministratorAccountPassword": {
-              "type": "secureString",
+              "type": "securestring",
               "defaultValue": "",
               "metadata": {
                 "description": "The password associated with the virtual machine administrator account. The vmAdministratorAccountUsername and  vmAdministratorAccountPassword parameters must both be provided. Otherwise, domain administrator credentials provided by administratorAccountUsername and administratorAccountPassword will be used."
@@ -3378,11 +3378,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "18233818777227830375"
+                      "templateHash": "13628187446363699436"
                     }
                   },
                   "parameters": {

@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "13428383541073816102"
+      "templateHash": "9667267869245389470"
     }
   },
   "parameters": {
@@ -36,11 +36,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "17011904784298391986"
+              "templateHash": "9542820828638189911"
             }
           },
           "parameters": {
@@ -82,7 +82,7 @@
           "outputs": {
             "appServicePlanID": {
               "type": "string",
-              "value": "[resourceInfo('appServicePlan').id]"
+              "value": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
             }
           }
         }
@@ -113,11 +113,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "16621618591576177853"
+              "templateHash": "3819470834506068566"
             }
           },
           "parameters": {
@@ -162,7 +162,7 @@
             "appServiceLogging": {
               "type": "Microsoft.Web/sites/config",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/logs', resourceInfo('appService').name)]",
+              "name": "[format('{0}/logs', variables('webSiteName'))]",
               "properties": {
                 "applicationLogs": {
                   "fileSystem": {
@@ -189,7 +189,7 @@
             "appServiceAppSettings": {
               "type": "Microsoft.Web/sites/config",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/appsettings', resourceInfo('appService').name)]",
+              "name": "[format('{0}/appsettings', variables('webSiteName'))]",
               "properties": {
                 "APPINSIGHTS_INSTRUMENTATIONKEY": "[parameters('APPINSIGHTS_INSTRUMENTATIONKEY')]"
               },
@@ -200,7 +200,7 @@
             "appServiceSiteExtension": {
               "type": "Microsoft.Web/sites/siteextensions",
               "apiVersion": "2020-06-01",
-              "name": "[format('{0}/Microsoft.ApplicationInsights.AzureWebsites', resourceInfo('appService').name)]",
+              "name": "[format('{0}/Microsoft.ApplicationInsights.AzureWebsites', variables('webSiteName'))]",
               "dependsOn": [
                 "appService"
               ]
@@ -235,11 +235,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "17786095178266411096"
+              "templateHash": "12650766577194912708"
             }
           },
           "parameters": {
@@ -305,11 +305,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "1509661387361677849"
+              "templateHash": "15502974547644745936"
             }
           },
           "parameters": {
@@ -345,7 +345,7 @@
           "outputs": {
             "logAnalaticsWorkspaceResourceID": {
               "type": "string",
-              "value": "[resourceInfo('logAnalyticsWorkspace').id]"
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]"
             }
           }
         }

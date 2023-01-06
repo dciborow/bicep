@@ -7,19 +7,21 @@ using Bicep.Core.UnitTests.Assertions;
 using Bicep.Core.UnitTests.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#pragma warning disable CA1825 // Avoid zero-length array allocations
+
 namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
 {
     [TestClass]
     public class ArtifactsParametersRuleTests : LinterRuleTestsBase
     {
-        private void CompileAndTest(string bicepText, string[] expectedMessagesForCode, OnCompileErrors onCompileErrors = OnCompileErrors.IncludeErrors)
+        private static void CompileAndTest(string bicepText, string[] expectedMessagesForCode, OnCompileErrors onCompileErrors = OnCompileErrors.IncludeErrors)
         {
             var options = new Options(onCompileErrors, IncludePosition.None);
             AssertLinterRuleDiagnostics(ArtifactsParametersRule.Code, bicepText, expectedMessagesForCode, options);
         }
 
         [TestMethod]
-        public void MissingUnderscoreInParamNames_ArtifactsLocation()
+        public void MissingUnderscoreInParamNames_ArtifactsLocation_TreatAsNonArtifactsParameter()
         {
             CompileAndTest(
                 @"
@@ -31,50 +33,28 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
                 ",
                 new string[]
                 {
-                    "The artifacts parameter 'artifactsLocation' must start with an underscore.",
-                    "If the '_artifactsLocation' parameter has a default value, it must be a raw URL or an expression like 'deployment().properties.templateLink.uri'.",
+                        "If an '_artifactsLocationSasToken' parameter is provided, an '_artifactsLocation' parameter must also be provided.",
                 }
-           );
+            );
         }
-
         [TestMethod]
-        public void MissingUnderscoreInParamNames_CaseInsensitive()
+        public void MissingUnderscoreInParamNames_SasToken_TreatAsNonArtifactsParameter()
         {
             CompileAndTest(
-                @"
-                    @secure()
-                    param artifactsLOCATION string = 'something'
-
-                    @secure()
-                    param _ARTIFACTSLocationSasToken string = ''
-                ",
-                new string[]
-                {
-                    "The artifacts parameter 'artifactsLocation' must start with an underscore.",
-                    "If the '_artifactsLocation' parameter has a default value, it must be a raw URL or an expression like 'deployment().properties.templateLink.uri'.",
-                }
-           );
-        }
-
-        [TestMethod]
-        public void MissingUnderscoreInParamNames_SasToken()
-        {
-            CompileAndTest(
-                @"
+            @"
                     @secure()
                     param _artifactsLocation string = deployment().properties.templateLink.uri
 
                     @secure()
                     param artifactsLocationSasToken string = 'something'
-                ",
-                new string[]
-                {
-                    "The artifacts parameter 'artifactsLocationSasToken' must start with an underscore.",
-                     "If the '_artifactsLocationSasToken' parameter has a default value, it must be an empty string.",
-                }
-           );
+                "
+            ,
+            new string[]
+            {
+                "If an '_artifactsLocation' parameter is provided, an '_artifactsLocationSasToken' parameter must also be provided.",
+            }
+            );
         }
-
         [TestMethod]
         public void ArmTtk_DeploymentFunction_Pass()
         {
@@ -294,7 +274,7 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
             /* TTK result:
                 [-] artifacts parameter (2 ms)                                                                                      
                     The _artifactsLocation in "mainTemplate.json" parameter must be a 'string' type in the parameter declaration "array"
-                    The _artifactsLocationSasToken in "mainTemplate.json" parameter must be of type 'secureString'.                 
+                    The _artifactsLocationSasToken in "mainTemplate.json" parameter must be of type 'securestring'.                 
                     The _artifactsLocation parameter in "mainTemplate.json" must have a defaultValue in the main template           
                     The _artifactsLocationSasToken in "mainTemplate.json" has an incorrect defaultValue, must be an empty string    
              */
@@ -318,7 +298,7 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
             /* TTK result:
                 [-] artifacts parameter (2 ms)                                                                                      
                     The _artifactsLocation in "mainTemplate.json" parameter must be a 'string' type in the parameter declaration "array"
-                    The _artifactsLocationSasToken in "mainTemplate.json" parameter must be of type 'secureString'.                 
+                    The _artifactsLocationSasToken in "mainTemplate.json" parameter must be of type 'securestring'.                 
                     The _artifactsLocation parameter in "mainTemplate.json" must have a defaultValue in the main template           
                     The _artifactsLocationSasToken in "mainTemplate.json" has an incorrect defaultValue, must be an empty string    
              */
@@ -474,12 +454,9 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
                         }
                     ")});
 
-            result.Diagnostics.Should().HaveDiagnostics(new[]
-            {
-                  ("artifacts-parameters", DiagnosticLevel.Warning, "Parameter '_artifactsLocation' of module 'creatingVM' should be assigned an explicit value."),
-                  ("artifacts-parameters", DiagnosticLevel.Warning, "Parameter '_artifactsLocationSasToken' of module 'creatingVM' should be assigned an explicit value."),
-                  ("BCP035", DiagnosticLevel.Error, "The specified \"object\" declaration is missing the following required properties: \"_artifactsLocation\"."),
-            });
+            result.Diagnostics.Should().ContainDiagnostic("artifacts-parameters", DiagnosticLevel.Warning, "Parameter '_artifactsLocationSasToken' of module 'creatingVM' should be assigned an explicit value.");
+            result.Diagnostics.Should().ContainDiagnostic("artifacts-parameters", DiagnosticLevel.Warning, "Parameter '_artifactsLocation' of module 'creatingVM' should be assigned an explicit value.");
+            result.Diagnostics.Should().ContainDiagnostic("BCP035", DiagnosticLevel.Error, "The specified \"object\" declaration is missing the following required properties: \"_artifactsLocation\".");
         }
     }
 }

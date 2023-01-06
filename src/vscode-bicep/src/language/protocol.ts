@@ -66,10 +66,13 @@ export interface BicepDeploymentStartParams {
   token: string;
   expiresOnTimestamp: string;
   deployId: string;
+  deploymentName: string;
   portalUrl: string;
   parametersFileName: string;
   parametersFileUpdateOption: ParametersFileUpdateOption;
   updatedDeploymentParameters: BicepUpdatedDeploymentParameter[];
+  resourceManagerEndpointUrl: string;
+  audience: string;
 }
 
 export interface BicepDeploymentStartResponse {
@@ -185,3 +188,17 @@ export const getRecommendedConfigLocationRequestType = new ProtocolRequestType<
   void,
   void
 >("bicep/getRecommendedConfigLocation");
+
+export interface BicepDecompileForPasteCommandParams {
+  jsonContent: string;
+  queryCanPaste: boolean;
+}
+
+export interface BicepDecompileForPasteCommandResult {
+  decompileId: string;
+  output: string;
+  errorMessage?: string;
+  pasteType?: string; // undefined if can't be pasted
+  bicep?: string;
+  decompilationDisclaimer?: string;
+}

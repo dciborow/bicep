@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "3181855944704852684"
+      "templateHash": "17789195672823044187"
     }
   },
   "parameters": {
@@ -167,7 +167,7 @@
       "location": "[parameters('location')]",
       "kind": "functionapp",
       "properties": {
-        "serverFarmId": "[resourceInfo('serverFarm').id]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "siteConfig": {
           "appSettings": [
             {
@@ -180,7 +180,7 @@
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix= {1};AccountKey={2}', resourceInfo('storageAccount').name, environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-04-01').keys[0].value)]"
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix= {1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-04-01').keys[0].value)]"
             },
             {
               "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
@@ -213,7 +213,7 @@
       "apiVersion": "2020-06-01",
       "name": "[format('{0}/{1}', variables('functionAppName'), 'virtualNetwork')]",
       "properties": {
-        "subnetResourceId": "[resourceInfo('subnet').id]",
+        "subnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]",
         "swiftSupported": true
       },
       "dependsOn": [

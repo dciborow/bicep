@@ -36,7 +36,7 @@ namespace Bicep.Core.FileSystem
         /// <param name="detectedEncoding">The encoding that was detected (if no failure occurred)</param>
         bool TryRead(Uri fileUri, [NotNullWhen(true)] out string? fileContents, [NotNullWhen(false)] out DiagnosticBuilder.ErrorBuilderDelegate? failureBuilder, Encoding fileEncoding, int maxCharacters, [NotNullWhen(true)] out Encoding? detectedEncoding);
 
-        bool TryReadAtMostNCharaters(Uri fileUri, Encoding fileEncoding, int n, [NotNullWhen(true)] out string? fileContents);
+        bool TryReadAtMostNCharacters(Uri fileUri, Encoding fileEncoding, int n, [NotNullWhen(true)] out string? fileContents);
 
         void Write(Uri fileUri, Stream contents);
 
@@ -59,14 +59,14 @@ namespace Bicep.Core.FileSystem
         /// </summary>
         /// <param name="fileUri">The base fileUri</param>
         /// <param name="pattern">optional pattern to filter the dirs</param>
-        IEnumerable<Uri> GetDirectories(Uri fileUri, string pattern);
+        IEnumerable<Uri> GetDirectories(Uri fileUri, string pattern = "");
 
         /// <summary>
         /// Tries to get Files given a uri and pattern. fileUri MUST have a trailing '/'
         /// </summary>
         /// <param name="fileUri">The base fileUri</param>
         /// <param name="pattern">optional pattern to filter the resulting files</param>
-        IEnumerable<Uri> GetFiles(Uri fileUri, string pattern);
+        IEnumerable<Uri> GetFiles(Uri fileUri, string pattern = "");
 
         /// <summary>
         /// Check whether specified URI's directory exists if specified URI is a file:// URI. fileUri MUST have a trailing '/'

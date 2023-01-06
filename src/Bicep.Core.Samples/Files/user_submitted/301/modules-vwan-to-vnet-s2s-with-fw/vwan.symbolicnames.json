@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "967997001662366028"
+      "templateHash": "9878070999700807777"
     }
   },
   "parameters": {
@@ -47,7 +47,7 @@
   "outputs": {
     "id": {
       "type": "string",
-      "value": "[resourceInfo('wan').id]"
+      "value": "[resourceId('Microsoft.Network/virtualWans', parameters('wanname'))]"
     }
   }
 }

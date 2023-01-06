@@ -1,82 +1,120 @@
 var boolVal = true
-//@[25:25]     "boolVal": true,
+//@    "boolVal": true,
 
 var vmProperties = {
-//@[26:35]     "vmProperties": {
+//@    "vmProperties": {
+//@    }
   diagnosticsProfile: {
-//@[27:33]       "diagnosticsProfile": {
+//@      "diagnosticsProfile": {
+//@      },
     bootDiagnostics: {
-//@[28:32]         "bootDiagnostics": {
+//@        "bootDiagnostics": {
+//@        }
       enabled: 123
-//@[29:29]           "enabled": 123,
+//@          "enabled": 123,
       storageUri: true
-//@[30:30]           "storageUri": true,
+//@          "storageUri": true,
       unknownProp: 'asdf'
-//@[31:31]           "unknownProp": "asdf"
+//@          "unknownProp": "asdf"
     }
   }
   evictionPolicy: boolVal
-//@[34:34]       "evictionPolicy": "[variables('boolVal')]"
+//@      "evictionPolicy": "[variables('boolVal')]"
 }
 
 resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
-//@[38:44]       "type": "Microsoft.Compute/virtualMachines",
+//@    {
+//@      "type": "Microsoft.Compute/virtualMachines",
+//@      "apiVersion": "2020-12-01",
+//@      "name": "vm",
+//@    },
   name: 'vm'
   location: 'West US'
-//@[42:42]       "location": "West US",
+//@      "location": "West US",
   properties: vmProperties
-//@[43:43]       "properties": "[variables('vmProperties')]"
+//@      "properties": "[variables('vmProperties')]"
 }
 
 var ipConfigurations = [for i in range(0, 2): {
-//@[12:23]         "name": "ipConfigurations",
+//@      {
+//@        "name": "ipConfigurations",
+//@        "count": "[length(range(0, 2))]",
+//@        "input": {
+//@        }
+//@      }
   id: true
-//@[16:16]           "id": true,
+//@          "id": true,
   name: 'asdf${i}'
-//@[17:17]           "name": "[format('asdf{0}', range(0, 2)[copyIndex('ipConfigurations')])]",
+//@          "name": "[format('asdf{0}', range(0, 2)[copyIndex('ipConfigurations')])]",
   properties: {
-//@[18:21]           "properties": {
+//@          "properties": {
+//@          }
     madeUpProperty: boolVal
-//@[19:19]             "madeUpProperty": "[variables('boolVal')]",
+//@            "madeUpProperty": "[variables('boolVal')]",
     subnet: 'hello'
-//@[20:20]             "subnet": "hello"
+//@            "subnet": "hello"
   }
 }]
 
 resource nic 'Microsoft.Network/networkInterfaces@2020-11-01' = {
-//@[45:52]       "type": "Microsoft.Network/networkInterfaces",
+//@    {
+//@      "type": "Microsoft.Network/networkInterfaces",
+//@      "apiVersion": "2020-11-01",
+//@      "name": "abc",
+//@    },
   name: 'abc'
   properties: {
-//@[49:51]       "properties": {
+//@      "properties": {
+//@      }
     ipConfigurations: ipConfigurations
-//@[50:50]         "ipConfigurations": "[variables('ipConfigurations')]"
+//@        "ipConfigurations": "[variables('ipConfigurations')]"
   }
 }
 
 resource nicLoop 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in range(0, 2): {
-//@[53:66]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "nicLoop",
+//@        "count": "[length(range(0, 2))]"
+//@      },
+//@      "type": "Microsoft.Network/networkInterfaces",
+//@      "apiVersion": "2020-11-01",
+//@      "name": "[format('abc{0}', range(0, 2)[copyIndex()])]",
+//@    },
   name: 'abc${i}'
   properties: {
-//@[61:65]       "properties": {
+//@      "properties": {
+//@      }
     ipConfigurations: [
-//@[62:64]         "ipConfigurations": [
+//@        "ipConfigurations": [
+//@        ]
       // TODO: fix this
       ipConfigurations[i]
-//@[63:63]           "[variables('ipConfigurations')[range(0, 2)[copyIndex()]]]"
+//@          "[variables('ipConfigurations')[range(0, 2)[copyIndex()]]]"
     ]
   }
 }]
 
 resource nicLoop2 'Microsoft.Network/networkInterfaces@2020-11-01' = [for ipConfig in ipConfigurations: {
-//@[67:80]       "copy": {
+//@    {
+//@      "copy": {
+//@        "name": "nicLoop2",
+//@        "count": "[length(variables('ipConfigurations'))]"
+//@      },
+//@      "type": "Microsoft.Network/networkInterfaces",
+//@      "apiVersion": "2020-11-01",
+//@      "name": "[format('abc{0}', variables('ipConfigurations')[copyIndex()].name)]",
+//@    }
   name: 'abc${ipConfig.name}'
   properties: {
-//@[75:79]       "properties": {
+//@      "properties": {
+//@      }
     ipConfigurations: [
-//@[76:78]         "ipConfigurations": [
+//@        "ipConfigurations": [
+//@        ]
       // TODO: fix this
       ipConfig
-//@[77:77]           "[variables('ipConfigurations')[copyIndex()]]"
+//@          "[variables('ipConfigurations')[copyIndex()]]"
     ]
   }
 }]

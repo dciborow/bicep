@@ -56,6 +56,7 @@ export async function importResourceIconInline(
         await import("./databases/10121-icon-service-Azure-Cosmos-DB.svg")
       ).default;
     case "microsoft.dbformysql/servers":
+    case "microsoft.dbformysql/flexibleservers":
       return (
         await import(
           "./databases/10122-icon-service-Azure-Database-MySQL-Server.svg"
@@ -74,6 +75,7 @@ export async function importResourceIconInline(
       return (await import("./databases/10126-icon-service-Data-Factory.svg"))
         .default;
     case "microsoft.dbforpostgressql/servers":
+    case "microsoft.dbforpostgressql/flexibleservers":
       return (
         await import(
           "./databases/10131-icon-service-Azure-Database-PostgreSQL-Server.svg"
@@ -105,6 +107,7 @@ export async function importResourceIconInline(
         .default;
 
     // microsoft.network
+    case "microsoft.network/privatednszones":
     case "microsoft.network/dnszones":
       return (await import("./networking/10064-icon-service-DNS-Zones.svg"))
         .default;
@@ -456,6 +459,19 @@ export async function importResourceIconInline(
     case "microsoft.containerregistry/registries":
       return (
         await import("./containers/10105-icon-service-Container-Registries.svg")
+      ).default;
+
+    // Microsoft.App
+    case "microsoft.app/containerapps":
+      return (
+        await import("./containers/02884-icon-service-Worker-Container-App.svg")
+      ).default;
+
+    case "microsoft.app/managedenvironments":
+      return (
+        await import(
+          "./containers/02989-icon-service-Container-App-Environments.svg"
+        )
       ).default;
 
     // Microsoft.Cdn

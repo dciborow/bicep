@@ -22,7 +22,7 @@ namespace Bicep.Core.Emit
         IList<RawSourceMapFileEntry> Entries);
 
     public record RawSourceMapFileEntry(
-        BicepFile SourceFile,
+        BicepSourceFile SourceFile,
         IList<SourceMapRawEntry> SourceMap);
 
     public record SourceMapRawEntry(
@@ -63,24 +63,26 @@ namespace Bicep.Core.Emit
 
         private static readonly Regex JsonWhitespaceStrippingRegex = new(@"(""(?:[^""\\]|\\.)*"")|\s+", RegexOptions.Compiled);
 
+        private readonly IFileResolver fileResolver;
         private readonly RawSourceMap rawSourceMap;
-        private readonly BicepFile? sourceFile;
+        private readonly BicepSourceFile? sourceFile;
         private readonly PositionTrackingTextWriter trackingWriter;
 
-        public static PositionTrackingJsonTextWriter Create(TextWriter textWriter, BicepFile? sourceFile = null)
+        public PositionTrackingJsonTextWriter(IFileResolver fileResolver, TextWriter textWriter, BicepSourceFile? sourceFile = null, RawSourceMap? rawSourceMap = null)
+            : this(fileResolver, new(textWriter), sourceFile, rawSourceMap)
         {
-            var trackingWriter = new PositionTrackingTextWriter(textWriter);
-            return new PositionTrackingJsonTextWriter(trackingWriter, sourceFile);
         }
 
-        private PositionTrackingJsonTextWriter(PositionTrackingTextWriter trackingWriter, BicepFile? sourceFile) : base(trackingWriter)
+        private PositionTrackingJsonTextWriter(IFileResolver fileResolver, PositionTrackingTextWriter trackingWriter, BicepSourceFile? sourceFile, RawSourceMap? rawSourceMap)
+            : base(trackingWriter)
         {
+            this.fileResolver = fileResolver;
+            this.rawSourceMap = rawSourceMap ?? new RawSourceMap(new List<RawSourceMapFileEntry>());
             this.sourceFile = sourceFile;
-            this.rawSourceMap = new RawSourceMap(new List<RawSourceMapFileEntry>());
             this.trackingWriter = trackingWriter;
         }
 
-        public void WriteExpressionWithPosition(SyntaxBase? sourcePosition, Action expressionFunc)
+        public void WriteExpressionWithPosition(IPositionable? sourcePosition, Action expressionFunc)
         {
             var startPos = this.trackingWriter.CurrentPosition;
 
@@ -89,7 +91,7 @@ namespace Bicep.Core.Emit
             AddSourceMapping(sourcePosition, startPos);
         }
 
-        public void WriteObjectWithPosition(SyntaxBase? sourcePosition, Action propertiesFunc)
+        public void WriteObjectWithPosition(IPositionable? sourcePosition, Action propertiesFunc)
         {
             var startPos = this.trackingWriter.CurrentPosition;
 
@@ -100,7 +102,7 @@ namespace Bicep.Core.Emit
             AddSourceMapping(sourcePosition, startPos);
         }
 
-        public void WritePropertyWithPosition(SyntaxBase? keyPosition, string name, Action valueFunc)
+        public void WritePropertyWithPosition(IPositionable? keyPosition, string name, Action valueFunc)
         {
             var startPos = this.trackingWriter.CurrentPosition;
 
@@ -130,7 +132,7 @@ namespace Bicep.Core.Emit
 
         public override string? ToString() => this.trackingWriter.ToString();
 
-        private void AddSourceMapping(SyntaxBase? bicepSyntax, int jsonStartPosition)
+        private void AddSourceMapping(IPositionable? bicepSyntax, int jsonStartPosition)
         {
             if (this.sourceFile == null || bicepSyntax == null || bicepSyntax.Span.Length == 0)
             {
@@ -147,7 +149,7 @@ namespace Bicep.Core.Emit
                 {
                     bicepPosition = new TextSpan(
                         lastLeadingNode.Span.Position + lastLeadingNode.Span.Length,
-                        syntax.Span.Length - lastLeadingNode.Span.Length);
+                        syntax.Span.Length - syntax.LeadingNodes.Sum(node => node.Span.Length));
                 }
             }
 
@@ -163,7 +165,7 @@ namespace Bicep.Core.Emit
             AddRawMapping(this.sourceFile, bicepPosition, jsonPosition);
         }
 
-        private void AddRawMapping(BicepFile bicepFile, TextSpan bicepPosition, TextSpan jsonPosition)
+        private void AddRawMapping(BicepSourceFile bicepFile, TextSpan bicepPosition, TextSpan jsonPosition)
         {
             var fileEntry = this.rawSourceMap.Entries.FirstOrDefault(entry => entry.SourceFile.Equals(bicepFile));
             if (fileEntry is null)
@@ -225,7 +227,6 @@ namespace Bicep.Core.Emit
             var sourceMapFileEntries = new List<SourceMapFileEntry>();
             var entrypointFileName = System.IO.Path.GetFileName(sourceFile.FileUri.AbsolutePath);
             var entrypointAbsolutePath = System.IO.Path.GetDirectoryName(sourceFile.FileUri.AbsolutePath)!;
-            var fileResolver = new FileResolver();
 
             foreach (var bicepFileEntry in this.rawSourceMap.Entries)
             {
@@ -271,9 +272,14 @@ namespace Bicep.Core.Emit
                     }
                 }
 
+                // ensure ordering is deterministic
+                var sortedEntries = sourceMapEntries
+                    .OrderBy(x => x.SourceLine).ThenBy(x => x.TargetLine)
+                    .ToImmutableArray();
+
                 var fileEntry = new SourceMapFileEntry(
                     bicepRelativeFilePath,
-                    sourceMapEntries.ToImmutableArray());
+                    sortedEntries);
                 sourceMapFileEntries.Add(fileEntry);
             }
 

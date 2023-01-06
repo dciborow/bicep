@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "11734737491927560896"
+      "templateHash": "16124052747105188444"
     }
   },
   "parameters": {
@@ -87,7 +87,7 @@
       "properties": {
         "friendlyName": "[parameters('appgroupNameFriendlyName')]",
         "applicationGroupType": "[parameters('applicationgrouptype')]",
-        "hostPoolArmPath": "[resourceInfo('hp').id]"
+        "hostPoolArmPath": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('hostpoolName'))]"
       },
       "dependsOn": [
         "hp"
@@ -101,7 +101,7 @@
       "properties": {
         "friendlyName": "[parameters('workspaceNameFriendlyName')]",
         "applicationGroupReferences": [
-          "[resourceInfo('ag').id]"
+          "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('appgroupName'))]"
         ]
       },
       "dependsOn": [
@@ -129,10 +129,10 @@
             "value": "[parameters('logAnalyticsWorkspaceSku')]"
           },
           "hostpoolName": {
-            "value": "[resourceInfo('hp').name]"
+            "value": "[parameters('hostpoolName')]"
           },
           "workspaceName": {
-            "value": "[resourceInfo('ws').name]"
+            "value": "[parameters('workspaceName')]"
           },
           "avdBackplaneResourceGroup": {
             "value": "[parameters('avdBackplaneResourceGroup')]"
@@ -143,11 +143,11 @@
           "languageVersion": "1.9-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
-            "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+            "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "16864722642105308362"
+              "templateHash": "15422770400368608700"
             }
           },
           "parameters": {
@@ -196,7 +196,7 @@
                 "mode": "Incremental",
                 "parameters": {
                   "logAnalyticsWorkspaceID": {
-                    "value": "[resourceInfo('avdla').id]"
+                    "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
                   },
                   "hostpoolName": {
                     "value": "[parameters('hostpoolName')]"
@@ -210,11 +210,11 @@
                   "languageVersion": "1.9-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
-                    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+                    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "1620512394627203274"
+                      "templateHash": "15554635999490937810"
                     }
                   },
                   "parameters": {

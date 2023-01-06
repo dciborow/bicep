@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Bicep.Core.Diagnostics;
@@ -12,14 +13,21 @@ namespace Bicep.Core.Syntax
 {
     public static class SyntaxFactory
     {
-        public static readonly TextSpan EmptySpan = new TextSpan(0, 0);
-
         public static readonly IEnumerable<SyntaxTrivia> EmptyTrivia = Enumerable.Empty<SyntaxTrivia>();
 
-        public static readonly SkippedTriviaSyntax EmptySkippedTrivia = new SkippedTriviaSyntax(EmptySpan, Enumerable.Empty<SyntaxBase>(), Enumerable.Empty<IDiagnostic>());
+        public static readonly IEnumerable<SyntaxTrivia> SingleSpaceTrivia = ImmutableArray.Create(
+            new SyntaxTrivia(SyntaxTriviaType.Whitespace, TextSpan.Nil, " "));
 
-        public static Token CreateToken(TokenType tokenType, string text = "")
-            => new Token(tokenType, EmptySpan, string.IsNullOrEmpty(text) ? TryGetTokenText(tokenType) : text, EmptyTrivia, EmptyTrivia);
+        public static readonly SkippedTriviaSyntax EmptySkippedTrivia = new(TextSpan.Nil, Enumerable.Empty<SyntaxBase>(), Enumerable.Empty<IDiagnostic>());
+
+        public static Token CreateToken(TokenType tokenType, string text = "", IEnumerable<SyntaxTrivia>? leadingTrivia = null, IEnumerable<SyntaxTrivia>? trailingTrivia = null)
+        {
+            text = string.IsNullOrEmpty(text) ? TryGetTokenText(tokenType) : text;
+            leadingTrivia ??= EmptyTrivia;
+            trailingTrivia ??= EmptyTrivia;
+
+            return new(tokenType, TextSpan.Nil, text, leadingTrivia, trailingTrivia);
+        }
 
         public static IdentifierSyntax CreateIdentifier(string text) => new(CreateToken(TokenType.Identifier, text));
 
@@ -31,10 +39,12 @@ namespace Bicep.Core.Syntax
                 Interleave(variables.Select(x => new LocalVariableSyntax(x)), () => CommaToken),
                 SyntaxFactory.RightParenToken);
 
-        public static ExplicitVariableAccessSyntax CreateExplicitVariableAccess(string text) => new(CreateIdentifier(text));
+        public static UnboundVariableAccessSyntax CreateUnboundVariableAccess(string text) => new(CreateIdentifier(text));
 
         public static Token DoubleNewlineToken => CreateToken(TokenType.NewLine, Environment.NewLine + Environment.NewLine);
         public static Token NewlineToken => CreateToken(TokenType.NewLine, Environment.NewLine);
+        public static Token GetNewlineToken(IEnumerable<SyntaxTrivia>? leadingTrivia = null, IEnumerable<SyntaxTrivia>? trailingTrivia = null)
+            => CreateToken(TokenType.NewLine, Environment.NewLine, leadingTrivia, trailingTrivia);
         public static Token AtToken => CreateToken(TokenType.At, "@");
         public static Token LeftBraceToken => CreateToken(TokenType.LeftBrace, "{");
         public static Token RightBraceToken => CreateToken(TokenType.RightBrace, "}");
@@ -42,7 +52,9 @@ namespace Bicep.Core.Syntax
         public static Token RightParenToken => CreateToken(TokenType.RightParen, ")");
         public static Token LeftSquareToken => CreateToken(TokenType.LeftSquare, "[");
         public static Token RightSquareToken => CreateToken(TokenType.RightSquare, "]");
-        public static Token CommaToken => CreateToken(TokenType.Comma, ",");
+        public static Token CommaToken => GetCommaToken();
+        public static Token GetCommaToken(IEnumerable<SyntaxTrivia>? leadingTrivia = null, IEnumerable<SyntaxTrivia>? trailingTrivia = null)
+            => CreateToken(TokenType.Comma, ",", leadingTrivia, trailingTrivia);
         public static Token DotToken => CreateToken(TokenType.Dot, ".");
         public static Token QuestionToken => CreateToken(TokenType.Question, "?");
         public static Token ColonToken => CreateToken(TokenType.Colon, ":");
@@ -69,7 +81,14 @@ namespace Bicep.Core.Syntax
         public static Token NullKeywordToken => CreateToken(TokenType.NullKeyword, "null");
 
         public static ObjectPropertySyntax CreateObjectProperty(string key, SyntaxBase value)
-            => new ObjectPropertySyntax(CreateObjectPropertyKey(key), CreateToken(TokenType.Colon, ":"), value);
+        {
+            if (value is SkippedTriviaSyntax)
+            {
+                return new ObjectPropertySyntax(CreateObjectPropertyKey(key), CreateToken(TokenType.Colon, ":", EmptyTrivia), value);
+            }
+
+            return new ObjectPropertySyntax(CreateObjectPropertyKey(key), CreateToken(TokenType.Colon, ":", EmptyTrivia, SingleSpaceTrivia), value);
+        }
 
         public static ObjectSyntax CreateObject(IEnumerable<ObjectPropertySyntax> properties)
         {
@@ -200,8 +219,8 @@ namespace Bicep.Core.Syntax
 
         public static StringSyntax CreateStringLiteralWithComment(string value, string comment)
         {
-            var trailingTrivia = new SyntaxTrivia(SyntaxTriviaType.MultiLineComment, EmptySpan, $"/*{comment.Replace("*/", "*\\/")}*/");
-            var stringToken = new Token(TokenType.StringComplete, EmptySpan, $"'{EscapeBicepString(value)}'", EmptyTrivia, trailingTrivia.AsEnumerable());
+            var trailingTrivia = new SyntaxTrivia(SyntaxTriviaType.MultiLineComment, TextSpan.Nil, $"/*{comment.Replace("*/", "*\\/")}*/");
+            var stringToken = CreateToken(TokenType.StringComplete, $"'{EscapeBicepString(value)}'", EmptyTrivia, trailingTrivia.AsEnumerable());
 
             return new StringSyntax(stringToken.AsEnumerable(), Enumerable.Empty<SyntaxBase>(), value.AsEnumerable());
         }
@@ -370,14 +389,7 @@ namespace Bicep.Core.Syntax
             }
         }
 
-        public static Token CreateNewLineWithIndent(string indent)
-        {
-            return new Token(
-                TokenType.NewLine,
-                SyntaxFactory.EmptySpan,
-                Environment.NewLine,
-                SyntaxFactory.EmptyTrivia,
-                new SyntaxTrivia[] { new SyntaxTrivia(SyntaxTriviaType.Whitespace, SyntaxFactory.EmptySpan, indent) });
-        }
+        public static Token CreateNewLineWithIndent(string indent) => GetNewlineToken(
+            trailingTrivia: new SyntaxTrivia(SyntaxTriviaType.Whitespace, TextSpan.Nil, indent).AsEnumerable());
     }
 }

@@ -3,11 +3,11 @@
   "languageVersion": "1.9-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
-    "EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
+    "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "10329342537630729871"
+      "templateHash": "4315925004950247409"
     }
   },
   "parameters": {
@@ -65,7 +65,7 @@
     "publicIpName": "[format('{0}-ip', parameters('natGatewayName'))]",
     "publicIpAddresses": [
       {
-        "id": "[resourceInfo('publicIp').id]"
+        "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
       }
     ]
   },
@@ -120,7 +120,7 @@
             "properties": {
               "addressPrefix": "[parameters('vnetSubnetPrefix')]",
               "natGateway": {
-                "id": "[resourceInfo('natGateway').id]"
+                "id": "[resourceId('Microsoft.Network/natGateways', parameters('natGatewayName'))]"
               },
               "privateEndpointNetworkPolicies": "Enabled",
               "privateLinkServiceNetworkPolicies": "Enabled",
@@ -161,7 +161,7 @@
       "properties": {
         "addressPrefix": "[parameters('vnetSubnetPrefix')]",
         "natGateway": {
-          "id": "[resourceInfo('natGateway').id]"
+          "id": "[resourceId('Microsoft.Network/natGateways', parameters('natGatewayName'))]"
         },
         "privateEndpointNetworkPolicies": "Enabled",
         "privateLinkServiceNetworkPolicies": "Enabled",

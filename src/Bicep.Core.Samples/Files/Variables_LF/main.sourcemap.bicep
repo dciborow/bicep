@@ -2,216 +2,233 @@
 // int
 @sys.description('an int variable')
 var myInt = 42
-//@[76:76]     "myInt": 42,
+//@    "myInt": 42,
 
 // string
 @sys.description('a string variable')
 var myStr = 'str'
-//@[77:77]     "myStr": "str",
+//@    "myStr": "str",
 var curliesWithNoInterp = '}{1}{'
-//@[78:78]     "curliesWithNoInterp": "}{1}{",
+//@    "curliesWithNoInterp": "}{1}{",
 var interp1 = 'abc${123}def'
-//@[79:79]     "interp1": "[format('abc{0}def', 123)]",
+//@    "interp1": "[format('abc{0}def', 123)]",
 var interp2 = '${123}def'
-//@[80:80]     "interp2": "[format('{0}def', 123)]",
+//@    "interp2": "[format('{0}def', 123)]",
 var interp3 = 'abc${123}'
-//@[81:81]     "interp3": "[format('abc{0}', 123)]",
+//@    "interp3": "[format('abc{0}', 123)]",
 var interp4 = 'abc${123}${456}jk$l${789}p$'
-//@[82:82]     "interp4": "[format('abc{0}{1}jk$l{2}p$', 123, 456, 789)]",
+//@    "interp4": "[format('abc{0}{1}jk$l{2}p$', 123, 456, 789)]",
 var doubleInterp = 'abc${'def${123}'}_${'${456}${789}'}'
-//@[83:83]     "doubleInterp": "[format('abc{0}_{1}', format('def{0}', 123), format('{0}{1}', 456, 789))]",
+//@    "doubleInterp": "[format('abc{0}_{1}', format('def{0}', 123), format('{0}{1}', 456, 789))]",
 var curliesInInterp = '{${123}{0}${true}}'
-//@[84:84]     "curliesInInterp": "[format('{{{0}{{0}}{1}}}', 123, true())]",
+//@    "curliesInInterp": "[format('{{{0}{{0}}{1}}}', 123, true())]",
 
 // #completionTest(0) -> declarations
 
 // verify correct bracket escaping
 var bracketInTheMiddle = 'a[b]'
-//@[85:85]     "bracketInTheMiddle": "a[b]",
+//@    "bracketInTheMiddle": "a[b]",
 // #completionTest(25) -> empty
 var bracketAtBeginning = '[test'
-//@[86:86]     "bracketAtBeginning": "[test",
+//@    "bracketAtBeginning": "[test",
 // #completionTest(23) -> symbolsPlusTypes
 var enclosingBrackets = '[test]'
-//@[87:87]     "enclosingBrackets": "[[test]",
+//@    "enclosingBrackets": "[[test]",
 var emptyJsonArray = '[]'
-//@[88:88]     "emptyJsonArray": "[[]",
+//@    "emptyJsonArray": "[[]",
 var interpolatedBrackets = '[${myInt}]'
-//@[89:89]     "interpolatedBrackets": "[format('[{0}]', variables('myInt'))]",
+//@    "interpolatedBrackets": "[format('[{0}]', variables('myInt'))]",
 var nestedBrackets = '[test[]test2]'
-//@[90:90]     "nestedBrackets": "[[test[]test2]",
+//@    "nestedBrackets": "[[test[]test2]",
 var nestedInterpolatedBrackets = '[${emptyJsonArray}]'
-//@[91:91]     "nestedInterpolatedBrackets": "[format('[{0}]', variables('emptyJsonArray'))]",
+//@    "nestedInterpolatedBrackets": "[format('[{0}]', variables('emptyJsonArray'))]",
 var bracketStringInExpression = concat('[', '\'test\'',']')
-//@[92:92]     "bracketStringInExpression": "[concat('[', '''test''', ']')]",
+//@    "bracketStringInExpression": "[concat('[', '''test''', ']')]",
 
 // booleans
 @sys.description('a bool variable')
 var myTruth = true
-//@[93:93]     "myTruth": true,
+//@    "myTruth": true,
 var myFalsehood = false
-//@[94:94]     "myFalsehood": false,
+//@    "myFalsehood": false,
 
 var myEmptyObj = { }
-//@[95:95]     "myEmptyObj": {},
+//@    "myEmptyObj": {},
 var myEmptyArray = [ ]
-//@[96:96]     "myEmptyArray": [],
+//@    "myEmptyArray": [],
 
 // object
 @sys.description('a object variable')
 var myObj = {
-//@[97:116]     "myObj": {
+//@    "myObj": {
+//@    },
   a: 'a'
-//@[98:98]       "a": "a",
+//@      "a": "a",
   b: -12
-//@[99:99]       "b": -12,
+//@      "b": -12,
   c: true
-//@[100:100]       "c": true,
+//@      "c": true,
   d: !true
-//@[101:101]       "d": "[not(true())]",
+//@      "d": "[not(true())]",
   list: [
-//@[102:110]       "list": [
+//@      "list": [
+//@      ],
     1
-//@[103:103]         1,
+//@        1,
     2
-//@[104:104]         2,
+//@        2,
     2+1
-//@[105:105]         "[add(2, 1)]",
+//@        "[add(2, 1)]",
     {
+//@        {
+//@        },
       test: 144 > 33 && true || 99 <= 199
-//@[107:107]           "test": "[or(and(greater(144, 33), true()), lessOrEquals(99, 199))]"
+//@          "test": "[or(and(greater(144, 33), true()), lessOrEquals(99, 199))]"
     }
     'a' =~ 'b'
-//@[109:109]         "[equals(toLower('a'), toLower('b'))]"
+//@        "[equals(toLower('a'), toLower('b'))]"
   ]
   obj: {
-//@[111:115]       "obj": {
+//@      "obj": {
+//@      }
     nested: [
-//@[112:114]         "nested": [
+//@        "nested": [
+//@        ]
       'hello'
-//@[113:113]           "hello"
+//@          "hello"
     ]
   }
 }
 
 @sys.description('a object with interp')
 var objWithInterp = {
-//@[117:121]     "objWithInterp": {
+//@    "objWithInterp": {
+//@    },
   '${myStr}': 1
-//@[118:118]       "[format('{0}', variables('myStr'))]": 1,
+//@      "[format('{0}', variables('myStr'))]": 1,
   'abc${myStr}def': 2
-//@[119:119]       "[format('abc{0}def', variables('myStr'))]": 2,
+//@      "[format('abc{0}def', variables('myStr'))]": 2,
   '${interp1}abc${interp2}': '${interp1}abc${interp2}'
-//@[120:120]       "[format('{0}abc{1}', variables('interp1'), variables('interp2'))]": "[format('{0}abc{1}', variables('interp1'), variables('interp2'))]"
+//@      "[format('{0}abc{1}', variables('interp1'), variables('interp2'))]": "[format('{0}abc{1}', variables('interp1'), variables('interp2'))]"
 }
 
 // array
 var myArr = [
-//@[122:126]     "myArr": [
+//@    "myArr": [
+//@    ],
   'pirates'
-//@[123:123]       "pirates",
+//@      "pirates",
   'say'
-//@[124:124]       "say",
+//@      "say",
   'arr'
-//@[125:125]       "arr"
+//@      "arr"
 ]
 
 // array with objects
 var myArrWithObjects = [
-//@[127:136]     "myArrWithObjects": [
+//@    "myArrWithObjects": [
+//@    ],
   {
+//@      {
+//@      },
     name: 'one'
-//@[129:129]         "name": "one",
+//@        "name": "one",
     enable: true
-//@[130:130]         "enable": true
+//@        "enable": true
   }
   {
+//@      {
+//@      }
     name: 'two'
-//@[133:133]         "name": "two",
+//@        "name": "two",
     enable: false && false || 'two' !~ 'three'
-//@[134:134]         "enable": "[or(and(false(), false()), not(equals(toLower('two'), toLower('three'))))]"
+//@        "enable": "[or(and(false(), false()), not(equals(toLower('two'), toLower('three'))))]"
   }
 ]
 
 var expressionIndexOnAny = any({
-//@[137:137]     "expressionIndexOnAny": "[createObject()[resourceGroup().location]]",
+//@    "expressionIndexOnAny": "[createObject()[resourceGroup().location]]",
 })[az.resourceGroup().location]
 
 var anyIndexOnAny = any(true)[any(false)]
-//@[138:138]     "anyIndexOnAny": "[true()[false()]]",
+//@    "anyIndexOnAny": "[true()[false()]]",
 
 var deploymentName = deployment().name
-//@[139:139]     "deploymentName": "[deployment().name]",
+//@    "deploymentName": "[deployment().name]",
 var templateContentVersion = deployment().properties.template.contentVersion
-//@[140:140]     "templateContentVersion": "[deployment().properties.template.contentVersion]",
+//@    "templateContentVersion": "[deployment().properties.template.contentVersion]",
 var templateLinkUri = deployment().properties.templateLink.uri
-//@[141:141]     "templateLinkUri": "[deployment().properties.templateLink.uri]",
+//@    "templateLinkUri": "[deployment().properties.templateLink.uri]",
 var templateLinkId = deployment().properties.templateLink.id
-//@[142:142]     "templateLinkId": "[deployment().properties.templateLink.id]",
+//@    "templateLinkId": "[deployment().properties.templateLink.id]",
 
 var portalEndpoint = environment().portal
-//@[143:143]     "portalEndpoint": "[environment().portal]",
+//@    "portalEndpoint": "[environment().portal]",
 var loginEndpoint = environment().authentication.loginEndpoint
-//@[144:144]     "loginEndpoint": "[environment().authentication.loginEndpoint]",
+//@    "loginEndpoint": "[environment().authentication.loginEndpoint]",
 
 var namedPropertyIndexer = {
-//@[145:145]     "namedPropertyIndexer": "[createObject('foo', 's').foo]",
+//@    "namedPropertyIndexer": "[createObject('foo', 's').foo]",
   foo: 's'
 }['foo']
 
 var intIndexer = [
-//@[146:146]     "intIndexer": "[createArray('s')[0]]",
+//@    "intIndexer": "[createArray('s')[0]]",
   's'
 ][0]
 
 var functionOnIndexer1 = concat([
-//@[147:147]     "functionOnIndexer1": "[concat(createArray('s')[0], 's')]",
+//@    "functionOnIndexer1": "[concat(createArray('s')[0], 's')]",
   's'
 ][0], 's')
 
 var functionOnIndexer2 = concat([
-//@[148:148]     "functionOnIndexer2": "[concat(createArray()[0], 's')]",
+//@    "functionOnIndexer2": "[concat(createArray()[0], 's')]",
 ][0], 's')
 
 var functionOnIndexer3 = concat([
-//@[149:149]     "functionOnIndexer3": "[concat(createArray()[0], 's')]",
+//@    "functionOnIndexer3": "[concat(createArray()[0], 's')]",
 ][0], any('s'))
 
 var singleQuote = '\''
-//@[150:150]     "singleQuote": "'",
+//@    "singleQuote": "'",
 var myPropertyName = '${singleQuote}foo${singleQuote}'
-//@[151:151]     "myPropertyName": "[format('{0}foo{1}', variables('singleQuote'), variables('singleQuote'))]",
+//@    "myPropertyName": "[format('{0}foo{1}', variables('singleQuote'), variables('singleQuote'))]",
 
 var unusedIntermediate = listKeys(resourceId('Mock.RP/type', 'steve'), '2020-01-01')
 var unusedIntermediateRef = unusedIntermediate.secondaryKey
 
 // previously this was not possible to emit correctly
 var previousEmitLimit = [
-//@[152:164]     "previousEmitLimit": [
+//@    "previousEmitLimit": [
+//@    ],
   concat('s')
-//@[153:153]       "[concat('s')]",
+//@      "[concat('s')]",
   '${4}'
-//@[154:154]       "[format('{0}', 4)]",
+//@      "[format('{0}', 4)]",
   {
+//@      {
+//@      }
     a: {
-//@[156:162]         "a": {
+//@        "a": {
+//@        }
       b: base64('s')
-//@[157:157]           "b": "[base64('s')]",
+//@          "b": "[base64('s')]",
       c: concat([
-//@[158:158]           "c": "[concat(createArray(add(12, 3)), createArray(not(true()), 'hello'))]",
+//@          "c": "[concat(createArray(add(12, 3)), createArray(not(true()), 'hello'))]",
         12 + 3
       ], [
         !true
         'hello'
       ])
       d: az.resourceGroup().location
-//@[159:159]           "d": "[resourceGroup().location]",
+//@          "d": "[resourceGroup().location]",
       e: concat([
-//@[160:160]           "e": "[concat(createArray(true()))]",
+//@          "e": "[concat(createArray(true()))]",
         true
       ])
       f: concat([
-//@[161:161]           "f": "[concat(createArray(equals('s', 12)))]"
+//@          "f": "[concat(createArray(equals('s', 12)))]"
         's' == 12
       ])
     }
@@ -220,31 +237,35 @@ var previousEmitLimit = [
 
 // previously this was not possible to emit correctly
 var previousEmitLimit2 = [
-//@[165:177]     "previousEmitLimit2": [
+//@    "previousEmitLimit2": [
+//@    ],
   concat('s')
-//@[166:166]       "[concat('s')]",
+//@      "[concat('s')]",
   '${4}'
-//@[167:167]       "[format('{0}', 4)]",
+//@      "[format('{0}', 4)]",
   {
+//@      {
+//@      }
     a: {
-//@[169:175]         "a": {
+//@        "a": {
+//@        }
       b: base64('s')
-//@[170:170]           "b": "[base64('s')]",
+//@          "b": "[base64('s')]",
       c: union({
-//@[171:171]           "c": "[union(createObject('a', add(12, 3)), createObject('b', not(true()), 'c', 'hello'))]",
+//@          "c": "[union(createObject('a', add(12, 3)), createObject('b', not(true()), 'c', 'hello'))]",
         a: 12 + 3
       }, {
         b: !true
         c: 'hello'
       })
       d: az.resourceGroup().location
-//@[172:172]           "d": "[resourceGroup().location]",
+//@          "d": "[resourceGroup().location]",
       e: union({
-//@[173:173]           "e": "[union(createObject('x', true()), createObject())]",
+//@          "e": "[union(createObject('x', true()), createObject())]",
         x: true
       }, {})
       f: intersection({
-//@[174:174]           "f": "[intersection(createObject('q', equals('s', 12)), createObject())]"
+//@          "f": "[intersection(createObject('q', equals('s', 12)), createObject())]"
         q: 's' == 12
       }, {})
     }
@@ -253,15 +274,17 @@ var previousEmitLimit2 = [
 
 // previously this was not possible to emit correctly
 var previousEmitLimit3 = {
-//@[178:183]     "previousEmitLimit3": {
+//@    "previousEmitLimit3": {
+//@    },
   a: {
-//@[179:182]       "a": {
+//@      "a": {
+//@      }
     b: {
-//@[180:180]         "b": "[equals(createObject('a', resourceGroup().location), 2)]",
+//@        "b": "[equals(createObject('a', resourceGroup().location), 2)]",
       a: az.resourceGroup().location
     } == 2
     c: concat([
-//@[181:181]         "c": "[concat(createArray(), createArray(true()))]"
+//@        "c": "[concat(createArray(), createArray(true()))]"
 
     ], [
       true
@@ -272,110 +295,123 @@ var previousEmitLimit3 = {
 // #completionTest(0) -> declarations
 
 var myVar = 'hello'
-//@[184:184]     "myVar": "hello",
+//@    "myVar": "hello",
 var myVar2 = any({
-//@[185:187]     "myVar2": {
+//@    "myVar2": {
+//@    },
   something: myVar
-//@[186:186]       "something": "[variables('myVar')]"
+//@      "something": "[variables('myVar')]"
 })
 var myVar3 = any(any({
-//@[188:190]     "myVar3": {
+//@    "myVar3": {
+//@    },
   something: myVar
-//@[189:189]       "something": "[variables('myVar')]"
+//@      "something": "[variables('myVar')]"
 }))
 var myVar4 = length(any(concat('s','a')))
-//@[191:191]     "myVar4": "[length(concat('s', 'a'))]",
+//@    "myVar4": "[length(concat('s', 'a'))]",
 
 // verify that unqualified banned function identifiers can be used as declaration identifiers
 var variables = true
-//@[192:192]     "variables": true,
+//@    "variables": true,
 param parameters bool = true
-//@[11:14]     "parameters": {
+//@    "parameters": {
+//@      "type": "bool",
+//@      "defaultValue": true
+//@    },
 var if = true
-//@[193:193]     "if": true,
+//@    "if": true,
 var createArray = true
-//@[194:194]     "createArray": true,
+//@    "createArray": true,
 var createObject = true
-//@[195:195]     "createObject": true,
+//@    "createObject": true,
 var add = true
-//@[196:196]     "add": true,
+//@    "add": true,
 var sub = true
-//@[197:197]     "sub": true,
+//@    "sub": true,
 var mul = true
-//@[198:198]     "mul": true,
+//@    "mul": true,
 var div = true
-//@[199:199]     "div": true,
+//@    "div": true,
 param mod bool = true
-//@[15:18]     "mod": {
+//@    "mod": {
+//@      "type": "bool",
+//@      "defaultValue": true
+//@    },
 var less = true
-//@[200:200]     "less": true,
+//@    "less": true,
 var lessOrEquals = true
-//@[201:201]     "lessOrEquals": true,
+//@    "lessOrEquals": true,
 var greater = true
-//@[202:202]     "greater": true,
+//@    "greater": true,
 var greaterOrEquals = true
-//@[203:203]     "greaterOrEquals": true,
+//@    "greaterOrEquals": true,
 param equals bool = true
-//@[19:22]     "equals": {
+//@    "equals": {
+//@      "type": "bool",
+//@      "defaultValue": true
+//@    }
 var not = true
-//@[204:204]     "not": true,
+//@    "not": true,
 var and = true
-//@[205:205]     "and": true,
+//@    "and": true,
 var or = true
-//@[206:206]     "or": true,
+//@    "or": true,
 var I_WANT_IT_ALL = variables && parameters && if && createArray && createObject && add && sub && mul && div && mod && less && lessOrEquals && greater && greaterOrEquals && equals && not && and && or
-//@[207:207]     "I_WANT_IT_ALL": "[and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(variables('variables'), parameters('parameters')), variables('if')), variables('createArray')), variables('createObject')), variables('add')), variables('sub')), variables('mul')), variables('div')), parameters('mod')), variables('less')), variables('lessOrEquals')), variables('greater')), variables('greaterOrEquals')), parameters('equals')), variables('not')), variables('and')), variables('or'))]",
+//@    "I_WANT_IT_ALL": "[and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(and(variables('variables'), parameters('parameters')), variables('if')), variables('createArray')), variables('createObject')), variables('add')), variables('sub')), variables('mul')), variables('div')), parameters('mod')), variables('less')), variables('lessOrEquals')), variables('greater')), variables('greaterOrEquals')), parameters('equals')), variables('not')), variables('and')), variables('or'))]",
 
 // identifiers can have underscores
 var _ = 3
-//@[208:208]     "_": 3,
+//@    "_": 3,
 var __ = 10 * _
-//@[209:209]     "__": "[mul(10, variables('_'))]",
+//@    "__": "[mul(10, variables('_'))]",
 var _0a_1b = true
-//@[210:210]     "_0a_1b": true,
+//@    "_0a_1b": true,
 var _1_ = _0a_1b || (__ + _ % 2 == 0)
-//@[211:211]     "_1_": "[or(variables('_0a_1b'), equals(add(variables('__'), mod(variables('_'), 2)), 0))]",
+//@    "_1_": "[or(variables('_0a_1b'), equals(add(variables('__'), mod(variables('_'), 2)), 0))]",
 
 // fully qualified access
 var resourceGroup = 'something'
-//@[212:212]     "resourceGroup": "something",
+//@    "resourceGroup": "something",
 var resourceGroupName = az.resourceGroup().name
-//@[213:213]     "resourceGroupName": "[resourceGroup().name]",
+//@    "resourceGroupName": "[resourceGroup().name]",
 var resourceGroupObject = az.resourceGroup()
-//@[214:214]     "resourceGroupObject": "[resourceGroup()]",
+//@    "resourceGroupObject": "[resourceGroup()]",
 var propertyAccessFromObject = resourceGroupObject.name
-//@[215:215]     "propertyAccessFromObject": "[variables('resourceGroupObject').name]",
+//@    "propertyAccessFromObject": "[variables('resourceGroupObject').name]",
 var isTrue = sys.max(1, 2) == 3
-//@[216:216]     "isTrue": "[equals(max(1, 2), 3)]",
+//@    "isTrue": "[equals(max(1, 2), 3)]",
 var isFalse = !isTrue
-//@[217:217]     "isFalse": "[not(variables('isTrue'))]",
+//@    "isFalse": "[not(variables('isTrue'))]",
 var someText = isTrue ? sys.concat('a', sys.concat('b', 'c')) : 'someText'
-//@[218:218]     "someText": "[if(variables('isTrue'), concat('a', concat('b', 'c')), 'someText')]",
+//@    "someText": "[if(variables('isTrue'), concat('a', concat('b', 'c')), 'someText')]",
 
 // Bicep functions that cannot be converted into ARM functions
 var scopesWithoutArmRepresentation = {
-//@[219:222]     "scopesWithoutArmRepresentation": {
+//@    "scopesWithoutArmRepresentation": {
+//@      "subscription": {},
+//@      "resourceGroup": {}
+//@    },
   subscription: subscription('10b57a01-6350-4ce2-972a-6a13642f00bf')
-//@[220:220]       "subscription": "[createObject()]",
   resourceGroup: az.resourceGroup('10b57a01-6350-4ce2-972a-6a13642f00bf', 'myRgName')
-//@[221:221]       "resourceGroup": "[createObject()]"
 }
 
 var scopesWithArmRepresentation = {
-//@[223:227]     "scopesWithArmRepresentation": {
+//@    "scopesWithArmRepresentation": {
+//@    },
   tenant: tenant()
-//@[224:224]       "tenant": "[tenant()]",
+//@      "tenant": "[tenant()]",
   subscription: subscription()
-//@[225:225]       "subscription": "[subscription()]",
+//@      "subscription": "[subscription()]",
   resourceGroup: az.resourceGroup()
-//@[226:226]       "resourceGroup": "[resourceGroup()]"
+//@      "resourceGroup": "[resourceGroup()]"
 }
 
 // Issue #1332
 var issue1332_propname = 'ptest'
-//@[228:228]     "issue1332_propname": "ptest",
+//@    "issue1332_propname": "ptest",
 var issue1332 = true ? {
-//@[229:229]     "issue1332": "[if(true(), createObject('prop1', createObject(format('{0}', variables('issue1332_propname')), createObject())), createObject())]",
+//@    "issue1332": "[if(true(), createObject('prop1', createObject(format('{0}', variables('issue1332_propname')), createObject())), createObject())]",
     prop1: {
         '${issue1332_propname}': {}
     }
@@ -383,78 +419,116 @@ var issue1332 = true ? {
 
 // Issue #486
 var myBigInt = 2199023255552
-//@[230:230]     "myBigInt": 2199023255552,
+//@    "myBigInt": 2199023255552,
 var myIntExpression = 5 * 5
-//@[231:231]     "myIntExpression": "[mul(5, 5)]",
+//@    "myIntExpression": "[mul(5, 5)]",
 var myBigIntExpression = 2199023255552 * 2
-//@[232:232]     "myBigIntExpression": "[mul(json('2199023255552'), 2)]",
+//@    "myBigIntExpression": "[mul(json('2199023255552'), 2)]",
 var myBigIntExpression2 = 2199023255552 * 2199023255552
-//@[233:233]     "myBigIntExpression2": "[mul(json('2199023255552'), json('2199023255552'))]",
+//@    "myBigIntExpression2": "[mul(json('2199023255552'), json('2199023255552'))]",
 
 // variable loops
 var incrementingNumbers = [for i in range(0,10) : i]
-//@[26:30]         "name": "incrementingNumbers",
+//@      {
+//@        "name": "incrementingNumbers",
+//@        "count": "[length(range(0, 10))]",
+//@        "input": "[range(0, 10)[copyIndex('incrementingNumbers')]]"
+//@      },
 var loopInput = [
-//@[234:237]     "loopInput": [
+//@    "loopInput": [
+//@    ],
   'one'
-//@[235:235]       "one",
+//@      "one",
   'two'
-//@[236:236]       "two"
+//@      "two"
 ]
 var arrayOfStringsViaLoop = [for (name, i) in loopInput: 'prefix-${i}-${name}']
-//@[31:35]         "name": "arrayOfStringsViaLoop",
+//@      {
+//@        "name": "arrayOfStringsViaLoop",
+//@        "count": "[length(variables('loopInput'))]",
+//@        "input": "[format('prefix-{0}-{1}', copyIndex('arrayOfStringsViaLoop'), variables('loopInput')[copyIndex('arrayOfStringsViaLoop')])]"
+//@      },
 var arrayOfObjectsViaLoop = [for (name, i) in loopInput: {
-//@[36:44]         "name": "arrayOfObjectsViaLoop",
+//@      {
+//@        "name": "arrayOfObjectsViaLoop",
+//@        "count": "[length(variables('loopInput'))]",
+//@        "input": {
+//@        }
+//@      },
   index: i
-//@[40:40]           "index": "[copyIndex('arrayOfObjectsViaLoop')]",
+//@          "index": "[copyIndex('arrayOfObjectsViaLoop')]",
   name: name
-//@[41:41]           "name": "[variables('loopInput')[copyIndex('arrayOfObjectsViaLoop')]]",
+//@          "name": "[variables('loopInput')[copyIndex('arrayOfObjectsViaLoop')]]",
   value: 'prefix-${i}-${name}-suffix'
-//@[42:42]           "value": "[format('prefix-{0}-{1}-suffix', copyIndex('arrayOfObjectsViaLoop'), variables('loopInput')[copyIndex('arrayOfObjectsViaLoop')])]"
+//@          "value": "[format('prefix-{0}-{1}-suffix', copyIndex('arrayOfObjectsViaLoop'), variables('loopInput')[copyIndex('arrayOfObjectsViaLoop')])]"
 }]
 var arrayOfArraysViaLoop = [for (name, i) in loopInput: [
-//@[45:49]         "name": "arrayOfArraysViaLoop",
+//@      {
+//@        "name": "arrayOfArraysViaLoop",
+//@        "count": "[length(variables('loopInput'))]",
+//@        "input": "[createArray(copyIndex('arrayOfArraysViaLoop'), variables('loopInput')[copyIndex('arrayOfArraysViaLoop')], format('prefix-{0}-{1}-suffix', copyIndex('arrayOfArraysViaLoop'), variables('loopInput')[copyIndex('arrayOfArraysViaLoop')]))]"
+//@      },
   i
   name
   'prefix-${i}-${name}-suffix'
 ]]
 var arrayOfBooleans = [for (name, i) in loopInput: i % 2 == 0]
-//@[50:54]         "name": "arrayOfBooleans",
+//@      {
+//@        "name": "arrayOfBooleans",
+//@        "count": "[length(variables('loopInput'))]",
+//@        "input": "[equals(mod(copyIndex('arrayOfBooleans'), 2), 0)]"
+//@      },
 var arrayOfHardCodedNumbers = [for i in range(0,10): 3]
-//@[55:59]         "name": "arrayOfHardCodedNumbers",
+//@      {
+//@        "name": "arrayOfHardCodedNumbers",
+//@        "count": "[length(range(0, 10))]",
+//@        "input": "[int(3)]"
+//@      },
 var arrayOfHardCodedBools = [for i in range(0,10): false]
-//@[60:64]         "name": "arrayOfHardCodedBools",
+//@      {
+//@        "name": "arrayOfHardCodedBools",
+//@        "count": "[length(range(0, 10))]",
+//@        "input": "[false()]"
+//@      },
 var arrayOfHardCodedStrings = [for i in range(0,3): 'hi']
-//@[65:69]         "name": "arrayOfHardCodedStrings",
+//@      {
+//@        "name": "arrayOfHardCodedStrings",
+//@        "count": "[length(range(0, 3))]",
+//@        "input": "hi"
+//@      },
 var arrayOfNonRuntimeFunctionCalls = [for i in range(0,3): concat('hi', i)]
-//@[70:74]         "name": "arrayOfNonRuntimeFunctionCalls",
+//@      {
+//@        "name": "arrayOfNonRuntimeFunctionCalls",
+//@        "count": "[length(range(0, 3))]",
+//@        "input": "[concat('hi', range(0, 3)[copyIndex('arrayOfNonRuntimeFunctionCalls')])]"
+//@      }
 
 var multilineString = '''
-//@[238:238]     "multilineString": "HELLO!\n",
+//@    "multilineString": "HELLO!\n",
 HELLO!
 '''
 
 var multilineEmpty = ''''''
-//@[239:239]     "multilineEmpty": "",
+//@    "multilineEmpty": "",
 var multilineEmptyNewline = '''
-//@[240:240]     "multilineEmptyNewline": "",
+//@    "multilineEmptyNewline": "",
 '''
 
 // evaluates to '\'abc\''
 var multilineExtraQuotes = ''''abc''''
-//@[241:241]     "multilineExtraQuotes": "'abc'",
+//@    "multilineExtraQuotes": "'abc'",
 
 // evaluates to '\'\nabc\n\''
 var multilineExtraQuotesNewlines = ''''
-//@[242:242]     "multilineExtraQuotesNewlines": "'\nabc\n'",
+//@    "multilineExtraQuotesNewlines": "'\nabc\n'",
 abc
 ''''
 
 var multilineSingleLine = '''hello!'''
-//@[243:243]     "multilineSingleLine": "hello!",
+//@    "multilineSingleLine": "hello!",
 
 var multilineFormatted = format('''
-//@[244:244]     "multilineFormatted": "[format('Hello,\nmy\nname is\n{0}\n', 'Anthony')]",
+//@    "multilineFormatted": "[format('Hello,\nmy\nname is\n{0}\n', 'Anthony')]",
 Hello,
 my
 name is
@@ -462,7 +536,7 @@ name is
 ''', 'Anthony')
 
 var multilineJavaScript = '''
-//@[245:245]     "multilineJavaScript": "// NOT RECOMMENDED PATTERN\nconst fs = require('fs');\n\nmodule.exports = function (context) {\n    fs.readFile('./hello.txt', (err, data) => {\n        if (err) {\n            context.log.error('ERROR', err);\n            // BUG #1: This will result in an uncaught exception that crashes the entire process\n            throw err;\n        }\n        context.log(`Data from file: ${data}`);\n        // context.done() should be called here\n    });\n    // BUG #2: Data is not guaranteed to be read before the Azure Function's invocation ends\n    context.done();\n}\n",
+//@    "multilineJavaScript": "// NOT RECOMMENDED PATTERN\nconst fs = require('fs');\n\nmodule.exports = function (context) {\n    fs.readFile('./hello.txt', (err, data) => {\n        if (err) {\n            context.log.error('ERROR', err);\n            // BUG #1: This will result in an uncaught exception that crashes the entire process\n            throw err;\n        }\n        context.log(`Data from file: ${data}`);\n        // context.done() should be called here\n    });\n    // BUG #2: Data is not guaranteed to be read before the Azure Function's invocation ends\n    context.done();\n}\n",
 // NOT RECOMMENDED PATTERN
 const fs = require('fs');
 
@@ -482,25 +556,34 @@ module.exports = function (context) {
 '''
 
 var providersTest = providers('Microsoft.Resources').namespace
-//@[246:246]     "providersTest": "[providers('Microsoft.Resources').namespace]",
+//@    "providersTest": "[providers('Microsoft.Resources').namespace]",
 var providersTest2 = providers('Microsoft.Resources', 'deployments').locations
-//@[247:247]     "providersTest2": "[providers('Microsoft.Resources', 'deployments').locations]",
+//@    "providersTest2": "[providers('Microsoft.Resources', 'deployments').locations]",
 
 var copyBlockInObject = {
-//@[248:256]     "copyBlockInObject": {
+//@    "copyBlockInObject": {
+//@    },
   copy: [
-//@[249:255]       "[string('copy')]": [
+//@      "[string('copy')]": [
+//@      ]
     {
+//@        {
+//@        }
       name: 'blah'
-//@[251:251]           "name": "blah",
+//@          "name": "blah",
       count: '[notAFunction()]'
-//@[252:252]           "count": "[[notAFunction()]",
+//@          "count": "[[notAFunction()]",
       input: {}
-//@[253:253]           "input": {}
+//@          "input": {}
     }
   ]
 }
 
 var joinedString = join(['I', 'love', 'Bicep!'], ' ')
-//@[257:257]     "joinedString": "[join(createArray('I', 'love', 'Bicep!'), ' ')]"
+//@    "joinedString": "[join(createArray('I', 'love', 'Bicep!'), ' ')]",
+
+var prefix = take('food', 3)
+//@    "prefix": "[take('food', 3)]",
+var isPrefixed = startsWith('food', 'foo')
+//@    "isPrefixed": "[startsWith('food', 'foo')]"
 
