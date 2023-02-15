@@ -93,3 +93,5 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 var testYaml = loadJsonContent('./Assets/test.yml')
 var testYamlString = testYaml.string
 
+var testYaml2 = loadJsonContent('./Assets/test2.yml')
+var testYamlString2 = testYaml2.string
