@@ -138,5 +138,6 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 
 var testYaml = loadJsonContent('./Assets/test.yml')
 //@[4:25) [no-unused-vars (Warning)] Variable "testYaml" is declared but never used. (CodeDescription: bicep core(https://aka.ms/bicep/linter/no-unused-vars)) |testYaml|
-var testYamlString2 = testYaml.string
-//@[4:25) [no-unused-vars (Warning)] Variable "testYamlString2" is declared but never used. (CodeDescription: bicep core(https://aka.ms/bicep/linter/no-unused-vars)) |testYamlString2|
+var testYamlString = testYaml.string
+//@[4:25) [no-unused-vars (Warning)] Variable "testYamlString" is declared but never used. (CodeDescription: bicep core(https://aka.ms/bicep/linter/no-unused-vars)) |testYamlString|
+
