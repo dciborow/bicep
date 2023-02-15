@@ -2565,7 +2565,6 @@ var file = " + functionName + @"('|')
                 completionItems.Should().SatisfyRespectively(
                     x => x.Label.Should().Be("json1.json"),
                     x => x.Label.Should().Be("json2.json"),
-                    x => x.Label.Should().Be("yaml1.yaml"),
                     x => x.Label.Should().Be("module1.txt"),
                     x => x.Label.Should().Be("module2.bicep"),
                     x => x.Label.Should().Be("module3.bicep"),
@@ -2573,7 +2572,8 @@ var file = " + functionName + @"('|')
                     x => x.Label.Should().Be("template2.json"),
                     x => x.Label.Should().Be("template3.jsonc"),
                     x => x.Label.Should().Be("template4.json"),
-                    x => x.Label.Should().Be("template5.json")
+                    x => x.Label.Should().Be("template5.json"),
+                    x => x.Label.Should().Be("yaml1.yaml")
                     );
             }
         }
