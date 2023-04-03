@@ -1061,7 +1061,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 return new(ErrorType.Create(errorDiagnostic));
             }
 
-            if (Deserializer.Deserialize<JToken>(fileContent) is not { } token)
+            if (JToken.FromObject(Deserializer.Deserialize<object>(fileContent)) is not { } token)
             {
                 // Instead of catching and returning the JSON parse exception, we simply return a generic error.
                 // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.
