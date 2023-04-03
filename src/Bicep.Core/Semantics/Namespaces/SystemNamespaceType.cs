@@ -1191,7 +1191,6 @@ namespace Bicep.Core.Semantics.Namespaces
                 _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported token: {token.Type}")
             };
 
-
         private static TypeSymbol GetItemsReturnType(TypeSymbol keyType, TypeSymbol valueType)
             => new TypedArrayType(
                 new ObjectType(
