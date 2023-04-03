@@ -862,7 +862,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("filePath", LanguageConstants.StringJsonFilePath, "The path to the file that will be loaded.")
                 .WithOptionalParameter("jsonPath", LanguageConstants.String, "JSONPath expression to narrow down the loaded file. If not provided, a root element indicator '$' is used")
                 .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
-                .WithReturnResultBuilder(LoadObjectContentResultBuilder, LanguageConstants.Any)
+                .WithReturnResultBuilder(LoadJsonContentResultBuilder, LanguageConstants.Any)
                 .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
                 .Build();
 
@@ -871,7 +871,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("filePath", LanguageConstants.StringJsonFilePath, "The path to the file that will be loaded.")
                 .WithOptionalParameter("jsonPath", LanguageConstants.String, "JSONPath expression to narrow down the loaded file. If not provided, a root element indicator '$' is used")
                 .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
-                .WithReturnResultBuilder(LoadObjectContentResultBuilder, LanguageConstants.Any)
+                .WithReturnResultBuilder(LoadJsonContentResultBuilder, LanguageConstants.Any)
                 .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
                 .Build();
 
@@ -1039,7 +1039,7 @@ namespace Bicep.Core.Semantics.Namespaces
 
         private static IDeserializer Deserializer = new DeserializerBuilder().Build();
 
-        private static FunctionResult LoadObjectContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
+        private static FunctionResult LoadJsonContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
         {
             var arguments = functionCall.Arguments.ToImmutableArray();
             string? tokenSelectorPath = null;
