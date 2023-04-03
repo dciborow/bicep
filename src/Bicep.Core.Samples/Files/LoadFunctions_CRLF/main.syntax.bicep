@@ -1029,34 +1029,4 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 //@[103:0104) |   └─Token(RightParen) |)|
 //@[104:0106) ├─Token(NewLine) |\r\n|
 
-var testYaml = loadYamlContent('./Assets/test.yml')
-//@[000:0057) ├─VariableDeclarationSyntax
-//@[000:0003) | ├─Token(Identifier) |var|
-//@[004:0013) | ├─IdentifierSyntax
-//@[004:0013) | | └─Token(Identifier) |testYaml|
-//@[014:0015) | ├─Token(Assignment) |=|
-//@[016:0057) | └─FunctionCallSyntax
-//@[016:0031) |   ├─IdentifierSyntax
-//@[016:0031) |   | └─Token(Identifier) |loadYamlContent|
-//@[031:0032) |   ├─Token(LeftParen) |(|
-//@[032:0056) |   ├─FunctionArgumentSyntax
-//@[032:0056) |   | └─StringSyntax
-//@[032:0056) |   |   └─Token(StringComplete) |'./Assets/test.yml'|
-//@[056:0057) |   └─Token(RightParen) |)|
-//@[057:0059) ├─Token(NewLine) |\r\n|
-var testYamlString = testYaml.string
-//@[000:0037) ├─VariableDeclarationSyntax
-//@[000:0003) | ├─Token(Identifier) |var|
-//@[004:0019) | ├─IdentifierSyntax
-//@[004:0019) | | └─Token(Identifier) |testYamlString|
-//@[020:0021) | ├─Token(Assignment) |=|
-//@[022:0037) | └─PropertyAccessSyntax
-//@[022:0030) |   ├─VariableAccessSyntax
-//@[022:0030) |   | └─IdentifierSyntax
-//@[022:0030) |   |   └─Token(Identifier) |testYaml|
-//@[030:0031) |   ├─Token(Dot) |.|
-//@[031:0037) |   └─IdentifierSyntax
-//@[031:0037) |     └─Token(Identifier) |string|
-
-//@[037:0039) ├─Token(NewLine) |\r\n|
 //@[000:0000) └─Token(EndOfFile) ||

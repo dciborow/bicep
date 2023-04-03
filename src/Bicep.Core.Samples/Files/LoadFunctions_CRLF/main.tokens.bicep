@@ -619,22 +619,4 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 //@[103:104) RightParen |)|
 //@[104:106) NewLine |\r\n|
 
-var testYaml = loadYamlContent('./Assets/test.yml')
-//@[000:003) Identifier |var|
-//@[004:013) Identifier |testYaml|
-//@[014:015) Assignment |=|
-//@[016:031) Identifier |loadYamlContent|
-//@[031:032) LeftParen |(|
-//@[032:056) StringComplete |'./Assets/test.yml'|
-//@[056:057) RightParen |)|
-//@[057:059) NewLine |\r\n|
-var testYamlString = testYaml.string
-//@[000:003) Identifier |var|
-//@[004:019) Identifier |testYamlString|
-//@[020:021) Assignment |=|
-//@[022:030) Identifier |testYaml|
-//@[030:031) Dot |.|
-//@[031:037) Identifier |string|
-//@[037:039) NewLine |\r\n|
-
 //@[000:000) EndOfFile ||
