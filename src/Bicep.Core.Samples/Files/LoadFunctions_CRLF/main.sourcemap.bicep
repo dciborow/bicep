@@ -240,4 +240,4 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 var testYaml = loadYamlContent('./Assets/test.yml')
 //@    "testYaml": "[variables('$fxv#23')]"
 var testYamlString = testYaml.string
-//@    "testYamlString": "[variables('$fxv#24')]"
+//@    "testYamlString": "[variables('testYaml').string]",
