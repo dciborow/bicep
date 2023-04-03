@@ -90,8 +90,5 @@ var testJsonNestedString2_2 = loadJsonContent('./Assets/test.json.txt', '.object
 
 var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.products[?(@.price > 3)].name')
 
-var testYaml = loadJsonContent('./Assets/test.yml')
+var testYaml = loadYamlContent('./Assets/test.yml')
 var testYamlString = testYaml.string
-
-var testYaml2 = loadJsonContent('./Assets/test2.yml')
-var testYamlString2 = testYaml2.string

@@ -865,6 +865,15 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
                 .Build();
 
+            yield return new FunctionOverloadBuilder("loadYamlContent")
+                .WithGenericDescription($"Loads the specified JSON file as bicep object. File loading occurs during compilation, not at runtime.")
+                .WithRequiredParameter("filePath", LanguageConstants.StringJsonFilePath, "The path to the file that will be loaded.")
+                .WithOptionalParameter("jsonPath", LanguageConstants.String, "JSONPath expression to narrow down the loaded file. If not provided, a root element indicator '$' is used")
+                .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
+                .WithReturnResultBuilder(LoadYamlContentResultBuilder, LanguageConstants.Any)
+                .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
+                .Build();
+
             yield return new FunctionOverloadBuilder("items")
                 .WithGenericDescription("Returns an array of keys and values for an object. Elements are consistently ordered alphabetically by key.")
                 .WithRequiredParameter("object", LanguageConstants.Object, "The object to return keys and values for")
@@ -1087,6 +1096,66 @@ namespace Bicep.Core.Semantics.Namespaces
             return new(ConvertJsonToBicepType(token), ConvertJsonToExpression(token));
         }
 
+        private static FunctionResult LoadYamlContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
+        {
+            var arguments = functionCall.Arguments.ToImmutableArray();
+            string? tokenSelectorPath = null;
+            if (arguments.Length > 1)
+            {
+                if (argumentTypes[1] is not StringLiteralType tokenSelectorType)
+                {
+                    return new(ErrorType.Create(DiagnosticBuilder.ForPosition(arguments[1]).CompileTimeConstantRequired()));
+                }
+                tokenSelectorPath = tokenSelectorType.RawStringValue;
+            }
+            if (!TryLoadTextContentFromFile(binder, fileResolver, diagnostics,
+                    (arguments[0], argumentTypes[0]),
+                    arguments.Length > 2 ? (arguments[2], argumentTypes[2]) : null,
+                    out var fileContent,
+                    out var errorDiagnostic,
+                    LanguageConstants.MaxJsonFileCharacterLimit))
+            {
+                return new(ErrorType.Create(errorDiagnostic));
+            }
+
+            if (fileContent.TryFromJson<JToken>() is not { } token)
+            {
+                // Instead of catching and returning the JSON parse exception, we simply return a generic error.
+                // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.
+                return new(ErrorType.Create(DiagnosticBuilder.ForPosition(arguments[0]).UnparseableJsonType()));
+            }
+
+            if (tokenSelectorPath is not null)
+            {
+                try
+                {
+                    var selectTokens = token.SelectTokens(tokenSelectorPath, false).ToList();
+                    switch (selectTokens.Count)
+                    {
+                        case 0:
+                            return new(ErrorType.Create(DiagnosticBuilder.ForPosition(arguments[1]).NoJsonTokenOnPathOrPathInvalid()));
+                        case 1:
+                            token = selectTokens.First();
+                            break;
+                        default:
+                            token = new JArray();
+                            foreach (var selectToken in selectTokens)
+                            {
+                                ((JArray)token).Add(selectToken);
+                            }
+                            break;
+                    }
+                }
+                catch (JsonException)
+                {
+                    //path is invalid or user hasn't finished typing it yet
+                    return new(ErrorType.Create(DiagnosticBuilder.ForPosition(arguments[1]).NoJsonTokenOnPathOrPathInvalid()));
+                }
+            }
+
+            return new(ConvertYamlToBicepType(token), ConvertYamlToExpression(token));
+        }
+
         private static bool TryLoadTextContentFromFile(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, (FunctionArgumentSyntax syntax, TypeSymbol typeSymbol) filePathArgument, (FunctionArgumentSyntax syntax, TypeSymbol typeSymbol)? encodingArgument, [NotNullWhen(true)] out string? fileContent, [NotNullWhen(false)] out ErrorDiagnostic? errorDiagnostic, int maxCharacters = -1)
         {
             fileContent = null;
@@ -1178,6 +1247,29 @@ namespace Bicep.Core.Semantics.Namespaces
                 _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported token: {token.Type}")
             };
 
+        private static Expression ConvertYamlToExpression(JToken token)
+            => token switch {
+                JObject @object => new ObjectExpression(null, @object.Properties()
+                    .Where(x => SupportedJsonTokenTypes.Contains(x.Value.Type))
+                    .Select(x => new ObjectPropertyExpression(null, new StringLiteralExpression(null, x.Name), ConvertJsonToExpression(x.Value)))
+                    .ToImmutableArray()),
+                JArray @array => new ArrayExpression(null, @array
+                    .Where(x => SupportedJsonTokenTypes.Contains(x.Type))
+                    .Select(ConvertJsonToExpression)
+                    .ToImmutableArray()),
+                JValue value => value.Type switch
+                {
+                    JTokenType.String => new StringLiteralExpression(null, value.ToString(CultureInfo.InvariantCulture)),
+                    JTokenType.Integer => new IntegerLiteralExpression(null, value.ToObject<long>()),
+                    // Floats are currently not supported in Bicep, so fall back to the default behavior of "any"
+                    JTokenType.Float => new FunctionCallExpression(null, "json", ImmutableArray.Create<Expression>(new StringLiteralExpression(null, value.ToObject<double>().ToString(CultureInfo.InvariantCulture)))),
+                    JTokenType.Boolean => new BooleanLiteralExpression(null, value.ToObject<bool>()),
+                    JTokenType.Null => new NullLiteralExpression(null),
+                    _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported value token type: {value.Type}"),
+                },
+                _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported token: {token.Type}")
+            };
+
         private static TypeSymbol GetItemsReturnType(TypeSymbol keyType, TypeSymbol valueType)
             => new TypedArrayType(
                 new ObjectType(
@@ -1223,6 +1315,30 @@ namespace Bicep.Core.Semantics.Namespaces
         }
 
         private static TypeSymbol ConvertJsonToBicepType(JToken token)
+            => token switch
+            {
+                JObject @object => new ObjectType(
+                    "object",
+                    TypeSymbolValidationFlags.Default,
+                    @object.Properties().Where(x => SupportedJsonTokenTypes.Contains(x.Value.Type)).Select(x => new TypeProperty(x.Name, ConvertJsonToBicepType(x.Value), TypePropertyFlags.ReadOnly | TypePropertyFlags.ReadableAtDeployTime)),
+                    null),
+                JArray @array => new TypedArrayType(
+                    TypeHelper.CreateTypeUnion(@array.Where(x => SupportedJsonTokenTypes.Contains(x.Type)).Select(ConvertJsonToBicepType)),
+                    TypeSymbolValidationFlags.Default),
+                JValue value => value.Type switch
+                {
+                    JTokenType.String => TypeFactory.CreateStringLiteralType(value.ToString(CultureInfo.InvariantCulture)),
+                    JTokenType.Integer => LanguageConstants.Int,
+                    // Floats are currently not supported in Bicep, so fall back to the default behavior of "any"
+                    JTokenType.Float => LanguageConstants.Any,
+                    JTokenType.Boolean => LanguageConstants.Bool,
+                    JTokenType.Null => LanguageConstants.Null,
+                    _ => LanguageConstants.Any,
+                },
+                _ => LanguageConstants.Any,
+            };
+
+        private static TypeSymbol ConvertYamlToBicepType(JToken token)
             => token switch
             {
                 JObject @object => new ObjectType(

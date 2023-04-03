@@ -1029,7 +1029,7 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 //@[103:0104) |   └─Token(RightParen) |)|
 //@[104:0106) ├─Token(NewLine) |\r\n|
 
-var testYaml = loadJsonContent('./Assets/test.yml')
+var testYaml = loadYamlContent('./Assets/test.yml')
 //@[000:0057) ├─VariableDeclarationSyntax
 //@[000:0003) | ├─Token(Identifier) |var|
 //@[004:0013) | ├─IdentifierSyntax
@@ -1037,7 +1037,7 @@ var testYaml = loadJsonContent('./Assets/test.yml')
 //@[014:0015) | ├─Token(Assignment) |=|
 //@[016:0057) | └─FunctionCallSyntax
 //@[016:0031) |   ├─IdentifierSyntax
-//@[016:0031) |   | └─Token(Identifier) |loadJsonContent|
+//@[016:0031) |   | └─Token(Identifier) |loadYamlContent|
 //@[031:0032) |   ├─Token(LeftParen) |(|
 //@[032:0056) |   ├─FunctionArgumentSyntax
 //@[032:0056) |   | └─StringSyntax
