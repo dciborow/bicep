@@ -314,3 +314,11 @@ var testJsonTokensAsArray = loadJsonContent('./Assets/test2.json.txt', '.product
 //@[00:0104) ├─DeclaredVariableExpression { Name = testJsonTokensAsArray }
 //@[28:0104) | └─SynthesizedVariableReferenceExpression { Name = $fxv#22 }
 
+var testYaml = loadYamlContent('./Assets/test.yml')
+//@[16:0057) ├─DeclaredVariableExpression { Name = $fxv#23 }
+//@[00:0057) ├─DeclaredVariableExpression { Name = testYaml }
+//@[16:0057) | └─SynthesizedVariableReferenceExpression { Name = $fxv#23 }
+var testYamlString = testYaml.string
+//@[00:0037) ├─DeclaredVariableExpression { Name = testYamlString }
+//@[22:0037) | └─PropertyAccessExpression { PropertyName = string }
+//@[22:0030) |   └─VariableReferenceExpression { Variable = testYaml }
