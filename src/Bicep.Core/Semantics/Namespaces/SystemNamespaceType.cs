@@ -872,7 +872,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("filePath", LanguageConstants.StringJsonFilePath, "The path to the file that will be loaded.")
                 .WithOptionalParameter("jsonPath", LanguageConstants.String, "JSONPath expression to narrow down the loaded file. If not provided, a root element indicator '$' is used")
                 .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
-                .WithReturnResultBuilder(LoadYamlContentResultBuilder, LanguageConstants.Any)
+                .WithReturnResultBuilder(LoadObjectContentResultBuilder, LanguageConstants.Any)
                 .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
                 .Build();
 
@@ -1098,7 +1098,7 @@ namespace Bicep.Core.Semantics.Namespaces
             return new(ConvertJsonToBicepType(token), ConvertJsonToExpression(token));
         }
 
-        private static FunctionResult LoadYamlContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
+        private static FunctionResult LoadObjectContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
         {
             var arguments = functionCall.Arguments.ToImmutableArray();
             string? tokenSelectorPath = null;
@@ -1122,9 +1122,9 @@ namespace Bicep.Core.Semantics.Namespaces
 
             var textReader = new StringReader(fileContent);
             var deserializer = new DeserializerBuilder().Build();
-            var deserializedYaml = deserializer.Deserialize(textReader);
+            var deserializedObject = deserializer.Deserialize(textReader);
 
-            if (deserializedYaml == null || JToken.FromObject(deserializedYaml) is not { } token)
+            if (deserializedObject == null || JToken.FromObject(deserializedObject) is not { } token)
             {
                 // Instead of catching and returning the JSON parse exception, we simply return a generic error.
                 // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.

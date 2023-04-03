@@ -1122,11 +1122,6 @@ namespace Bicep.Core.Diagnostics
                "BCP186",
                $"Unable to parse literal JSON value. Please ensure that it is well-formed.");
 
-            public ErrorDiagnostic UnparseableYamlType() => new(
-               TextSpan,
-               "BCP186",
-               $"Unable to parse literal YAML value. Please ensure that it is well-formed.");
-
             public Diagnostic FallbackPropertyUsed(string property) => new(
                 TextSpan,
                 DiagnosticLevel.Warning,
