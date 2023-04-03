@@ -1121,7 +1121,7 @@ namespace Bicep.Core.Semantics.Namespaces
 
             var yamlDeserializer = new YamlDotNet.Serialization.DeserializerBuilder().Build();
 
-            if (JsonConvert.SerializeObject(yamlDeserializer.Deserialize<T>(fileContent)) is not { } token)
+            if (JsonConvert.SerializeObject(yamlDeserializer.Deserialize(fileContent)) is not { } token)
             {
                 // Instead of catching and returning the JSON parse exception, we simply return a generic error.
                 // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.
