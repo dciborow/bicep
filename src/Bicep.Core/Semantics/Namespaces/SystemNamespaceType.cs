@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -1119,9 +1120,12 @@ namespace Bicep.Core.Semantics.Namespaces
                 return new(ErrorType.Create(errorDiagnostic));
             }
 
-            var yamlDeserializer = new YamlDotNet.Serialization.DeserializerBuilder().Build();
 
-            if (JsonConvert.SerializeObject(yamlDeserializer.Deserialize(fileContent)) is not { } token)
+            var textReader = new StringReader(fileContent);
+            var deserializer = new DeserializerBuilder().Build();
+            var deserializedYaml = deserializer.Deserialize(textReader);
+
+            if (JToken.FromObject(deserializedYaml) is not { } token)
             {
                 // Instead of catching and returning the JSON parse exception, we simply return a generic error.
                 // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.
