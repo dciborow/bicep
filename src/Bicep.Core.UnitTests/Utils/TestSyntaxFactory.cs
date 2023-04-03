@@ -28,9 +28,13 @@ namespace Bicep.Core.UnitTests.Utils
 
         public static IdentifierSyntax CreateIdentifier(string identifier) => new(CreateToken(TokenType.Identifier, identifier));
 
+        public static VariableAccessSyntax CreateVariableAccess(string identifier) => new(CreateIdentifier(identifier));
+
         public static ObjectPropertySyntax CreateProperty(string name, SyntaxBase value) => CreateProperty(CreateIdentifier(name), value);
 
         public static ObjectPropertySyntax CreateProperty(IdentifierSyntax name, SyntaxBase value) => new(name, CreateToken(TokenType.Colon), value);
+
+        public static PropertyAccessSyntax CreatePropertyAccess(SyntaxBase baseExpression, string propertyName) => new(baseExpression, CreateToken(TokenType.Dot), null, CreateIdentifier(propertyName));
 
         public static UnaryOperationSyntax CreateUnaryMinus(SyntaxBase operand) => new(CreateToken(TokenType.Minus), operand);
 

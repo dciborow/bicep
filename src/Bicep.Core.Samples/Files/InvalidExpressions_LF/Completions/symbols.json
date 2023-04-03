@@ -438,27 +438,6 @@
     }
   },
   {
-    "label": "coalesce",
-    "kind": "function",
-    "documentation": {
-      "kind": "markdown",
-      "value": "```bicep\ncoalesce(... : any): any\n\n```\nReturns first non-null value from the parameters. Empty strings, empty arrays, and empty objects are not null.\n"
-    },
-    "deprecated": false,
-    "preselect": false,
-    "sortText": "3_coalesce",
-    "insertTextFormat": "snippet",
-    "insertTextMode": "adjustIndentation",
-    "textEdit": {
-      "range": {},
-      "newText": "coalesce($0)"
-    },
-    "command": {
-      "title": "signature help",
-      "command": "editor.action.triggerParameterHints"
-    }
-  },
-  {
     "label": "complex",
     "kind": "variable",
     "detail": "complex",
@@ -860,6 +839,10 @@
     "label": "fakeFuncP",
     "kind": "field",
     "detail": "fakeFuncP",
+    "documentation": {
+      "kind": "markdown",
+      "value": "Type: string"
+    },
     "deprecated": false,
     "preselect": false,
     "sortText": "2_fakeFuncP",
@@ -986,6 +969,10 @@
     "label": "funcvarparam",
     "kind": "field",
     "detail": "funcvarparam",
+    "documentation": {
+      "kind": "markdown",
+      "value": "Type: bool"
+    },
     "deprecated": false,
     "preselect": false,
     "sortText": "2_funcvarparam",
@@ -1302,7 +1289,7 @@
     "kind": "function",
     "documentation": {
       "kind": "markdown",
-      "value": "```bicep\njoin(inputArray: string[], delimiter: string): string\n\n```\nJoins multiple strings into a single string, separated using a delimiter.\n"
+      "value": "```bicep\njoin(inputArray: (bool | int | string)[], delimiter: string): string\n\n```\nJoins multiple strings into a single string, separated using a delimiter.\n"
     },
     "deprecated": false,
     "preselect": false,

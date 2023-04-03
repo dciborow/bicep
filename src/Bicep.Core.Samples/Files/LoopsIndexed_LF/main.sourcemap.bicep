@@ -452,16 +452,12 @@ resource combinedDependencies 'Microsoft.Network/dnsZones@2018-05-01' = {
 module singleModule 'passthrough.bicep' = {
 //@    {
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -490,8 +486,12 @@ module singleModule 'passthrough.bicep' = {
   name: 'test'
 //@      "name": "test",
   params: {
+//@        "parameters": {
+//@        },
     myInput: 'hello'
+//@          "myInput": {
 //@            "value": "hello"
+//@          }
   }
 }
 
@@ -517,16 +517,12 @@ module moduleCollectionWithSingleDependency 'passthrough.bicep' = [for (moduleNa
 //@        "batchSize": 3
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -559,8 +555,12 @@ module moduleCollectionWithSingleDependency 'passthrough.bicep' = [for (moduleNa
   name: concat(moduleName, moduleIndex)
 //@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     myInput: 'in-${moduleName}-${moduleIndex}'
+//@          "myInput": {
 //@            "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@          }
   }
   dependsOn: [
     singleModule
@@ -576,16 +576,12 @@ module moduleCollectionWithCollectionDependencies 'passthrough.bicep' = [for (mo
 //@        "count": "[length(variables('moduleSetup'))]"
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -618,8 +614,12 @@ module moduleCollectionWithCollectionDependencies 'passthrough.bicep' = [for (mo
   name: concat(moduleName, moduleIndex)
 //@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     myInput: 'in-${moduleName}-${moduleIndex}'
+//@          "myInput": {
 //@            "value": "[format('in-{0}-{1}', variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@          }
   }
   dependsOn: [
     storageAccounts
@@ -630,16 +630,12 @@ module moduleCollectionWithCollectionDependencies 'passthrough.bicep' = [for (mo
 module singleModuleWithIndexedDependencies 'passthrough.bicep' = {
 //@    {
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -673,8 +669,12 @@ module singleModuleWithIndexedDependencies 'passthrough.bicep' = {
   name: 'hello'
 //@      "name": "hello",
   params: {
+//@        "parameters": {
+//@        },
     myInput: concat(moduleCollectionWithCollectionDependencies[index].outputs.myOutput, storageAccounts[index * 3].properties.accessTier)
-//@            "value": "[concat(reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2020-10-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier)]"
+//@          "myInput": {
+//@            "value": "[concat(reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2022-09-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier)]"
+//@          }
   }
   dependsOn: [
     storageAccounts2[index - 10]
@@ -688,16 +688,12 @@ module moduleCollectionWithIndexedDependencies 'passthrough.bicep' = [for (modul
 //@        "count": "[length(variables('moduleSetup'))]"
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -731,8 +727,12 @@ module moduleCollectionWithIndexedDependencies 'passthrough.bicep' = [for (modul
   name: concat(moduleName, moduleIndex)
 //@      "name": "[concat(variables('moduleSetup')[copyIndex()], copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     myInput: '${moduleCollectionWithCollectionDependencies[index].outputs.myOutput} - ${storageAccounts[index * 3].properties.accessTier} - ${moduleName} - ${moduleIndex}'
-//@            "value": "[format('{0} - {1} - {2} - {3}', reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2020-10-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier, variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@          "myInput": {
+//@            "value": "[format('{0} - {1} - {2} - {3}', reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[parameters('index')], parameters('index'))), '2022-09-01').outputs.myOutput.value, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-collection-{1}-{2}', parameters('name'), parameters('accounts')[mul(parameters('index'), 3)].name, mul(parameters('index'), 3))), '2019-06-01').accessTier, variables('moduleSetup')[copyIndex()], copyIndex())]"
+//@          }
   }
   dependsOn: [
     storageAccounts2[index - 9]
@@ -747,7 +747,7 @@ output indexedModulesName string = moduleCollectionWithSingleDependency[index].n
 output indexedModuleOutput string = moduleCollectionWithSingleDependency[index * 1].outputs.myOutput
 //@    "indexedModuleOutput": {
 //@      "type": "string",
-//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[mul(parameters('index'), 1)], mul(parameters('index'), 1))), '2020-10-01').outputs.myOutput.value]"
+//@      "value": "[reference(resourceId('Microsoft.Resources/deployments', concat(variables('moduleSetup')[mul(parameters('index'), 1)], mul(parameters('index'), 1))), '2022-09-01').outputs.myOutput.value]"
 //@    },
 
 // resource collection
@@ -839,16 +839,12 @@ module apim 'passthrough.bicep' = [for (region, i) in regions: {
 //@        "count": "[length(variables('regions'))]"
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "myInput": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -877,8 +873,12 @@ module apim 'passthrough.bicep' = [for (region, i) in regions: {
   name: 'apim-${region}-${name}-${i}'
 //@      "name": "[format('apim-{0}-{1}-{2}', variables('regions')[copyIndex()], parameters('name'), copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     myInput: region
+//@          "myInput": {
 //@            "value": "[variables('regions')[copyIndex()]]"
+//@          }
   }
 }]
 
@@ -921,9 +921,9 @@ resource propertyLoopDependencyOnModuleCollection 'Microsoft.Network/frontDoors@
             // would be outside of the scope of the property loop
             // as a result, this will generate a dependency on the entire collection
             address: apim[index + i].outputs.myOutput
-//@                    "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2020-10-01').outputs.myOutput.value]",
+//@                    "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2022-09-01').outputs.myOutput.value]",
             backendHostHeader: apim[index + i].outputs.myOutput
-//@                    "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2020-10-01').outputs.myOutput.value]",
+//@                    "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends'))], parameters('name'), add(range(0, length(variables('regions')))[copyIndex('backends')], copyIndex('backends')))), '2022-09-01').outputs.myOutput.value]",
             httpPort: 80
 //@                    "httpPort": 80,
             httpsPort: 443
@@ -979,9 +979,9 @@ resource indexedModuleCollectionDependency 'Microsoft.Network/frontDoors@2020-05
               // this indexed dependency on a module collection will be generated correctly because
               // copyIndex() can be invoked in the generated dependsOn
               address: apim[index+i].outputs.myOutput
-//@                  "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2020-10-01').outputs.myOutput.value]",
+//@                  "address": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2022-09-01').outputs.myOutput.value]",
               backendHostHeader: apim[index+i].outputs.myOutput
-//@                  "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2020-10-01').outputs.myOutput.value]",
+//@                  "backendHostHeader": "[reference(resourceId('Microsoft.Resources/deployments', format('apim-{0}-{1}-{2}', variables('regions')[add(range(0, length(variables('regions')))[copyIndex()], copyIndex())], parameters('name'), add(range(0, length(variables('regions')))[copyIndex()], copyIndex()))), '2022-09-01').outputs.myOutput.value]",
               httpPort: 80
 //@                  "httpPort": 80,
               httpsPort: 443

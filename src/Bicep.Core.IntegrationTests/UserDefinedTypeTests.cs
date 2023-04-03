@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using Bicep.Core.CodeAction;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
@@ -58,6 +61,15 @@ param thirtyThreeParam 33
 param oneOfSeveralStrings 'this one'|'that one'|'perhaps this one instead'
 ");
         result.Should().ContainDiagnostic("BCP284", DiagnosticLevel.Error, "Using a type union declaration requires enabling EXPERIMENTAL feature \"UserDefinedTypes\".");
+    }
+
+    [TestMethod]
+    public void Nullable_types_are_disabled_unless_feature_is_enabled()
+    {
+        var result = CompilationHelper.Compile(@"
+param nullableString string?
+");
+        result.Should().ContainDiagnostic("BCP324", DiagnosticLevel.Error, "Using nullable types requires enabling EXPERIMENTAL feature \"UserDefinedTypes\".");
     }
 
     [TestMethod]
@@ -214,12 +226,12 @@ type anObject = {
 
         blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
             ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
-            ("BCP062", DiagnosticLevel.Error, "The referenced declaration with name \"anObject\" is not valid."),
+            ("BCP293", DiagnosticLevel.Error, "All members of a union type declaration must be literal values."),
         });
 
         var blockedBecauseOfUnionSemantics = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
 type anObject = {
-    recur?: {foo: 'bar'}|anObject
+    recur: {foo: 'bar'}|anObject?
 }
 ");
 
@@ -238,17 +250,6 @@ type anObject = {
 ");
 
         blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
-            ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
-            ("BCP062", DiagnosticLevel.Error, "The referenced declaration with name \"anObject\" is not valid."),
-        });
-
-        var blockedBecauseOfUnionSemantics = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
-type anObject = {
-    recur?: !anObject
-}
-");
-
-        blockedBecauseOfUnionSemantics.Should().HaveDiagnostics(new[] {
             ("BCP285", DiagnosticLevel.Error, "The type expression could not be reduced to a literal value."),
         });
     }
@@ -264,16 +265,39 @@ type anObject = {
 
         blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
             ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
-            ("BCP062", DiagnosticLevel.Error, "The referenced declaration with name \"anObject\" is not valid."),
         });
 
-        var blockedBecauseOfUnionSemantics = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+        var permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
 type anObject = {
-    recur?: anObject[]
+    recur: (anObject?)[]
 }
 ");
 
-        blockedBecauseOfUnionSemantics.Should().NotHaveAnyDiagnostics();
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anArray = (anArray?)[]
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anArray = anArray[]?
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void Cyclic_nullables_do_not_blow_the_stack()
+    {
+        var blockedBecauseOfCycle = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type nullable = nullable?
+");
+
+        blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
+            ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
+        });
     }
 
     [TestMethod]
@@ -281,22 +305,41 @@ type anObject = {
     {
         var blockedBecauseOfCycle = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
 type anObject = {
-    recurEventually: [anObject]
+    recur: [anObject]
 }
 ");
 
         blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
             ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
-            ("BCP062", DiagnosticLevel.Error, "The referenced declaration with name \"anObject\" is not valid."),
         });
 
-        var blockedBecauseOfUnionSemantics = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+        var permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
 type anObject = {
-    recur?: [anObject]
+    recur: [anObject]?
 }
 ");
 
-        blockedBecauseOfUnionSemantics.Should().NotHaveAnyDiagnostics();
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recur: [anObject?]
+}
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type aTuple = [aTuple?]
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type aTuple = [aTuple]?
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
     }
 
     [TestMethod]
@@ -312,18 +355,75 @@ type anObject = {
 
         blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
             ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
-            ("BCP062", DiagnosticLevel.Error, "The referenced declaration with name \"anObject\" is not valid."),
         });
 
-        var blockedBecauseOfUnionSemantics = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+        var permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
 type anObject = {
-    recurEventually?: {
-        recurNow: anObject
+    recurEventually: {
+        recurNow: anObject?
     }
 }
 ");
 
-        blockedBecauseOfUnionSemantics.Should().NotHaveAnyDiagnostics();
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recurEventually: {
+        recurNow: anObject
+    }?
+}
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+
+        permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recurEventually: {
+        recurNow: anObject
+    }
+}?
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void Cyclic_check_understands_nullability_modifiers()
+    {
+        var blockedBecauseOfCycle = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recurEventually: {
+        recurNow: anObject!
+    }
+}?
+");
+
+        blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
+            ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
+        });
+
+        blockedBecauseOfCycle = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recurEventually: {
+        recurNow: anObject
+    }
+}?!
+");
+
+        blockedBecauseOfCycle.Should().HaveDiagnostics(new[] {
+            ("BCP298", DiagnosticLevel.Error, "This type definition includes itself as required component, which creates a constraint that cannot be fulfilled."),
+        });
+
+        var permitted = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+type anObject = {
+    recurEventually: {
+        recurNow: anObject!?
+    }
+}?
+");
+
+        permitted.Should().NotHaveAnyDiagnostics();
     }
 
     [TestMethod]
@@ -353,6 +453,265 @@ param anotherObject object = {prop: 'someVal'}
 
         result.Should().HaveDiagnostics(new[] {
             ("BCP037", DiagnosticLevel.Warning, "The property \"prop\" is not allowed on objects of type \"{ }\". No other properties are allowed."),
+        });
+    }
+
+    [TestMethod]
+    public void Error_should_be_shown_when_setting_unknown_properties_that_do_not_match_additional_properties_type()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+#disable-next-line no-unused-params
+param aDict {
+  *: int
+} = {prop: 'someVal'}
+");
+
+        result.Should().HaveDiagnostics(new[] {
+            ("BCP036", DiagnosticLevel.Error, @"The property ""prop"" expected a value of type ""int"" but the provided value is of type ""'someVal'""."),
+        });
+
+        result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+#disable-next-line no-unused-params
+param aDict {
+  *: string
+} = {prop: 'someVal'}
+");
+
+        result.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void Additional_properties_may_be_used_alongside_named_properties()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+#disable-next-line no-unused-params
+param aDict {
+  knownProp: int
+  *: string
+} = {
+  knownProp: 21
+  prop: 'someVal'
+}
+");
+
+        result.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void Constraint_decorators_can_be_used_on_nullably_typed_params()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+@minLength(3)
+@maxLength(10)
+@secure()
+#disable-next-line no-unused-params
+param constrainedString string?
+
+@minValue(3)
+@maxValue(10)
+type constrainedInt = int?
+
+@minLength(3)
+@maxLength(10)
+type constrainedArray = array?
+
+@sealed()
+@secure()
+#disable-next-line no-unused-params
+param sealedObject {}?
+");
+
+        result.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void Nullably_typed_values_can_be_used_as_nonnullable_outputs_with_postfix_assertion()
+    {
+        var templateWithPossiblyNullDeref = @"
+param foos (null | { bar: { baz: { quux: 'quux' } } })[]
+
+output quux string = foos[0].bar.baz.quux
+";
+        var templateWithNonNullAssertion = @"
+param foos (null | { bar: { baz: { quux: 'quux' } } })[]
+
+output quux string = foos[0]!.bar.baz.quux
+";
+        var templateWithSafeDeref = @"
+param foos (null | { bar: { baz: { quux: 'quux' } } })[]
+
+output quux string = foos[0].?bar.baz.quux
+";
+
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, templateWithPossiblyNullDeref);
+        result.Should().HaveDiagnostics(new []
+        {
+          ("BCP318", DiagnosticLevel.Warning, @"The value of type ""null | { bar: { baz: { quux: 'quux' } } }"" may be null at the start of the deployment, which would cause this access expression (and the overall deployment with it) to fail."),
+        });
+
+        result.Diagnostics.Single().Should().BeAssignableTo<IFixable>();
+        var fixAlternatives = new HashSet<string> { templateWithNonNullAssertion, templateWithSafeDeref };
+        foreach (var fix in result.Diagnostics.Single().As<IFixable>().Fixes)
+        {
+            fix.Replacements.Should().HaveCount(1);
+            var replacement = fix.Replacements.Single();
+
+            var actualText = templateWithPossiblyNullDeref.Remove(replacement.Span.Position, replacement.Span.Length);
+            actualText = actualText.Insert(replacement.Span.Position, replacement.Text);
+
+            fixAlternatives.Remove(actualText);
+        }
+
+        fixAlternatives.Should().BeEmpty();
+
+        result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, templateWithNonNullAssertion);
+        result.Should().NotHaveAnyDiagnostics();
+        result.Should().HaveTemplateWithOutput("quux", "[parameters('foos')[0].bar.baz.quux]");
+    }
+
+    [TestMethod]
+    public void Error_should_be_emitted_when_setting_a_default_value_on_a_nullable_parameter()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+#disable-next-line no-unused-params
+param myParam string? = 'foo'
+");
+
+        result.Should().HaveDiagnostics(new[] {
+            ("BCP326", DiagnosticLevel.Error, "Nullable-typed parameters may not be assigned default values. They have an implicit default of 'null' that cannot be overridden."),
+        });
+    }
+
+    [TestMethod]
+    public void Tuples_with_a_literal_index_use_type_at_index()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes,
+("main.bicep", @"
+var myArray = ['foo', 'bar']
+
+module mod './mod.bicep' = {
+  name: 'mod'
+  params: {
+    myParam: myArray[0]
+  }
+}
+"),
+("mod.bicep", @"
+param myParam 'foo'
+"));
+
+        result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
+        result.Template.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public void Tuples_with_a_literal_union_index_use_type_at_indices()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes,
+("main.bicep", @"
+param index 0 | 1
+
+var myArray = ['foo', 'bar', 'baz']
+
+module mod './mod.bicep' = {
+  name: 'mod'
+  params: {
+    myParam: myArray[index]
+  }
+}
+"),
+("mod.bicep", @"
+param myParam 'foo' | 'bar'
+"));
+
+        result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
+        result.Template.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public void Constraint_decorators_permitted_on_outputs()
+    {
+        var result = CompilationHelper.Compile(@"
+@minLength(3)
+@maxLength(5)
+@description('A string with a bunch of constraints')
+output foo string = 'foo'
+");
+
+        result.Should().NotHaveAnyDiagnostics();
+    }
+
+    [TestMethod]
+    public void User_defined_types_may_be_used_with_outputs()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+@minLength(3)
+@maxLength(4)
+type constrainedString = string
+
+output arrayOfConstrainedStrings constrainedString[] = ['fizz', 'buzz', 'pop']
+");
+
+        result.Should().NotHaveAnyDiagnostics();
+    }
+
+    public void Type_aliases_incorporate_modifiers_into_type()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+@maxLength(2)
+type shortString = string
+
+param myString shortString = 'foo'
+");
+
+        result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new []
+        {
+            ("BCP332", DiagnosticLevel.Error, "The provided value (whose length will always be greater than or equal to 3) is too long to assign to a target for which the maximum allowable length is 2."),
+        });
+    }
+
+    [TestMethod]
+    public void Impossible_integer_domains_raise_descriptive_error()
+    {
+        var result = CompilationHelper.Compile(@"
+@minValue(1)
+@maxValue(0)
+param myParam int
+");
+
+        result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new []
+        {
+            ("BCP331", DiagnosticLevel.Error, "A type's \"minValue\" must be less than or equal to its \"maxValue\", but a minimum of 1 and a maximum of 0 were specified."),
+        });
+    }
+
+    [TestMethod]
+    public void Impossible_array_length_domains_raise_descriptive_error()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+@minLength(1)
+@maxLength(0)
+param myParam array
+");
+
+        result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new []
+        {
+            ("BCP331", DiagnosticLevel.Error, "A type's \"minLength\" must be less than or equal to its \"maxLength\", but a minimum of 1 and a maximum of 0 were specified."),
+        });
+    }
+
+    [TestMethod]
+    public void Impossible_string_length_domains_raise_descriptive_error()
+    {
+        var result = CompilationHelper.Compile(ServicesWithUserDefinedTypes, @"
+@minLength(1)
+@maxLength(0)
+param myParam string
+");
+
+        result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new []
+        {
+            ("BCP331", DiagnosticLevel.Error, "A type's \"minLength\" must be less than or equal to its \"maxLength\", but a minimum of 1 and a maximum of 0 were specified."),
         });
     }
 }

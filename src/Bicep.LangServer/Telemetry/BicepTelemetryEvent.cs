@@ -14,6 +14,12 @@ namespace Bicep.LanguageServer.Telemetry
         public const string Failed = "Failed";
     }
 
+    public static class ModuleRegistryType
+    {
+        public const string MCR = "MCR";
+        public const string ACR = "ACR";
+    }
+
     public record BicepTelemetryEvent : TelemetryEventParams
     {
         public string EventName { get; private set; }
@@ -249,13 +255,14 @@ namespace Bicep.LanguageServer.Telemetry
                 }
             );
 
-        public static BicepTelemetryEvent DecompileForPaste(string decompileId, string? pasteType, int jsonSize, int? bicepSize)
+        public static BicepTelemetryEvent DecompileForPaste(string decompileId, string? pasteContext, string? pasteType,  int jsonSize, int? bicepSize)
             => new BicepTelemetryEvent
             (
                 eventName: TelemetryConstants.EventNames.DecompileForPaste,
                 properties: new()
                 {
                     ["decompileId"] = decompileId,
+                    ["pasteContext"] = pasteContext?.ToString() ?? string.Empty,
                     ["pasteType"] = pasteType ?? string.Empty,
                     ["jsonSize"] = jsonSize.ToString(),
                     ["bicepSize"] = bicepSize?.ToString() ?? string.Empty,
@@ -269,6 +276,16 @@ namespace Bicep.LanguageServer.Telemetry
                 properties: new()
                 {
                     ["exception"] = exception.ToString(),
+                }
+            );
+
+        public static BicepTelemetryEvent ModuleRegistryPathCompletion(string moduleRegistryType)
+            => new BicepTelemetryEvent
+            (
+                eventName: TelemetryConstants.EventNames.ModuleRegistryPathCompletion,
+                properties: new()
+                {
+                    ["moduleRegistryType"] = moduleRegistryType
                 }
             );
     }

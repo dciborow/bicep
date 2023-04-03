@@ -222,12 +222,6 @@ output out string = message
         }
 
         [DataTestMethod]
-        [DataRow(FunctionCase.loadTextContent, "var fileName = 'message.txt'", "'${fileName}'", DisplayName = "loadTextContent: variable in interpolation")]
-        [DataRow(FunctionCase.loadFileAsBase64, "var fileName = 'message.txt'", "'${fileName}'", DisplayName = "loadFileAsBase64: variable in interpolation")]
-        [DataRow(FunctionCase.loadJsonContent, "var fileName = 'message.txt'", "'${fileName}'", DisplayName = "loadJsonContent: variable in interpolation")]
-        [DataRow(FunctionCase.loadTextContent, "", "'${'fileName'}'", DisplayName = "loadTextContent: string literal in interpolation")]
-        [DataRow(FunctionCase.loadFileAsBase64, "", "'${'fileName'}'", DisplayName = "loadFileAsBase64: string literal in interpolation")]
-        [DataRow(FunctionCase.loadJsonContent, "", "'${'fileName'}'", DisplayName = "loadJsonContent: string literal in interpolation")]
         [DataRow(FunctionCase.loadTextContent, "param fileName string = 'message.txt'", "fileName", DisplayName = "loadTextContent: parameter")]
         [DataRow(FunctionCase.loadFileAsBase64, "param fileName string = 'message.txt'", "fileName", DisplayName = "loadFileAsBase64: parameter")]
         [DataRow(FunctionCase.loadJsonContent, "param fileName string = 'message.txt'", "fileName", DisplayName = "loadJsonContent: parameter")]
@@ -523,7 +517,7 @@ output out string = script
   ""propString"": ""propStringValue"",
   ""propBoolTrue"": true,
   ""propBoolFalse"": false,
-  ""propNull"": ""[null()]"",
+  ""propNull"": null,
   ""propInt"": 1073741824,
   ""propIntNegative"": -1073741824,
   ""propBigInt"": 4611686018427387904,
@@ -549,7 +543,7 @@ output out string = script
     ""subObjectPropString"": ""subObjectPropStringValue"",
     ""subObjectPropBoolTrue"": true,
     ""subObjectPropBoolFalse"": false,
-    ""subObjectPropNull"": ""[null()]"",
+    ""subObjectPropNull"": null,
     ""subObjectPropInt"": 1234542113245,
     ""subObjectPropFloat"": ""[json('1.618033988749894')]"",
     ""subObjectPropArrayString"": [

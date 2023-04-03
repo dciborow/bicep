@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+
 using System;
 
 namespace Bicep.LanguageServer.Completions
@@ -54,7 +55,7 @@ namespace Bicep.LanguageServer.Completions
         ResourceType = 1UL << 7,
 
         /// <summary>
-        /// The current location needs a module path.
+        /// The current location needs a module path (local or remote)
         /// </summary>
         ModulePath = 1UL << 8,
 
@@ -194,5 +195,15 @@ namespace Bicep.LanguageServer.Completions
         /// We're at this place in an import statement: 'import 'foo@1.0.0' with { foo: true } as |'
         /// </summary>
         ExpectingImportAsKeyword = 1L << 35,
+
+        /// <summary>
+        /// The current location is after the output type.
+        /// </summary>
+        OutputTypeFollower = 1UL << 36,
+
+        /// <summary>
+        /// The current location can accept a symbolic reference to a resource.
+        /// </summary>
+        ExpectsResourceSymbolicReference = 1UL << 37
     }
 }

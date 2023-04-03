@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "languageVersion": "1.9-experimental",
+  "languageVersion": "1.10-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "4259362336117477743"
+      "templateHash": "14641791797984039205"
     }
   },
   "parameters": {
@@ -574,7 +574,7 @@
     "workspace": {
       "condition": "[parameters('addToWorkspace')]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('Workspace-linkedTemplate-{0}', parameters('deploymentId'))]",
       "resourceGroup": "[variables('workspaceResourceGroup_var')]",
       "properties": {
@@ -595,14 +595,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "3519962476518881134"
+              "templateHash": "11900281492122678541"
             }
           },
           "parameters": {
@@ -633,7 +633,7 @@
     "AVSet": {
       "condition": "[and(and(variables('createVMs'), equals(parameters('availabilityOption'), 'AvailabilitySet')), parameters('createAvailabilitySet'))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "AVSet-deployment",
       "resourceGroup": "[parameters('vmResourceGroup')]",
       "properties": {
@@ -663,14 +663,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "7826305157177586661"
+              "templateHash": "3211583636901785721"
             }
           },
           "parameters": {
@@ -718,7 +718,7 @@
     "vmCreation_customVHD_managedDisks": {
       "condition": "[and(and(variables('createVMs'), equals(parameters('vmImageType'), 'CustomVHD')), parameters('vmUseManagedDisks'))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('vmCreation-linkedTemplate-{0}-managedDisks-customvhdvm', parameters('deploymentId'))]",
       "resourceGroup": "[parameters('vmResourceGroup')]",
       "properties": {
@@ -838,14 +838,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "8529385440411645806"
+              "templateHash": "11281229788072385683"
             }
           },
           "parameters": {
@@ -1255,11 +1255,11 @@
               ]
             },
             "vm_AADLoginForWindows": {
-              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "copy": {
                 "name": "vm_AADLoginForWindows",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindows', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -1275,11 +1275,11 @@
               ]
             },
             "vm_AADLoginForWindowsWithIntune": {
-              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "copy": {
                 "name": "vm_AADLoginForWindowsWithIntune",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindowsWithIntune', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -1298,11 +1298,11 @@
               ]
             },
             "vm_joindomain": {
-              "condition": "[not(parameters('aadJoin'))]",
               "copy": {
                 "name": "vm_joindomain",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[not(parameters('aadJoin'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/joindomain', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -1329,7 +1329,7 @@
             },
             "NSG": {
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "NSG-linkedTemplate",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -1355,14 +1355,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "13628187446363699436"
+                      "templateHash": "4892198028949632780"
                     }
                   },
                   "parameters": {
@@ -1408,7 +1408,7 @@
     "vmCreation_customVHD_unmanagedDisks": {
       "condition": "[and(and(variables('createVMs'), equals(parameters('vmImageType'), 'CustomVHD')), not(parameters('vmUseManagedDisks')))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('vmCreation-linkedTemplate-{0}-unmanagedDisks-customvhdvm', parameters('deploymentId'))]",
       "resourceGroup": "[parameters('vmResourceGroup')]",
       "properties": {
@@ -1528,14 +1528,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "9357298842282880538"
+              "templateHash": "14190063536201337959"
             }
           },
           "parameters": {
@@ -1930,11 +1930,11 @@
               ]
             },
             "vm_AADLoginForWindows": {
-              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "copy": {
                 "name": "vm_AADLoginForWindows",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindows', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -1950,11 +1950,11 @@
               ]
             },
             "vm_AADLoginForWindowsWithIntune": {
-              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "copy": {
                 "name": "vm_AADLoginForWindowsWithIntune",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindowsWithIntune', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -1973,11 +1973,11 @@
               ]
             },
             "vm_joindomain": {
-              "condition": "[not(parameters('aadJoin'))]",
               "copy": {
                 "name": "vm_joindomain",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[not(parameters('aadJoin'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/joindomain', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -2004,7 +2004,7 @@
             },
             "NSG": {
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "NSG-linkedTemplate",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -2030,14 +2030,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "13628187446363699436"
+                      "templateHash": "4892198028949632780"
                     }
                   },
                   "parameters": {
@@ -2083,7 +2083,7 @@
     "vmCreation_customeImage": {
       "condition": "[and(variables('createVMs'), equals(parameters('vmImageType'), 'CustomImage'))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('vmCreation-linkedTemplate-{0}-managedDisks-customimagevm', parameters('deploymentId'))]",
       "resourceGroup": "[parameters('vmResourceGroup')]",
       "properties": {
@@ -2203,14 +2203,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "12880138032970427321"
+              "templateHash": "5228748956448808827"
             }
           },
           "parameters": {
@@ -2601,11 +2601,11 @@
               ]
             },
             "vm_AADLoginForWindows": {
-              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "copy": {
                 "name": "vm_AADLoginForWindows",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindows', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -2621,11 +2621,11 @@
               ]
             },
             "vm_AADLoginForWindowsWithIntune": {
-              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "copy": {
                 "name": "vm_AADLoginForWindowsWithIntune",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindowsWithIntune', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -2644,11 +2644,11 @@
               ]
             },
             "vm_joindomain": {
-              "condition": "[not(parameters('aadJoin'))]",
               "copy": {
                 "name": "vm_joindomain",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[not(parameters('aadJoin'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/joindomain', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -2675,7 +2675,7 @@
             },
             "NSG": {
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "NSG-linkedTemplate",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -2701,14 +2701,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "13628187446363699436"
+                      "templateHash": "4892198028949632780"
                     }
                   },
                   "parameters": {
@@ -2754,7 +2754,7 @@
     "vmCreation_Gallery": {
       "condition": "[and(and(variables('createVMs'), equals(parameters('vmImageType'), 'Gallery')), parameters('vmUseManagedDisks'))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('vmCreation-linkedTemplate-{0}-managedDisks-galleryvm', parameters('deploymentId'))]",
       "resourceGroup": "[parameters('vmResourceGroup')]",
       "properties": {
@@ -2874,14 +2874,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "17069599427407558853"
+              "templateHash": "5026583956773796744"
             }
           },
           "parameters": {
@@ -3275,11 +3275,11 @@
               ]
             },
             "vm_AADLoginForWindows": {
-              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "copy": {
                 "name": "vm_AADLoginForWindows",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), not(parameters('intune')))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindows', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -3295,11 +3295,11 @@
               ]
             },
             "vm_AADLoginForWindowsWithIntune": {
-              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "copy": {
                 "name": "vm_AADLoginForWindowsWithIntune",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[and(parameters('aadJoin'), parameters('intune'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/AADLoginForWindowsWithIntune', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -3318,11 +3318,11 @@
               ]
             },
             "vm_joindomain": {
-              "condition": "[not(parameters('aadJoin'))]",
               "copy": {
                 "name": "vm_joindomain",
                 "count": "[length(range(0, parameters('rdshNumberOfInstances')))]"
               },
+              "condition": "[not(parameters('aadJoin'))]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2018-10-01",
               "name": "[format('{0}{1}/joindomain', parameters('rdshPrefix'), add(range(0, parameters('rdshNumberOfInstances'))[copyIndex()], parameters('vmInitialNumber')))]",
@@ -3349,7 +3349,7 @@
             },
             "NSG": {
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "NSG-linkedTemplate",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -3375,14 +3375,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "13628187446363699436"
+                      "templateHash": "4892198028949632780"
                     }
                   },
                   "parameters": {

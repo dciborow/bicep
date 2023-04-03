@@ -18,7 +18,7 @@ namespace Bicep.Core.Syntax
         public static readonly IEnumerable<SyntaxTrivia> SingleSpaceTrivia = ImmutableArray.Create(
             new SyntaxTrivia(SyntaxTriviaType.Whitespace, TextSpan.Nil, " "));
 
-        public static readonly SkippedTriviaSyntax EmptySkippedTrivia = new(TextSpan.Nil, Enumerable.Empty<SyntaxBase>(), Enumerable.Empty<IDiagnostic>());
+        public static readonly SkippedTriviaSyntax EmptySkippedTrivia = new(TextSpan.Nil, Enumerable.Empty<SyntaxBase>());
 
         public static Token CreateToken(TokenType tokenType, string text = "", IEnumerable<SyntaxTrivia>? leadingTrivia = null, IEnumerable<SyntaxTrivia>? trailingTrivia = null)
         {
@@ -38,8 +38,6 @@ namespace Bicep.Core.Syntax
                 LeftParenToken,
                 Interleave(variables.Select(x => new LocalVariableSyntax(x)), () => CommaToken),
                 SyntaxFactory.RightParenToken);
-
-        public static UnboundVariableAccessSyntax CreateUnboundVariableAccess(string text) => new(CreateIdentifier(text));
 
         public static Token DoubleNewlineToken => CreateToken(TokenType.NewLine, Environment.NewLine + Environment.NewLine);
         public static Token NewlineToken => CreateToken(TokenType.NewLine, Environment.NewLine);
@@ -79,6 +77,7 @@ namespace Bicep.Core.Syntax
         public static Token TrueKeywordToken => CreateToken(TokenType.TrueKeyword, "true");
         public static Token FalseKeywordToken => CreateToken(TokenType.FalseKeyword, "false");
         public static Token NullKeywordToken => CreateToken(TokenType.NullKeyword, "null");
+        public static Token ArrowToken => CreateToken(TokenType.Arrow, "=>");
 
         public static ObjectPropertySyntax CreateObjectProperty(string key, SyntaxBase value)
         {
@@ -161,11 +160,11 @@ namespace Bicep.Core.Syntax
                 RightSquareToken);
         }
 
-        public static ArrayAccessSyntax CreateArrayAccess(SyntaxBase baseExpression, SyntaxBase indexExpression) => new(baseExpression, LeftSquareToken, indexExpression, RightSquareToken);
+        public static ArrayAccessSyntax CreateArrayAccess(SyntaxBase baseExpression, SyntaxBase indexExpression, bool safeAccess = false) => new(baseExpression, LeftSquareToken, safeAccess ? QuestionToken : null, indexExpression, RightSquareToken);
 
         public static SyntaxBase CreateObjectPropertyKey(string text)
         {
-            if (Regex.IsMatch(text, "^[a-zA-Z][a-zA-Z0-9_]*$"))
+            if (Lexer.IsValidIdentifier(text))
             {
                 return CreateIdentifier(text);
             }
@@ -254,6 +253,15 @@ namespace Bicep.Core.Syntax
 
         public static FunctionCallSyntax CreateFunctionCall(string functionName, params SyntaxBase[] argumentExpressions)
             => new FunctionCallSyntax(
+                CreateIdentifier(functionName),
+                LeftParenToken,
+                Interleave(argumentExpressions.Select(x => new FunctionArgumentSyntax(x)), () => CommaToken),
+                RightParenToken);
+
+        public static InstanceFunctionCallSyntax CreateInstanceFunctionCall(SyntaxBase baseSyntax, string functionName, params SyntaxBase[] argumentExpressions)
+            => new(
+                baseSyntax,
+                DotToken,
                 CreateIdentifier(functionName),
                 LeftParenToken,
                 Interleave(argumentExpressions.Select(x => new FunctionArgumentSyntax(x)), () => CommaToken),
@@ -391,5 +399,31 @@ namespace Bicep.Core.Syntax
 
         public static Token CreateNewLineWithIndent(string indent) => GetNewlineToken(
             trailingTrivia: new SyntaxTrivia(SyntaxTriviaType.Whitespace, TextSpan.Nil, indent).AsEnumerable());
+
+        public static LambdaSyntax CreateLambdaSyntax(IEnumerable<string> parameterNames, SyntaxBase functionExpression)
+        {
+            SyntaxBase variableBlock = parameterNames.Count() switch {
+                1 => new LocalVariableSyntax(SyntaxFactory.CreateIdentifier(parameterNames.First())),
+                _ => new VariableBlockSyntax(
+                    SyntaxFactory.LeftParenToken,
+                    SyntaxFactory.Interleave(parameterNames
+                        .Select(name => new LocalVariableSyntax(SyntaxFactory.CreateIdentifier(name))), () => SyntaxFactory.CommaToken),
+                    SyntaxFactory.RightParenToken),
+            };
+
+            return new LambdaSyntax(
+                variableBlock,
+                SyntaxFactory.ArrowToken,
+                functionExpression);
+        }
+
+        public static NonNullAssertionSyntax AsNonNullable(SyntaxBase @base) => @base switch
+        {
+            NonNullAssertionSyntax alreadyNonNull => alreadyNonNull,
+            _ => new NonNullAssertionSyntax(@base, ExclamationToken),
+        };
+
+        public static PropertyAccessSyntax CreatePropertyAccess(SyntaxBase @base, string propertyName)
+            => new(@base, DotToken, null, CreateIdentifier(propertyName));
     }
 }

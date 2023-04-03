@@ -190,6 +190,10 @@ export const getRecommendedConfigLocationRequestType = new ProtocolRequestType<
 >("bicep/getRecommendedConfigLocation");
 
 export interface BicepDecompileForPasteCommandParams {
+  uri: string;
+  bicepContent: string;
+  rangeOffset: number;
+  rangeLength: number;
   jsonContent: string;
   queryCanPaste: boolean;
 }
@@ -198,7 +202,15 @@ export interface BicepDecompileForPasteCommandResult {
   decompileId: string;
   output: string;
   errorMessage?: string;
-  pasteType?: string; // undefined if can't be pasted
+  pasteContext?: "none" | "string";
+  // undefined if can't be pasted
+  pasteType:
+    | undefined
+    | "fullTemplate"
+    | "resource"
+    | "resourceList"
+    | "jsonValue"
+    | "bicepValue";
   bicep?: string;
-  decompilationDisclaimer?: string;
+  disclaimer?: string;
 }

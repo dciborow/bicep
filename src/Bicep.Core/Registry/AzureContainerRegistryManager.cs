@@ -1,17 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Azure;
-using Azure.Containers.ContainerRegistry.Specialized;
-using Bicep.Core.Configuration;
-using Bicep.Core.Modules;
-using Bicep.Core.Registry.Oci;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Containers.ContainerRegistry.Specialized;
+using Azure.Identity;
+using Bicep.Core.Configuration;
+using Bicep.Core.Modules;
+using Bicep.Core.Registry.Oci;
 using OciManifest = Bicep.Core.Registry.Oci.OciManifest;
 
 namespace Bicep.Core.Registry
@@ -31,24 +32,35 @@ namespace Bicep.Core.Registry
 
         public async Task<OciArtifactResult> PullArtifactAsync(RootConfiguration configuration, OciArtifactModuleReference moduleReference)
         {
-            var client = this.CreateBlobClient(configuration, moduleReference);
-
+            ContainerRegistryBlobClient client;
             OciManifest manifest;
             Stream manifestStream;
             string manifestDigest;
 
+            async Task<(ContainerRegistryBlobClient, OciManifest, Stream, string)> DownloadManifestInternalAsync(bool anonymousAccess)
+            {
+                var client = this.CreateBlobClient(configuration, moduleReference, anonymousAccess);
+                var (manifest, manifestStream, manifestDigest) = await DownloadManifestAsync(moduleReference, client);
+                return (client, manifest, manifestStream, manifestDigest);
+            }
+
             try
             {
-                Trace.WriteLine($"Authenticated attempt to pull artifact for module {moduleReference.FullyQualifiedReference}.");
                 // Try authenticated client first.
-                (manifest, manifestStream, manifestDigest) = await DownloadManifestAsync(moduleReference, client);
+                Trace.WriteLine($"Authenticated attempt to pull artifact for module {moduleReference.FullyQualifiedReference}.");
+                (client, manifest, manifestStream, manifestDigest) = await DownloadManifestInternalAsync(anonymousAccess: false);
             }
             catch (RequestFailedException exception) when (exception.Status == 401 || exception.Status == 403)
             {
-                Trace.WriteLine($"Authenticated attempt to pull artifact for module {moduleReference.FullyQualifiedReference} failed, received code {exception.Status}. Fallback to anonymous pull.");
                 // Fall back to anonymous client.
-                client = this.CreateBlobClient(configuration, moduleReference, anonymousAccess: true);
-                (manifest, manifestStream, manifestDigest) = await DownloadManifestAsync(moduleReference, client);
+                Trace.WriteLine($"Authenticated attempt to pull artifact for module {moduleReference.FullyQualifiedReference} failed, received code {exception.Status}. Fallback to anonymous pull.");                
+                (client, manifest, manifestStream, manifestDigest) = await DownloadManifestInternalAsync(anonymousAccess: true);
+            }
+            catch(CredentialUnavailableException)
+            {
+                // Fall back to anonymous client.
+                Trace.WriteLine($"Authenticated attempt to pull artifact for module {moduleReference.FullyQualifiedReference} failed due to missing login step. Fallback to anonymous pull.");
+                (client, manifest, manifestStream, manifestDigest) = await DownloadManifestInternalAsync(anonymousAccess: true);
             }
 
             var moduleStream = await ProcessManifest(client, manifest);
@@ -56,12 +68,13 @@ namespace Bicep.Core.Registry
             return new OciArtifactResult(manifestDigest, manifest, manifestStream, moduleStream);
         }
 
-        public async Task PushArtifactAsync(Configuration.RootConfiguration configuration, OciArtifactModuleReference moduleReference, StreamDescriptor config, params StreamDescriptor[] layers)
+        public async Task PushArtifactAsync(RootConfiguration configuration, OciArtifactModuleReference moduleReference, string? artifactType, StreamDescriptor config, string? documentationUri = null, params StreamDescriptor[] layers)
         {
             // TODO: How do we choose this? Does it ever change?
             var algorithmIdentifier = DescriptorFactory.AlgorithmIdentifierSha256;
 
-            var blobClient = this.CreateBlobClient(configuration, moduleReference);
+            // push is not supported anonymously
+            var blobClient = this.CreateBlobClient(configuration, moduleReference, anonymousAccess: false);
 
             config.ResetStream();
             var configDescriptor = DescriptorFactory.CreateDescriptor(algorithmIdentifier, config);
@@ -80,7 +93,21 @@ namespace Bicep.Core.Registry
                 var layerUploadResult = await blobClient.UploadBlobAsync(layer.Stream);
             }
 
-            var manifest = new OciManifest(2, configDescriptor, layerDescriptors);
+            OciManifest manifest;
+
+            if (string.IsNullOrWhiteSpace(documentationUri))
+            {
+                manifest = new OciManifest(2, artifactType, configDescriptor, layerDescriptors);
+            }
+            else
+            {
+                var annotations = new Dictionary<string, string>
+            {
+                { LanguageConstants.OciOpenContainerImageDocumentationAnnotation, documentationUri }
+            };
+                manifest = new OciManifest(2, artifactType, configDescriptor, layerDescriptors, annotations);
+            }
+
             using var manifestStream = new MemoryStream();
             OciSerialization.Serialize(manifestStream, manifest);
 
@@ -91,7 +118,7 @@ namespace Bicep.Core.Registry
 
         private static Uri GetRegistryUri(OciArtifactModuleReference moduleReference) => new($"https://{moduleReference.Registry}");
 
-        private ContainerRegistryBlobClient CreateBlobClient(RootConfiguration configuration, OciArtifactModuleReference moduleReference, bool anonymousAccess = false) => anonymousAccess
+        private ContainerRegistryBlobClient CreateBlobClient(RootConfiguration configuration, OciArtifactModuleReference moduleReference, bool anonymousAccess) => anonymousAccess
             ? this.clientFactory.CreateAnonymouosBlobClient(configuration, GetRegistryUri(moduleReference), moduleReference.Repository)
             : this.clientFactory.CreateAuthenticatedBlobClient(configuration, GetRegistryUri(moduleReference), moduleReference.Repository);
 
@@ -141,6 +168,13 @@ namespace Bicep.Core.Registry
 
         private static async Task<Stream> ProcessManifest(ContainerRegistryBlobClient client, OciManifest manifest)
         {
+            // Bicep versions before 0.14 used to publish modules without the artifactType field set in the OCI manifest,
+            // so we must allow null here
+            if(manifest.ArtifactType is not null && !string.Equals(manifest.ArtifactType, BicepMediaTypes.BicepModuleArtifactType, MediaTypeComparison))
+            {
+                throw new InvalidModuleException($"Expected OCI artifact to have the artifactType field set to either null or '{BicepMediaTypes.BicepModuleArtifactType}' but found '{manifest.ArtifactType}'.");
+            }
+
             ProcessConfig(manifest.Config);
             if (manifest.Layers.Length != 1)
             {

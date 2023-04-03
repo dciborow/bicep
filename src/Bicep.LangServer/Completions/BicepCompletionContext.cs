@@ -162,6 +162,7 @@ namespace Bicep.LanguageServer.Completions
             var topLevelDeclarationInfo = SyntaxMatcher.FindLastNodeOfType<ITopLevelDeclarationSyntax, SyntaxBase>(matchingNodes);
             var objectInfo = SyntaxMatcher.FindLastNodeOfType<ObjectSyntax, ObjectSyntax>(matchingNodes);
             var propertyInfo = SyntaxMatcher.FindLastNodeOfType<ObjectPropertySyntax, ObjectPropertySyntax>(matchingNodes);
+            var propertyKey = propertyInfo.node?.TryGetKeyText();
             var arrayInfo = SyntaxMatcher.FindLastNodeOfType<ArraySyntax, ArraySyntax>(matchingNodes);
             var propertyAccessInfo = SyntaxMatcher.FindLastNodeOfType<PropertyAccessSyntax, PropertyAccessSyntax>(matchingNodes);
             var resourceAccessInfo = SyntaxMatcher.FindLastNodeOfType<ResourceAccessSyntax, ResourceAccessSyntax>(matchingNodes);
@@ -185,6 +186,7 @@ namespace Bicep.LanguageServer.Completions
                        ConvertFlag(IsParameterDefaultValueContext(matchingNodes, offset), BicepCompletionContextKind.ParameterDefaultValue | BicepCompletionContextKind.Expression) |
                        ConvertFlag(IsVariableValueContext(matchingNodes, offset), BicepCompletionContextKind.VariableValue | BicepCompletionContextKind.Expression) |
                        ConvertFlag(IsOutputValueContext(matchingNodes, offset), BicepCompletionContextKind.OutputValue | BicepCompletionContextKind.Expression) |
+                       ConvertFlag(IsOutputTypeFollowerContext(matchingNodes, offset), BicepCompletionContextKind.OutputTypeFollower) |
                        ConvertFlag(IsOuterExpressionContext(matchingNodes, offset), BicepCompletionContextKind.Expression) |
                        ConvertFlag(IsTargetScopeContext(matchingNodes, offset), BicepCompletionContextKind.TargetScope) |
                        ConvertFlag(IsDecoratorNameContext(matchingNodes, offset), BicepCompletionContextKind.DecoratorName) |
@@ -211,12 +213,22 @@ namespace Bicep.LanguageServer.Completions
                 // check if we're inside an expression
                 kind |= ConvertFlag(IsInnerExpressionContext(matchingNodes, offset), BicepCompletionContextKind.Expression);
 
-                if (kind.HasFlag(BicepCompletionContextKind.Expression) &&
-                    PropertyTypeShouldFlowThrough(matchingNodes, propertyInfo, offset))
+                if (kind.HasFlag(BicepCompletionContextKind.Expression))
                 {
-                    kind |= BicepCompletionContextKind.PropertyValue;
+                    if (PropertyTypeShouldFlowThrough(matchingNodes, propertyInfo, offset))
+                    {
+                        kind |= BicepCompletionContextKind.PropertyValue;
+                    }
+
+                    var arrayItemInfo = SyntaxMatcher.FindLastNodeOfType<ArrayItemSyntax, ArrayItemSyntax>(matchingNodes);
+                    if (ArrayItemTypeShouldFlowThrough(matchingNodes, arrayItemInfo, arrayInfo.node))
+                    {
+                        kind |= BicepCompletionContextKind.ArrayItem;
+                    }
                 }
             }
+
+            kind |= ConvertFlag(IsResourceDependsOnArrayItemContext(kind, propertyKey, topLevelDeclarationInfo.node), BicepCompletionContextKind.ExpectsResourceSymbolicReference);
 
             return new BicepCompletionContext(
                 kind,
@@ -342,7 +354,7 @@ namespace Bicep.LanguageServer.Completions
                 return BicepCompletionContextKind.OutputType;
             }
 
-             // NOTE: this logic is different between parameters and outputs because the resource type is optional for outputs.
+            // NOTE: this logic is different between parameters and outputs because the resource type is optional for outputs.
             if (SyntaxMatcher.IsTailMatch<OutputDeclarationSyntax>(matchingNodes, output => CheckOutputResourceTypeIsExpected(output)) ||
                 SyntaxMatcher.IsTailMatch<OutputDeclarationSyntax, ResourceTypeSyntax, StringSyntax, Token>(matchingNodes, (_, _, _, token) => token.Type == TokenType.StringComplete))
             {
@@ -488,6 +500,9 @@ namespace Bicep.LanguageServer.Completions
                         (propertyAccess, identifier, token) => ReferenceEquals(propertyAccess.PropertyName, identifier) && token.Type == TokenType.Identifier) ||
                     SyntaxMatcher.IsTailMatch<PropertyAccessSyntax, Token>(
                         matchingNodes,
+                        (propertyAccess, token) => token.Type == TokenType.Question && ReferenceEquals(propertyAccess.SafeAccessMarker, token)) ||
+                    SyntaxMatcher.IsTailMatch<PropertyAccessSyntax, Token>(
+                        matchingNodes,
                         (propertyAccess, token) => token.Type == TokenType.Dot && ReferenceEquals(propertyAccess.Dot, token)) ||
                     SyntaxMatcher.IsTailMatch<PropertyAccessSyntax>(
                         matchingNodes,
@@ -628,6 +643,41 @@ namespace Bicep.LanguageServer.Completions
             return false;
         }
 
+        private static bool ArrayItemTypeShouldFlowThrough(
+            List<SyntaxBase> matchingNodes,
+            (ArrayItemSyntax? node, int index) arrayItemInfo,
+            ArraySyntax? arraySyntax
+        )
+        {
+            if (arraySyntax is null)
+            {
+                return false;
+            }
+
+            // Array item types should flow through parenthesized and ternary expressions. For examples:
+            // [(|)]
+            // [(...), (conditionA ? |)]
+            // [
+            //   ( | )
+            // ]
+            // [
+            //   conditionA ? | : false
+            // ]
+            // [
+            //   conditionA ? (conditionB ? true : |) : false
+            // ]
+            if (arrayItemInfo.node != null
+                && matchingNodes.Skip(arrayItemInfo.index + 1).SkipLast(1).All(node => node is TernaryOperationSyntax or ParenthesizedExpressionSyntax)
+                && matchingNodes.Last() is TernaryOperationSyntax or ParenthesizedExpressionSyntax or Token)
+            {
+                return true;
+            }
+
+            var arrayHasNewLines = arraySyntax.Children.Any(c => c is Token { Type: TokenType.NewLine });
+            // something like [, (|)] ..
+            return !arrayHasNewLines && SyntaxMatcher.IsTailMatch<ArraySyntax, SkippedTriviaSyntax, Token>(matchingNodes);
+        }
+
         private static bool IsArrayItemContext(List<SyntaxBase> matchingNodes, (ArraySyntax? node, int index) arrayInfo, int offset)
         {
             if (arrayInfo.node == null)
@@ -637,27 +687,27 @@ namespace Bicep.LanguageServer.Completions
                 return false;
             }
 
-            switch (matchingNodes[^1])
+            // var arr = [ | ]
+            if (SyntaxMatcher.IsTailMatch<ArraySyntax>(matchingNodes)
+                // var arr = [|] var arr = [ |]
+                || SyntaxMatcher.IsTailMatch<ArraySyntax, Token>(
+                    matchingNodes,
+                    (_, token) => token is { Type: TokenType.NewLine or TokenType.Comma or TokenType.LeftSquare or TokenType.RightSquare }
+                )
+                || SyntaxMatcher.IsTailMatch<ArraySyntax, SkippedTriviaSyntax>(matchingNodes) // var arr = [, | ,]
+                || SyntaxMatcher.IsTailMatch<ArraySyntax, SkippedTriviaSyntax, Token>( // var arr = [,|]
+                    matchingNodes,
+                    (_, _, token) => token is { Type: TokenType.Comma }
+                ))
             {
-                case ArraySyntax arraySyntax:
-                    return CanInsertChildNodeAtOffset(arraySyntax, offset);
-
-                case Token token:
-                    int nodeCount = matchingNodes.Count - arrayInfo.index;
-
-                    switch (nodeCount)
-                    {
-                        case 2:
-                            return token.Type == TokenType.NewLine && CanInsertChildNodeAtOffset((ArraySyntax)matchingNodes[^2], offset);
-
-                        case 5:
-                            return token.Type == TokenType.Identifier;
-                    }
-
-                    break;
+                return CanInsertChildNodeAtOffset(arrayInfo.node, offset);
             }
 
-            return false;
+            // var arr = [a|]
+            return SyntaxMatcher.IsTailMatch<ArraySyntax, ArrayItemSyntax, VariableAccessSyntax, IdentifierSyntax, Token>(
+                matchingNodes,
+                (_, _, _, _, token) => token is { Type: TokenType.Identifier }
+            );
         }
 
         private static bool IsParameterDefaultValueContext(List<SyntaxBase> matchingNodes, int offset) =>
@@ -677,6 +727,11 @@ namespace Bicep.LanguageServer.Completions
             SyntaxMatcher.IsTailMatch<OutputDeclarationSyntax, Token>(matchingNodes, (output, token) => output.Assignment == token && token.Type == TokenType.Assignment && offset == token.GetEndPosition()) ||
             // output foo type = a|
             SyntaxMatcher.IsTailMatch<OutputDeclarationSyntax, VariableAccessSyntax, IdentifierSyntax, Token>(matchingNodes, (output, _, _, token) => output.Assignment is Token assignmentToken && offset > assignmentToken.GetEndPosition() && token.Type == TokenType.Identifier);
+
+        private static bool IsOutputTypeFollowerContext(List<SyntaxBase> matchingNodes, int offset) =>
+            // | below indicates cursor position
+            // output foo type |
+            SyntaxMatcher.IsTailMatch<OutputDeclarationSyntax>(matchingNodes, output => offset > output.Type.GetEndPosition() && offset <= output.Assignment.Span.Position);
 
         private static bool IsVariableValueContext(List<SyntaxBase> matchingNodes, int offset) =>
             // | below indicates cursor position
@@ -1018,6 +1073,13 @@ namespace Bicep.LanguageServer.Completions
             // param foo = 'o|'
             SyntaxMatcher.IsTailMatch<ParameterAssignmentSyntax, StringSyntax, Token>(matchingNodes, (_, _, token) => token.Type == TokenType.StringComplete);
 
+        private static bool IsResourceDependsOnArrayItemContext(BicepCompletionContextKind kind, string? propertyName, SyntaxBase? topLevelDeclarationInfo)
+        {
+            return propertyName == LanguageConstants.ResourceDependsOnPropertyName
+                   && kind.HasFlag(BicepCompletionContextKind.ArrayItem)
+                   && topLevelDeclarationInfo is ResourceDeclarationSyntax or ModuleDeclarationSyntax;
+        }
+
         static bool IsOffsetImmediatlyAfterNode(int offset, SyntaxBase node) => node.Span.Position + node.Span.Length == offset;
 
         private static Range GetReplacementRange(BicepSourceFile bicepFile, SyntaxBase innermostMatchingNode, int offset)
@@ -1082,14 +1144,26 @@ namespace Bicep.LanguageServer.Completions
                 return true;
             }
 
-            var nodes = arraySyntax.OpenBracket.AsEnumerable().Concat(arraySyntax.Children).Concat(arraySyntax.CloseBracket);
+            var nodes = arraySyntax.OpenBracket.AsEnumerable().Concat(arraySyntax.Children).Concat(arraySyntax.CloseBracket).ToList();
+            var hasNewLines = nodes.Any(node => node is Token { Type: TokenType.NewLine });
             var lastNodeBeforeOffset = nodes.LastOrDefault(node => node.GetEndPosition() <= offset);
             var firstNodeAfterOffset = nodes.FirstOrDefault(node => node.GetPosition() >= offset);
 
-            // To insert a new child in an array, we must be in between newlines.
-            // This will not be the case once https://github.com/Azure/bicep/issues/146 is implemented.
-            return lastNodeBeforeOffset is Token { Type: TokenType.NewLine } &&
-                firstNodeAfterOffset is Token { Type: TokenType.NewLine };
+            return lastNodeBeforeOffset switch
+            {
+                Token { Type: TokenType.NewLine } =>
+                    // To insert a new child in a multiline array, we must be in between newlines.
+                    firstNodeAfterOffset is Token { Type: TokenType.NewLine },
+                _ when hasNewLines =>
+                    false,
+                Token { Type: TokenType.LeftSquare } =>
+                    firstNodeAfterOffset is Token { Type: TokenType.RightSquare } or ArrayItemSyntax or SkippedTriviaSyntax,
+                Token { Type: TokenType.Comma } or ArrayItemSyntax =>
+                    true,
+                SkippedTriviaSyntax =>
+                    firstNodeAfterOffset is Token { Type: TokenType.RightSquare },
+                _ => false
+            };
         }
 
         private class ActiveScopesVisitor : SymbolVisitor

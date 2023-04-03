@@ -93,7 +93,7 @@ var test3 = {
 
 // duplicate properties
 var testDupe = {
-//@[04:12) Variable testDupe. Type: object. Declaration start char: 0, length: 56
+//@[04:12) Variable testDupe. Type: error. Declaration start char: 0, length: 56
   'duplicate': true
   duplicate: true
 }
@@ -113,6 +113,14 @@ var myConcat = sys.concat('a', az.concat('b', 'c'))
 // invalid string using double quotes
 var doubleString = "bad string"
 //@[04:16) Variable doubleString. Type: error. Declaration start char: 0, length: 31
+
+// invalid index on array literal
+var nonExistentIndex1 = [][0]
+//@[04:21) Variable nonExistentIndex1. Type: error. Declaration start char: 0, length: 29
+var nonExistentIndex2 = ['foo'][1]
+//@[04:21) Variable nonExistentIndex2. Type: error. Declaration start char: 0, length: 34
+var nonExistentIndex3 = ['foo', 'bar'][-1]
+//@[04:21) Variable nonExistentIndex3. Type: error. Declaration start char: 0, length: 42
 
 var resourceGroup = ''
 //@[04:17) Variable resourceGroup. Type: ''. Declaration start char: 0, length: 22
@@ -172,10 +180,10 @@ var objectVarTopLevelCompletions2 = objectLiteralType.
 // this does not produce any completions because mixed array items are of type "any"
 // #completionTest(60) -> mixedArrayProperties
 var mixedArrayTypeCompletions = objectLiteralType.fifth[0].o
-//@[04:29) Variable mixedArrayTypeCompletions. Type: any. Declaration start char: 0, length: 60
+//@[04:29) Variable mixedArrayTypeCompletions. Type: error. Declaration start char: 0, length: 60
 // #completionTest(60) -> mixedArrayProperties
 var mixedArrayTypeCompletions2 = objectLiteralType.fifth[0].
-//@[04:30) Variable mixedArrayTypeCompletions2. Type: any. Declaration start char: 0, length: 60
+//@[04:30) Variable mixedArrayTypeCompletions2. Type: error. Declaration start char: 0, length: 60
 
 // #completionTest(58) -> oneArrayItemProperties
 var oneArrayItemCompletions = objectLiteralType.sixth[0].t
@@ -261,7 +269,7 @@ var indirection = keys
 var runtimeLoop = [for (item, index) in []: indirection]
 //@[24:28) Local item. Type: never. Declaration start char: 24, length: 4
 //@[30:35) Local index. Type: int. Declaration start char: 30, length: 5
-//@[04:15) Variable runtimeLoop. Type: any[]. Declaration start char: 0, length: 56
+//@[04:15) Variable runtimeLoop. Type: array. Declaration start char: 0, length: 56
 var runtimeLoop2 = [for (item, index) in indirection.keys: 's']
 //@[25:29) Local item. Type: any. Declaration start char: 25, length: 4
 //@[31:36) Local index. Type: int. Declaration start char: 31, length: 5

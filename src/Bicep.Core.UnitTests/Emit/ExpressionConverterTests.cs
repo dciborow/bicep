@@ -59,6 +59,13 @@ namespace Bicep.Core.UnitTests.Emit
         [DataRow("5 ?? 3 + 2 ?? 7", "[coalesce(coalesce(5, add(3, 2)), 7)]")]
         [DataRow("true ?? true && false ?? false || true", "[coalesce(coalesce(true(), and(true(), false())), or(false(), true()))]")]
         [DataRow("null ?? true", "[coalesce(null(), true())]")]
+        [DataRow("{foo:true}!.foo", "[createObject('foo', true()).foo]")]
+        [DataRow("[1, 2, 3][?3]", "[tryGet(createArray(1, 2, 3), 3)]")]
+        [DataRow("{fizz: 'buzz'}.?key", "[tryGet(createObject('fizz', 'buzz'), 'key')]")]
+        [DataRow("{fizz: 'buzz'}.?key.and.nested.property.accesses[0]['stringKey']", "[tryGet(createObject('fizz', 'buzz'), 'key', 'and', 'nested', 'property', 'accesses', 0, 'stringKey')]")]
+        [DataRow("{fizz: 'buzz'}.key.and.nested.property.accesses[0]['stringKey']", "[createObject('fizz', 'buzz').key.and.nested.property.accesses[0].stringKey]")]
+        [DataRow("{fizz: 'buzz'}.?key.and.nested.?property.accesses[0]['stringKey']", "[tryGet(tryGet(createObject('fizz', 'buzz'), 'key', 'and', 'nested'), 'property', 'accesses', 0, 'stringKey')]")]
+        [DataRow("({fizz: 'buzz'}.?key.and.nested).property.accesses[0]['stringKey']", "[tryGet(createObject('fizz', 'buzz'), 'key', 'and', 'nested').property.accesses[0].stringKey]")]
         public void ShouldConvertExpressionsCorrectly(string text, string expected)
         {
             var programText = $"var test = {text}";
@@ -67,7 +74,7 @@ namespace Bicep.Core.UnitTests.Emit
             var programSyntax = compilation.SourceFileGrouping.EntryPoint.ProgramSyntax;
             var variableDeclarationSyntax = programSyntax.Children.OfType<VariableDeclarationSyntax>().First();
 
-            var converter = new ExpressionConverter(new EmitterContext(compilation.GetEntrypointSemanticModel(), BicepTestConstants.EmitterSettings));
+            var converter = new ExpressionConverter(new EmitterContext(compilation.GetEntrypointSemanticModel()));
             var converted = converter.ConvertExpression(variableDeclarationSyntax.Value);
 
             var serializer = new ExpressionSerializer(new ExpressionSerializerSettings

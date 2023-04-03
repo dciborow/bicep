@@ -4,9 +4,9 @@
 output myStr string = 'hello'
 //@    "myStr": {
 //@      "type": "string",
-//@      "value": "hello",
 //@      "metadata": {
-//@      }
+//@      },
+//@      "value": "hello"
 //@    },
 
 @sys.description('int output description')
@@ -14,9 +14,9 @@ output myStr string = 'hello'
 output myInt int = 7
 //@    "myInt": {
 //@      "type": "int",
-//@      "value": 7,
 //@      "metadata": {
-//@      }
+//@      },
+//@      "value": 7
 //@    },
 output myOtherInt int = 20 / 13 + 80 % -4
 //@    "myOtherInt": {
@@ -29,9 +29,9 @@ output myOtherInt int = 20 / 13 + 80 % -4
 output myBool bool = !false
 //@    "myBool": {
 //@      "type": "bool",
-//@      "value": "[not(false())]",
 //@      "metadata": {
-//@      }
+//@      },
+//@      "value": "[not(false())]"
 //@    },
 output myOtherBool bool = true
 //@    "myOtherBool": {
@@ -44,9 +44,9 @@ output myOtherBool bool = true
 output suchEmpty array = [
 //@    "suchEmpty": {
 //@      "type": "array",
-//@      "value": [],
 //@      "metadata": {
-//@      }
+//@      },
+//@      "value": []
 //@    },
 ]
 
@@ -62,9 +62,9 @@ output suchEmpty2 object = {
 output obj object = {
 //@    "obj": {
 //@      "type": "object",
-//@      "value": {
-//@      },
 //@      "metadata": {
+//@      },
+//@      "value": {
 //@      }
 //@    },
   a: 'a'
@@ -142,6 +142,7 @@ output expressionBasedIndexer string = {
 }[resourceGroup().location].foo
 
 var secondaryKeyIntermediateVar = listKeys(resourceId('Mock.RP/type', 'steve'), '2020-01-01').secondaryKey
+//@      "value": "[listKeys(resourceId('Mock.RP/type', 'steve'), '2020-01-01').secondaryKey]"
 
 output primaryKey string = listKeys(resourceId('Mock.RP/type', 'nigel'), '2020-01-01').primaryKey
 //@    "primaryKey": {
@@ -151,7 +152,6 @@ output primaryKey string = listKeys(resourceId('Mock.RP/type', 'nigel'), '2020-0
 output secondaryKey string = secondaryKeyIntermediateVar
 //@    "secondaryKey": {
 //@      "type": "string",
-//@      "value": "[listKeys(resourceId('Mock.RP/type', 'steve'), '2020-01-01').secondaryKey]"
 //@    },
 
 var varWithOverlappingOutput = 'hello'

@@ -107,16 +107,12 @@ var mappedResProps = map(items(storageAcc.properties.secondaryEndpoints), item =
 module myMod './test.bicep' = {
 //@    {
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "outputThis": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -145,8 +141,12 @@ module myMod './test.bicep' = {
   name: 'asdfsadf'
 //@      "name": "asdfsadf",
   params: {
+//@        "parameters": {
+//@        },
     outputThis: map(mapObject, obj => obj.doggo)
+//@          "outputThis": {
 //@            "value": "[map(variables('mapObject'), lambda('obj', lambdaVariables('obj').doggo))]"
+//@          }
   }
 }
 var mappedModOutputProps = map(myMod.outputs.outputThis, doggo => '${doggo} says bork')

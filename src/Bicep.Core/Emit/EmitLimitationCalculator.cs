@@ -11,10 +11,12 @@ using Bicep.Core.Semantics;
 using Bicep.Core.Semantics.Metadata;
 using Bicep.Core.Syntax;
 using Bicep.Core.TypeSystem;
+using Bicep.Core.TypeSystem.Az;
 using Bicep.Core.Utils;
 using Bicep.Core.Extensions;
 using Bicep.Core.Syntax.Visitors;
 using Microsoft.WindowsAzure.ResourceStack.Common.Extensions;
+using Newtonsoft.Json.Linq;
 
 namespace Bicep.Core.Emit
 {
@@ -43,8 +45,12 @@ namespace Bicep.Core.Emit
             DetectInvalidValueForParentProperty(model, diagnostics);
             BlockLambdasOutsideFunctionArguments(model, diagnostics);
             BlockUnsupportedLambdaVariableUsage(model, diagnostics);
+            BlockModuleOutputResourcePropertyAccess(model, diagnostics);
+            BlockSafeDereferenceOfModuleOrResourceCollectionMember(model, diagnostics);
+            BlockCyclicAggregateTypeReferences(model, diagnostics);
+            var paramAssignments = CalculateParameterAssignments(model, diagnostics);
 
-            return new(diagnostics.GetDiagnostics(), moduleScopeData, resourceScopeData);
+            return new(diagnostics.GetDiagnostics(), moduleScopeData, resourceScopeData, paramAssignments);
         }
 
         private static void DetectDuplicateNames(SemanticModel semanticModel, IDiagnosticWriter diagnosticWriter, ImmutableDictionary<DeclaredResourceMetadata, ScopeHelper.ScopeData> resourceScopeData, ImmutableDictionary<ModuleSymbol, ScopeHelper.ScopeData> moduleScopeData)
@@ -445,6 +451,64 @@ namespace Bicep.Core.Emit
             return indexVariable is null
                 ? IsLocalInvariant(itemVariable)
                 : IsLocalInvariant(itemVariable) && IsLocalInvariant(indexVariable);
+        }
+
+        private static void BlockModuleOutputResourcePropertyAccess(SemanticModel model, IDiagnosticWriter diagnostics) =>
+            diagnostics.WriteMultiple(SyntaxAggregator.Aggregate(model.Root.Syntax, syntax => syntax is PropertyAccessSyntax propertyAccess &&
+                model.ResourceMetadata.TryLookup(propertyAccess.BaseExpression) is ModuleOutputResourceMetadata &&
+                !AzResourceTypeProvider.ReadWriteDeployTimeConstantPropertyNames.Contains(propertyAccess.PropertyName.IdentifierName))
+                .Select(syntaxToBlock => DiagnosticBuilder.ForPosition(syntaxToBlock).ModuleOutputResourcePropertyAccessDetected()));
+
+        private static void BlockSafeDereferenceOfModuleOrResourceCollectionMember(SemanticModel model, IDiagnosticWriter diagnostics) =>
+            diagnostics.WriteMultiple(SyntaxAggregator.AggregateByType<ArrayAccessSyntax>(model.Root.Syntax)
+                .Select(arrayAccess => arrayAccess.SafeAccessMarker is not null
+                    ? model.GetSymbolInfo(arrayAccess.BaseExpression) switch
+                    {
+                        ModuleSymbol module when module.IsCollection => arrayAccess.SafeAccessMarker,
+                        ResourceSymbol resource when resource.IsCollection => arrayAccess.SafeAccessMarker,
+                        _ => null,
+                    }
+                    : null)
+                .WhereNotNull()
+                .Select(forbiddenSafeAccessMarker => DiagnosticBuilder.ForPosition(forbiddenSafeAccessMarker).SafeDereferenceNotPermittedOnResourceCollections()));
+
+        private static void BlockCyclicAggregateTypeReferences(SemanticModel model, IDiagnosticWriter diagnostics)
+        {
+            var cycles = CyclicTypeCheckVisitor.FindCycles(model);
+            diagnostics.WriteMultiple(cycles.Select(kvp => kvp.Value.Length switch
+            {
+                1 => DiagnosticBuilder.ForPosition(kvp.Key.DeclaringType.Name).CyclicTypeSelfReference(),
+                _ => DiagnosticBuilder.ForPosition(kvp.Key.DeclaringType.Name).CyclicType(kvp.Value.Select(s => s.Name)),
+            }));
+        }
+
+        private static ImmutableDictionary<ParameterAssignmentSymbol, JToken> CalculateParameterAssignments(SemanticModel model, IDiagnosticWriter diagnostics)
+        {
+            var generated = new Dictionary<ParameterAssignmentSymbol, JToken>();
+            var evaluator = new ParameterAssignmentEvaluator(model);
+            foreach (var parameter in model.Root.ParameterAssignments)
+            {
+                var type = model.GetTypeInfo(parameter.DeclaringSyntax);
+                if (type is ErrorType)
+                {
+                    // no point evaluating if we're already reporting an error
+                    continue;
+                }
+
+                // We may emit duplicate errors here - type checking will also execute some ARM functions and generate errors
+                // This is something we should improve before the first release.
+                var result = evaluator.EvaluateParameter(parameter);
+                if (result.Diagnostic is {})
+                {
+                    diagnostics.Write(result.Diagnostic);
+                }
+                if (result.Value is {})
+                {
+                    generated[parameter] = result.Value;
+                }
+            }
+
+            return generated.ToImmutableDictionary();
         }
     }
 }

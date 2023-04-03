@@ -1,6 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Bicep.Core.Registry;
 using Bicep.Core.Semantics;
+using Bicep.Core.Semantics.Metadata;
 using Bicep.Core.Semantics.Namespaces;
 using Bicep.Core.Syntax;
 using Bicep.Core.TypeSystem;
@@ -9,22 +17,25 @@ using Bicep.LanguageServer.Utils;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Bicep.LanguageServer.Handlers
 {
     public class BicepHoverHandler : HoverHandlerBase
     {
+        private readonly IModuleDispatcher moduleDispatcher;
+        private readonly IModuleRegistryProvider moduleRegistryProvider;
         private readonly ISymbolResolver symbolResolver;
 
         private const int MaxHoverMarkdownCodeBlockLength = 90000;
         //actual limit for hover in VS code is 100,000 characters.
 
-        public BicepHoverHandler(ISymbolResolver symbolResolver)
+        public BicepHoverHandler(
+            IModuleDispatcher moduleDispatcher,
+            IModuleRegistryProvider moduleRegistryProvider,
+            ISymbolResolver symbolResolver)
         {
+            this.moduleDispatcher = moduleDispatcher;
+            this.moduleRegistryProvider = moduleRegistryProvider;
             this.symbolResolver = symbolResolver;
         }
 
@@ -36,7 +47,7 @@ namespace Bicep.LanguageServer.Handlers
                 return Task.FromResult<Hover?>(null);
             }
 
-            var markdown = GetMarkdown(request, result);
+            var markdown = GetMarkdown(request, result, this.moduleDispatcher, this.moduleRegistryProvider);
             if (markdown == null)
             {
                 return Task.FromResult<Hover?>(null);
@@ -51,8 +62,8 @@ namespace Bicep.LanguageServer.Handlers
 
         private static string? TryGetDescriptionMarkdown(SymbolResolutionResult result, DeclaredSymbol symbol)
         {
-            if (symbol.DeclaringSyntax is StatementSyntax statementSyntax &&
-                SemanticModelHelper.TryGetDescription(result.Context.Compilation.GetEntrypointSemanticModel(), statementSyntax) is { } description)
+            if (symbol.DeclaringSyntax is DecorableSyntax decorableSyntax &&
+                SemanticModelHelper.TryGetDescription(result.Context.Compilation.GetEntrypointSemanticModel(), decorableSyntax) is { } description)
             {
                 return description;
             }
@@ -60,7 +71,11 @@ namespace Bicep.LanguageServer.Handlers
             return null;
         }
 
-        private static MarkedStringsOrMarkupContent? GetMarkdown(HoverParams request, SymbolResolutionResult result)
+        private static MarkedStringsOrMarkupContent? GetMarkdown(
+            HoverParams request,
+            SymbolResolutionResult result,
+            IModuleDispatcher moduleDispatcher,
+            IModuleRegistryProvider moduleRegistryProvider)
         {
             // all of the generated markdown includes the language id to avoid VS code rendering
             // with multiple borders
@@ -77,14 +92,14 @@ namespace Bicep.LanguageServer.Handlers
 
                 case ParameterSymbol parameter:
                     return WithMarkdown(CodeBlockWithDescription(
-                        $"param {parameter.Name}: {parameter.Type}", TryGetDescriptionMarkdown(result, parameter)));
+                        WithTypeModifiers($"param {parameter.Name}: {parameter.Type}", parameter.Type), TryGetDescriptionMarkdown(result, parameter)));
 
                 case TypeAliasSymbol declaredType:
                     return WithMarkdown(CodeBlockWithDescription(
-                        $"type {declaredType.Name}: {declaredType.Type}", TryGetDescriptionMarkdown(result, declaredType)));
+                        WithTypeModifiers($"type {declaredType.Name}: {declaredType.Type}", declaredType.Type), TryGetDescriptionMarkdown(result, declaredType)));
 
                 case AmbientTypeSymbol ambientType:
-                    return WithMarkdown(CodeBlock($"type {ambientType.Name}: {ambientType.Type}"));
+                    return WithMarkdown(CodeBlock(WithTypeModifiers($"type {ambientType.Name}: {ambientType.Type}", ambientType.Type)));
 
                 case VariableSymbol variable:
                     return WithMarkdown(CodeBlockWithDescription($"var {variable.Name}: {variable.Type}", TryGetDescriptionMarkdown(result, variable)));
@@ -99,8 +114,28 @@ namespace Bicep.LanguageServer.Handlers
 
                 case ModuleSymbol module:
                     var filePath = SyntaxHelper.TryGetModulePath(module.DeclaringModule, out _);
+
                     if (filePath != null)
                     {
+                        var uri = request.TextDocument.Uri.ToUri();
+                        var registries = moduleRegistryProvider.Registries(uri);
+
+                        if (registries != null &&
+                            registries.Any() &&
+                            moduleDispatcher.TryGetModuleReference(module.DeclaringModule, uri, out var moduleReference, out _) &&
+                            moduleReference is not null)
+                        {
+                            foreach (var registry in registries)
+                            {
+                                if (registry.Scheme == moduleReference.Scheme &&
+                                    registry.GetDocumentationUri(moduleReference) is string documentationUri &&
+                                    !string.IsNullOrWhiteSpace(documentationUri))
+                                {
+                                    return WithMarkdown(CodeBlockWithDescription($"module {module.Name} '{filePath}'", $"[View Type Documentation]({Uri.UnescapeDataString(documentationUri)})"));
+                                }
+                            }
+                        }
+
                         return WithMarkdown(CodeBlockWithDescription($"module {module.Name} '{filePath}'", TryGetDescriptionMarkdown(result, module)));
                     }
 
@@ -108,7 +143,7 @@ namespace Bicep.LanguageServer.Handlers
 
                 case OutputSymbol output:
                     return WithMarkdown(CodeBlockWithDescription(
-                        $"output {output.Name}: {output.Type}", TryGetDescriptionMarkdown(result, output)));
+                        WithTypeModifiers($"output {output.Name}: {output.Type}", output.Type), TryGetDescriptionMarkdown(result, output)));
 
                 case BuiltInNamespaceSymbol builtInNamespace:
                     return WithMarkdown(CodeBlock($"{builtInNamespace.Name} namespace"));
@@ -124,11 +159,92 @@ namespace Bicep.LanguageServer.Handlers
                 case LocalVariableSymbol local:
                     return WithMarkdown(CodeBlock($"{local.Name}: {local.Type}"));
 
+                case ParameterAssignmentSymbol parameterAssignment:
+                     if(GetDeclaredParameterMetadata(parameterAssignment) is not ParameterMetadata declaredParamMetadata)
+                     {
+                        return null;
+                     }
+
+                    return WithMarkdown(CodeBlockWithDescription(
+                        WithTypeModifiers($"param {parameterAssignment.Name}: {declaredParamMetadata.TypeReference.Type}", declaredParamMetadata.TypeReference.Type), declaredParamMetadata.Description));
+                        
                 default:
                     return null;
             }
         }
 
+        private static ParameterMetadata? GetDeclaredParameterMetadata(ParameterAssignmentSymbol symbol)
+        {
+            if(!symbol.Context.Compilation.GetEntrypointSemanticModel().Root.TryGetBicepFileSemanticModelViaUsing(out var bicepSemanticModel, out _))
+            {
+                // failed to resolve using
+                return null;
+            }
+
+            if(bicepSemanticModel.Parameters.TryGetValue(symbol.Name, out var parameterMetadata))
+            {
+                return parameterMetadata;
+            }
+
+            return null;
+        }
+
+
+        private static string WithTypeModifiers(string coreContent, TypeSymbol type)
+        {
+            type = UnwrapType(type);
+
+            StringBuilder contentBuilder = new();
+            switch (type)
+            {
+                case IntegerType integer:
+                    if (integer.MinValue.HasValue)
+                    {
+                        contentBuilder.Append("@minValue(").Append(integer.MinValue.Value).Append(")\n");
+                    }
+                    if (integer.MaxValue.HasValue)
+                    {
+                        contentBuilder.Append("@maxValue(").Append(integer.MaxValue.Value).Append(")\n");
+                    }
+                    break;
+                case StringType @string:
+                    if (@string.MinLength.HasValue)
+                    {
+                        contentBuilder.Append("@minLength(").Append(@string.MinLength.Value).Append(")\n");
+                    }
+                    if (@string.MaxLength.HasValue)
+                    {
+                        contentBuilder.Append("@maxLength(").Append(@string.MaxLength.Value).Append(")\n");
+                    }
+                    break;
+                case ArrayType array when array is not TupleType:
+                    if (array.MinLength.HasValue)
+                    {
+                        contentBuilder.Append("@minLength(").Append(array.MinLength.Value).Append(")\n");
+                    }
+                    if (array.MaxLength.HasValue)
+                    {
+                        contentBuilder.Append("@maxLength(").Append(array.MaxLength.Value).Append(")\n");
+                    }
+                    break;
+            }
+
+            if (type.ValidationFlags.HasFlag(TypeSymbolValidationFlags.IsSecure))
+            {
+                contentBuilder.Append("@secure()\n");
+            }
+
+            contentBuilder.Append(coreContent);
+
+            return contentBuilder.ToString();
+        }
+
+        private static TypeSymbol UnwrapType(TypeSymbol type) => type switch
+        {
+            TypeType tt => UnwrapType(tt.Unwrapped),
+            _ when TypeHelper.TryRemoveNullability(type) is {} nonNullable => UnwrapType(nonNullable),
+            _ => type,
+        };
 
         //we need to check for overflow due to using code blocks.
         //if we reach limit in a code block vscode will truncate it automatically, the block will not be terminated so the hover will not be properly formatted
@@ -189,7 +305,7 @@ namespace Bicep.LanguageServer.Handlers
 
         protected override HoverRegistrationOptions CreateRegistrationOptions(HoverCapability capability, ClientCapabilities clientCapabilities) => new()
         {
-            DocumentSelector = DocumentSelectorFactory.Create()
+            DocumentSelector = DocumentSelectorFactory.CreateForBicepAndParams()
         };
     }
 }

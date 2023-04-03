@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Linq;
 using Bicep.Core.Semantics;
 using Bicep.Core.TypeSystem;
 using Bicep.Core.Workspaces;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
 
 namespace Bicep.Core.UnitTests.Semantics;
 
@@ -19,7 +19,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""objectParameter"": {
@@ -38,12 +38,9 @@ public class ArmTemplateSemanticModelTests
 
         var properties = parameterType.As<ObjectType>().Properties;
         properties.Should().HaveCount(3);
-        properties["foo"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["foo"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameString);
-        properties["bar"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["bar"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameInt);
-        properties["baz"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["baz"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameBool);
+        properties["foo"].TypeReference.Type.Should().BeOfType<StringType>();
+        properties["bar"].TypeReference.Type.Should().BeOfType<IntegerType>();
+        properties["baz"].TypeReference.Type.Should().BeOfType<BooleanType>();
 
         // By default, objects should accept additional properties without constraints as a fallback
         parameterType.As<ObjectType>().AdditionalPropertiesType.Should().NotBeNull().And.Be(LanguageConstants.Any);
@@ -56,7 +53,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""objectParameter"": {
@@ -70,8 +67,7 @@ public class ArmTemplateSemanticModelTests
         parameterType.Should().BeOfType<ObjectType>();
 
         var addlPropsType = parameterType.As<ObjectType>().AdditionalPropertiesType;
-        addlPropsType.Should().NotBeNull().And.BeOfType<PrimitiveType>();
-        addlPropsType.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameString);
+        addlPropsType.Should().NotBeNull().And.BeOfType<StringType>();
 
         parameterType.As<ObjectType>().AdditionalPropertiesFlags.Should().NotHaveFlag(TypePropertyFlags.FallbackProperty);
     }
@@ -82,7 +78,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""arrayParameter"": {
@@ -96,8 +92,7 @@ public class ArmTemplateSemanticModelTests
         parameterType.Should().BeOfType<TypedArrayType>();
 
         var itemType = parameterType.As<TypedArrayType>().Item;
-        itemType.Should().NotBeNull().And.BeOfType<PrimitiveType>();
-        itemType.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameString);
+        itemType.Should().NotBeNull().And.BeOfType<StringType>();
     }
 
     [TestMethod]
@@ -106,7 +101,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""tupleParameter"": {
@@ -125,12 +120,9 @@ public class ArmTemplateSemanticModelTests
 
         var items = parameterType.As<TupleType>().Items;
         items.Should().HaveCount(3);
-        items[0].Type.Should().BeOfType<PrimitiveType>();
-        items[0].Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameString);
-        items[1].Type.Should().BeOfType<PrimitiveType>();
-        items[1].Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameInt);
-        items[2].Type.Should().BeOfType<PrimitiveType>();
-        items[2].Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameBool);
+        items[0].Type.Should().BeOfType<StringType>();
+        items[1].Type.Should().BeOfType<IntegerType>();
+        items[2].Type.Should().BeOfType<BooleanType>();
     }
 
     [TestMethod]
@@ -139,7 +131,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""complexParameter"": {
@@ -151,9 +143,21 @@ public class ArmTemplateSemanticModelTests
                   ""items"": {
                     ""type"": ""object"",
                     ""properties"": {
-                      ""foo"": { ""type"": ""string"" },
-                      ""bar"": { ""type"": ""int"" },
-                      ""baz"": { ""type"": ""bool"" }
+                      ""foo"": {
+                        ""type"": ""string"",
+                        ""minLength"": 2,
+                        ""maxLength"": 4
+                      },
+                      ""bar"": {
+                        ""type"": ""int"",
+                        ""minValue"": 1,
+                        ""maxValue"": 10
+                      },
+                      ""baz"": {
+                        ""type"": ""array"",
+                        ""minLength"": 6,
+                        ""maxLength"": 8
+                      }
                     }
                   }
                 }
@@ -170,12 +174,9 @@ public class ArmTemplateSemanticModelTests
 
         var properties = parameterType.As<TypedArrayType>().Item.As<ObjectType>().AdditionalPropertiesType.As<TypedArrayType>().Item.As<ObjectType>().Properties;
         properties.Should().HaveCount(3);
-        properties["foo"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["foo"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameString);
-        properties["bar"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["bar"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameInt);
-        properties["baz"].TypeReference.Type.Should().BeOfType<PrimitiveType>();
-        properties["baz"].TypeReference.Type.As<PrimitiveType>().Name.Should().Be(LanguageConstants.TypeNameBool);
+        properties["foo"].TypeReference.Type.Should().Be(TypeFactory.CreateStringType(minLength: 2, maxLength: 4));
+        properties["bar"].TypeReference.Type.Should().Be(TypeFactory.CreateIntegerType(minValue: 1, maxValue: 10));
+        properties["baz"].TypeReference.Type.Should().Be(TypeFactory.CreateArrayType(minLength: 6, maxLength: 8));
     }
 
     [TestMethod]
@@ -184,7 +185,7 @@ public class ArmTemplateSemanticModelTests
         var parameterType = GetLoadedParameterType(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""definitions"": {
             ""intermediate"": {
@@ -202,36 +203,37 @@ public class ArmTemplateSemanticModelTests
         }
         ", "refParam");
 
-        parameterType.Type.Should().BeOfType<PrimitiveType>();
-        parameterType.Type.Name.Should().Be(LanguageConstants.TypeNameString);
+        parameterType.Type.Should().BeOfType<StringType>();
     }
 
     [TestMethod]
-    public void Model_handles_missing_type_reference_targets()
+    public void Model_with_missing_type_reference_targets_is_a_load_error()
     {
-        var parameterType = GetLoadedParameterType(@"{
+        var model = LoadModel(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
+          ""definitions"": {},
           ""resources"": {},
+          ""definitions"": {},
           ""parameters"": {
             ""refParam"": {
               ""$ref"": ""#/definitions/doesntExist""
             }
           }
         }
-        ", "refParam");
+        ");
 
-        parameterType.Type.Should().BeOfType<ErrorType>();
+        model.HasErrors().Should().BeTrue();
     }
 
     [TestMethod]
-    public void Model_handles_cyclic_type_references()
+    public void Model_with_cyclic_type_references_is_a_load_error()
     {
-        var parameterType = GetLoadedParameterType(@"{
+        var model = LoadModel(@"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""definitions"": {
             ""intermediate"": {
@@ -247,9 +249,9 @@ public class ArmTemplateSemanticModelTests
             }
           }
         }
-        ", "refParam");
+        ");
 
-        parameterType.Type.Should().BeOfType<ErrorType>();
+        model.HasErrors().Should().BeTrue();
     }
 
     [TestMethod]
@@ -258,7 +260,7 @@ public class ArmTemplateSemanticModelTests
         var jsonTemplate = @"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""definitions"": {
             ""intermediate"": {
@@ -301,7 +303,7 @@ public class ArmTemplateSemanticModelTests
         var jsonTemplate = @"{
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
           ""contentVersion"": ""1.0.0.0"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""resources"": {},
           ""parameters"": {
             ""stringLiteral"": {
@@ -327,7 +329,7 @@ public class ArmTemplateSemanticModelTests
         ArmTemplateSemanticModel model = new(SourceFileFactory.CreateArmTemplateFile(new("inmemory://template.json"), jsonTemplate));
 
         model.Parameters.TryGetValue("stringLiteral", out var stringLiteral).Should().BeTrue();
-        stringLiteral!.TypeReference.Type.Should().Be(new StringLiteralType("foo"));
+        stringLiteral!.TypeReference.Type.Should().Be(TypeFactory.CreateStringLiteralType("foo"));
 
         model.Parameters.TryGetValue("stringLiteralUnion", out var stringLiteralUnion).Should().BeTrue();
         stringLiteralUnion!.TypeReference.Type.Name.Should().Be("'crackle' | 'pop' | 'snap'");
@@ -339,10 +341,37 @@ public class ArmTemplateSemanticModelTests
         arrayOfSubsetOfLiterals!.TypeReference.Type.Name.Should().Be("('buzz' | 'fizz' | 1 | 2 | null | true | { key: 'value', arrayProp: ['fee', 'fi', 'fo', 'fum'] })[]");
     }
 
+    [TestMethod]
+    public void Model_creates_union_null_types_from_nullable_modifier()
+    {
+        var parameterType = GetLoadedParameterType(@"{
+          ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
+          ""contentVersion"": ""1.0.0.0"",
+          ""languageVersion"": ""1.10-experimental"",
+          ""resources"": {},
+          ""parameters"": {
+            ""nullableParam"": {
+              ""type"": ""string"",
+              ""nullable"": true
+            }
+          }
+        }
+        ", "nullableParam");
+
+        parameterType.Should().BeOfType<UnionType>();
+
+        var members = parameterType.As<UnionType>().Members;
+        members.Should().HaveCount(2);
+        members.Should().Contain(new[] { LanguageConstants.Null, LanguageConstants.LooseString });
+    }
+
     private static TypeSymbol GetLoadedParameterType(string jsonTemplate, string parameterName)
     {
-        ArmTemplateSemanticModel model = new(SourceFileFactory.CreateArmTemplateFile(new("inmemory://template.json"), jsonTemplate));
+        var model = LoadModel(jsonTemplate);
         model.Parameters.TryGetValue(parameterName, out var parameter).Should().BeTrue();
         return parameter!.TypeReference.Type;
     }
+
+    private static ArmTemplateSemanticModel LoadModel(string jsonTemplate)
+        => new(SourceFileFactory.CreateArmTemplateFile(new("inmemory://template.json"), jsonTemplate));
 }

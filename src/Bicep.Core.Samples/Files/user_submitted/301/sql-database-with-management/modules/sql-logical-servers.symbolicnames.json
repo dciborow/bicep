@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "languageVersion": "1.9-experimental",
+  "languageVersion": "1.10-experimental",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
     "_generator": {
       "name": "bicep",
       "version": "dev",
-      "templateHash": "6078679929449391574"
+      "templateHash": "10319507846578421190"
     }
   },
   "parameters": {
@@ -89,7 +89,7 @@
         "count": "[length(parameters('sqlLogicalServers'))]"
       },
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
+      "apiVersion": "2022-09-01",
       "name": "[format('sqlLogicalServer-{0}', copyIndex())]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -114,14 +114,14 @@
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "1.9-experimental",
+          "languageVersion": "1.10-experimental",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
             "_generator": {
               "name": "bicep",
               "version": "dev",
-              "templateHash": "15779774648617518046"
+              "templateHash": "17904364761423502628"
             }
           },
           "parameters": {
@@ -289,13 +289,13 @@
               ]
             },
             "dummyDeployments": {
-              "condition": "[and(parameters('sqlLogicalServer').diagnosticLogsAndMetrics.auditLogs, not(empty(parameters('sqlLogicalServer').diagnosticLogsAndMetrics.name)))]",
               "copy": {
                 "name": "dummyDeployments",
                 "count": "[length(range(0, 5))]",
                 "mode": "serial",
                 "batchSize": 1
               },
+              "condition": "[and(parameters('sqlLogicalServer').diagnosticLogsAndMetrics.auditLogs, not(empty(parameters('sqlLogicalServer').diagnosticLogsAndMetrics.name)))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2021-04-01",
               "name": "[format('dummyTemplateSqlServer-{0}-{1}', uniqueString(parameters('sqlLogicalServer').name), copyIndex())]",
@@ -395,7 +395,7 @@
                 "count": "[length(parameters('sqlLogicalServer').firewallRules)]"
               },
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "[format('sqlFirewallRule-{0}-{1}', uniqueString(parameters('sqlLogicalServer').name), copyIndex())]",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -412,14 +412,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "3465786759672262163"
+                      "templateHash": "7079575420009602366"
                     }
                   },
                   "parameters": {
@@ -459,7 +459,7 @@
                 "count": "[length(parameters('sqlLogicalServer').databases)]"
               },
               "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2020-10-01",
+              "apiVersion": "2022-09-01",
               "name": "[format('sqlDb-{0}-{1}', uniqueString(parameters('sqlLogicalServer').name), copyIndex())]",
               "properties": {
                 "expressionEvaluationOptions": {
@@ -479,14 +479,14 @@
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "1.9-experimental",
+                  "languageVersion": "1.10-experimental",
                   "contentVersion": "1.0.0.0",
                   "metadata": {
                     "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                     "_generator": {
                       "name": "bicep",
                       "version": "dev",
-                      "templateHash": "4919674308990176848"
+                      "templateHash": "17114950105215420528"
                     }
                   },
                   "parameters": {
@@ -649,7 +649,7 @@
                     "shortTermBackup": {
                       "condition": "[not(equals(parameters('sqlDatabase').shortTermBackupRetention, 0))]",
                       "type": "Microsoft.Resources/deployments",
-                      "apiVersion": "2020-10-01",
+                      "apiVersion": "2022-09-01",
                       "name": "[format('shortTermBackup-{0}', uniqueString(parameters('sqlServerName'), parameters('sqlDatabase').name))]",
                       "properties": {
                         "expressionEvaluationOptions": {
@@ -666,14 +666,14 @@
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                          "languageVersion": "1.9-experimental",
+                          "languageVersion": "1.10-experimental",
                           "contentVersion": "1.0.0.0",
                           "metadata": {
                             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                             "_generator": {
                               "name": "bicep",
                               "version": "dev",
-                              "templateHash": "16310462587025838121"
+                              "templateHash": "9682486117571712728"
                             }
                           },
                           "parameters": {
@@ -703,7 +703,7 @@
                     },
                     "azureDefender": {
                       "type": "Microsoft.Resources/deployments",
-                      "apiVersion": "2020-10-01",
+                      "apiVersion": "2022-09-01",
                       "name": "[format('azureDefender-{0}', uniqueString(parameters('sqlServerName'), parameters('sqlDatabase').name))]",
                       "properties": {
                         "expressionEvaluationOptions": {
@@ -720,14 +720,14 @@
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                          "languageVersion": "1.9-experimental",
+                          "languageVersion": "1.10-experimental",
                           "contentVersion": "1.0.0.0",
                           "metadata": {
                             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                             "_generator": {
                               "name": "bicep",
                               "version": "dev",
-                              "templateHash": "6918482051287903640"
+                              "templateHash": "2014792371563287107"
                             }
                           },
                           "parameters": {
@@ -760,7 +760,7 @@
                     },
                     "auditSettings": {
                       "type": "Microsoft.Resources/deployments",
-                      "apiVersion": "2020-10-01",
+                      "apiVersion": "2022-09-01",
                       "name": "[format('auditSettings-{0}', uniqueString(parameters('sqlServerName'), parameters('sqlDatabase').name))]",
                       "properties": {
                         "expressionEvaluationOptions": {
@@ -777,14 +777,14 @@
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                          "languageVersion": "1.9-experimental",
+                          "languageVersion": "1.10-experimental",
                           "contentVersion": "1.0.0.0",
                           "metadata": {
                             "_EXPERIMENTAL_WARNING": "Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!",
                             "_generator": {
                               "name": "bicep",
                               "version": "dev",
-                              "templateHash": "5511448292274207219"
+                              "templateHash": "11818408786239638984"
                             }
                           },
                           "parameters": {

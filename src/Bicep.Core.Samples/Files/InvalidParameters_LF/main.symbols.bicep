@@ -318,8 +318,8 @@ param unaryMinusOnFunction int
 param duplicateDecorators string
 //@[06:025) Parameter duplicateDecorators. Type: string. Declaration start char: 0, length: 98
 
-@minLength(-1)
-@maxLength(-100)
+@maxLength(-1)
+@minLength(-100)
 param invalidLength string
 //@[06:019) Parameter invalidLength. Type: string. Declaration start char: 0, length: 58
 
@@ -350,7 +350,7 @@ param invalidPermutation array = [
 	]
 ])
 param invalidDefaultWithAllowedArrayDecorator array = true
-//@[06:045) Parameter invalidDefaultWithAllowedArrayDecorator. Type: (['Microsoft.AnalysisServices/servers', 'Microsoft.ApiManagement/service'] | ['Microsoft.Network/applicationGateways', 'Microsoft.Automation/automationAccounts'])[]. Declaration start char: 0, length: 245
+//@[06:045) Parameter invalidDefaultWithAllowedArrayDecorator. Type: ['Microsoft.AnalysisServices/servers', 'Microsoft.ApiManagement/service'] | ['Microsoft.Network/applicationGateways', 'Microsoft.Automation/automationAccounts']. Declaration start char: 0, length: 245
 
 // unterminated multi-line comment
 /*    

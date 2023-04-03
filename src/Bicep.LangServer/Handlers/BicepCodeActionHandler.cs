@@ -229,7 +229,7 @@ namespace Bicep.LanguageServer.Handlers
             return new CodeAction
             {
                 Kind = codeActionKind,
-                Title = fix.Description,
+                Title = fix.Title,
                 IsPreferred = fix.IsPreferred,
                 Edit = new WorkspaceEdit
                 {
@@ -247,7 +247,7 @@ namespace Bicep.LanguageServer.Handlers
 
         protected override CodeActionRegistrationOptions CreateRegistrationOptions(CodeActionCapability capability, ClientCapabilities clientCapabilities) => new()
         {
-            DocumentSelector = DocumentSelectorFactory.Create(),
+            DocumentSelector = DocumentSelectorFactory.CreateForBicepAndParams(),
             CodeActionKinds = new Container<CodeActionKind>(CodeActionKind.QuickFix),
             ResolveProvider = false
         };

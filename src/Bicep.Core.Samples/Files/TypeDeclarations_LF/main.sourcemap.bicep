@@ -4,12 +4,6 @@
 type foo = {
 //@    "foo": {
 //@      "type": "object",
-//@      "required": [
-//@        "stringProp",
-//@        "objectProp",
-//@        "typeRefProp",
-//@        "literalProp"
-//@      ],
 //@      "properties": {
 //@        "stringProp": {
 //@          "type": "string",
@@ -18,9 +12,6 @@ type foo = {
 //@        },
 //@        "objectProp": {
 //@          "type": "object",
-//@          "required": [
-//@            "intProp"
-//@          ],
 //@          "properties": {
 //@            "intProp": {
 //@              "type": "int",
@@ -32,7 +23,8 @@ type foo = {
 //@                "items": {
 //@                  "type": "int"
 //@                }
-//@              }
+//@              },
+//@              "nullable": true
 //@            }
 //@          }
 //@        },
@@ -45,10 +37,11 @@ type foo = {
 //@          ]
 //@        },
 //@        "recursion": {
-//@          "$ref": "#/definitions/foo"
+//@          "$ref": "#/definitions/foo",
+//@          "nullable": true
 //@        }
 //@      },
-//@      "sealed": true,
+//@      "additionalProperties": false,
 //@      "metadata": {
 //@      }
 //@    },
@@ -65,7 +58,7 @@ type foo = {
 //@              "minValue": 1
     intProp: int
 
-    intArrayArrayProp?: int [] []
+    intArrayArrayProp: int [] [] ?
   }
 
   typeRefProp: bar
@@ -73,7 +66,7 @@ type foo = {
   literalProp: 'literal'
 //@            "literal"
 
-  recursion?: foo
+  recursion: foo?
 }
 
 @minLength(3)
@@ -81,6 +74,8 @@ type foo = {
 @description('An array of array of arrays of arrays of ints')
 //@        "description": "An array of array of arrays of arrays of ints"
 @metadata({
+//@      "metadata": {
+//@      },
   examples: [
 //@        "examples": [
 //@        ],
@@ -124,8 +119,6 @@ type bar = int[][][][]
 //@            }
 //@          }
 //@        }
-//@      },
-//@      "metadata": {
 //@      },
 //@    },
 
@@ -200,11 +193,6 @@ type bool = string
 param inlineObjectParam {
 //@    "inlineObjectParam": {
 //@      "type": "object",
-//@      "required": [
-//@        "foo",
-//@        "bar",
-//@        "baz"
-//@      ],
 //@      "properties": {
 //@        "foo": {
 //@          "type": "string"
@@ -257,16 +245,98 @@ param unionParam {property: 'ping'}|{property: 'pong'} = {property: 'pong'}
 param paramUsingType mixedArray
 //@    "paramUsingType": {
 //@      "$ref": "#/definitions/mixedArray"
-//@    }
+//@    },
+
+output outputUsingType mixedArray = paramUsingType
+//@    "outputUsingType": {
+//@      "$ref": "#/definitions/mixedArray",
+//@      "value": "[parameters('paramUsingType')]"
+//@    },
 
 type tuple = [
 //@    "tuple": {
-//@      "type": "array"
-//@    }
+//@      "type": "array",
+//@      "prefixItems": [
+//@        {
+//@          "type": "string",
+//@          "metadata": {
+//@          }
+//@        },
+//@        {
+//@          "$ref": "#/definitions/bar",
+//@          "metadata": {
+//@          }
+//@        }
+//@      ],
+//@      "items": false
+//@    },
     @description('A leading string')
+//@            "description": "A leading string"
     string
 
     @description('A second element using a type alias')
+//@            "description": "A second element using a type alias"
     bar
 ]
+
+type stringStringDictionary = {
+//@    "stringStringDictionary": {
+//@      "type": "object",
+//@      "additionalProperties": {
+//@        "type": "string"
+//@      }
+//@    },
+    *: string
+}
+
+@minValue(1)
+//@      "minValue": 1
+@maxValue(10)
+//@      "maxValue": 10,
+type constrainedInt = int
+//@    "constrainedInt": {
+//@      "type": "int",
+//@    },
+
+param mightIncludeNull ({key: 'value'} | null)[]
+//@    "mightIncludeNull": {
+//@      "type": "array",
+//@      "allowedValues": [
+//@        null,
+//@        {
+//@          "key": "value"
+//@        }
+//@      ]
+//@    }
+
+var nonNull = mightIncludeNull[0]!.key
+//@    "nonNull": "[parameters('mightIncludeNull')[0].key]",
+
+output nonNull string = nonNull
+//@    "nonNull": {
+//@      "type": "string",
+//@      "value": "[variables('nonNull')]"
+//@    },
+
+var maybeNull = mightIncludeNull[0].?key
+//@    "maybeNull": "[tryGet(parameters('mightIncludeNull')[0], 'key')]"
+
+output maybeNull string? = maybeNull
+//@    "maybeNull": {
+//@      "type": "string",
+//@      "nullable": true,
+//@      "value": "[variables('maybeNull')]"
+//@    }
+
+type nullable = string?
+//@    "nullable": {
+//@      "type": "string",
+//@      "nullable": true
+//@    },
+
+type nonNullable = nullable!
+//@    "nonNullable": {
+//@      "$ref": "#/definitions/nullable",
+//@      "nullable": false
+//@    }
 

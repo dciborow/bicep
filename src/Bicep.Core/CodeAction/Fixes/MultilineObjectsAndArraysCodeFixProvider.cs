@@ -14,7 +14,7 @@ namespace Bicep.Core.CodeAction.Fixes
 {
     public class MultilineObjectsAndArraysCodeFixProvider : ICodeFixProvider
     {
-        public const string ConvertToMultiLineDescription = "Convert to multi line";
+        public const string ConvertToMultiLineDescription = "Convert to multiline";
         public const string ConvertToSingleLineDescription = "Convert to single line";
         private const int IndentSpaces = 2;
 
@@ -35,7 +35,7 @@ namespace Bicep.Core.CodeAction.Fixes
         public IEnumerable<CodeFix> GetFixes(SemanticModel semanticModel, IReadOnlyList<SyntaxBase> matchingNodes)
         {
             var objectOrArray = matchingNodes.Where(x => x is ArraySyntax or ObjectSyntax).LastOrDefault();
-            if (objectOrArray is null || objectOrArray.HasParseErrors())
+            if (objectOrArray is null || semanticModel.HasParsingError(objectOrArray))
             {
                 yield break;
             }

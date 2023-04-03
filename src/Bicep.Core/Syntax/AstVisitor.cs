@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Bicep.Core.Parsing;
 
 namespace Bicep.Core.Syntax
@@ -11,7 +9,7 @@ namespace Bicep.Core.Syntax
     /// Visits an <see href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree (AST)</see>.
     /// </summary>
     /// <remarks>
-    /// The Bicep syntax tree is always a <see href="https://en.wikipedia.org/wiki/Parse_tree">concret syntax tree</see>.
+    /// The Bicep syntax tree is always a <see href="https://en.wikipedia.org/wiki/Parse_tree">concrete syntax tree</see>.
     /// The visitor visits syntax nodes except for terminal symbols (tokens) so that the Bicep syntax tree is traversed as an AST.
     /// </remarks>
     public abstract class AstVisitor : SyntaxVisitor
@@ -132,6 +130,12 @@ namespace Bicep.Core.Syntax
             this.Visit(syntax.Value);
         }
 
+        public override void VisitObjectTypeAdditionalPropertiesSyntax(ObjectTypeAdditionalPropertiesSyntax syntax)
+        {
+            this.VisitNodes(syntax.LeadingNodes);
+            this.Visit(syntax.Value);
+        }
+
         public override void VisitTupleTypeSyntax(TupleTypeSyntax syntax)
         {
             this.VisitNodes(syntax.Children);
@@ -168,6 +172,11 @@ namespace Bicep.Core.Syntax
             this.VisitNodes(syntax.LeadingNodes);
             this.Visit(syntax.Name);
             this.Visit(syntax.Value);
+        }
+
+        public override void VisitNullableTypeSyntax(NullableTypeSyntax syntax)
+        {
+            this.Visit(syntax.Base);
         }
 
         public override void VisitStringSyntax(StringSyntax syntax)
@@ -333,6 +342,11 @@ namespace Bicep.Core.Syntax
         {
             this.Visit(syntax.VariableSection);
             this.Visit(syntax.Body);
+        }
+
+        public override void VisitNonNullAssertionSyntax(NonNullAssertionSyntax syntax)
+        {
+            this.Visit(syntax.BaseExpression);
         }
     }
 }

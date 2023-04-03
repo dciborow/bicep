@@ -42,9 +42,9 @@ namespace Bicep.Core.IntegrationTests.Emit
         private async Task<SourceFileGrouping> GetSourceFileGrouping(DataSet dataSet)
         {
             var outputDirectory = dataSet.SaveFilesToTestDirectory(TestContext);
-            var clientFactory = dataSet.CreateMockRegistryClients(TestContext);
+            var clientFactory = dataSet.CreateMockRegistryClients();
             var templateSpecRepositoryFactory = dataSet.CreateMockTemplateSpecRepositoryFactory(TestContext);
-            await dataSet.PublishModulesToRegistryAsync(clientFactory, TestContext);
+            await dataSet.PublishModulesToRegistryAsync(clientFactory);
             var bicepFilePath = Path.Combine(outputDirectory, DataSet.TestFileMain);
             var bicepFileUri = PathHelper.FilePathToFileUrl(bicepFilePath);
 
@@ -235,7 +235,7 @@ namespace Bicep.Core.IntegrationTests.Emit
             data.Compiled.Should().NotBeNull();
 
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(BicepTestConstants.FileResolver, BicepTestConstants.ModuleDispatcher, new Workspace(), PathHelper.FilePathToFileUrl(data.Parameters.OutputFilePath));
-            var result = this.EmitParam(sourceFileGrouping, new(), data.Compiled!.OutputFilePath);
+            var result = this.EmitParam(sourceFileGrouping, new(ParamsFilesEnabled: true), data.Compiled!.OutputFilePath);
 
             result.Diagnostics.Should().NotHaveErrors();
             result.Status.Should().Be(EmitStatus.Succeeded);
@@ -316,7 +316,7 @@ this
             var compilation = Services.WithFeatureOverrides(features).Build().BuildCompilation(sourceFileGrouping);
             var emitter = new ParametersEmitter(compilation.GetEntrypointSemanticModel());
             using var stream = new FileStream(outputFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-            return emitter.EmitParamsFile(stream);
+            return emitter.Emit(stream);
         }
 
         private static IEnumerable<object[]> GetValidDataSets() => DataSets

@@ -6,11 +6,13 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Features;
 using Bicep.Core.FileSystem;
+using Bicep.Core.Intermediate;
 using Bicep.Core.Modules;
 using Bicep.Core.Parsing;
 using Bicep.Core.Syntax;
@@ -35,6 +37,8 @@ namespace Bicep.Core.Semantics.Namespaces
         private const string LastDescription = "Returns the last element of the array, or last character of the string.";
         private const string MinDescription = "Returns the minimum value from an array of integers or a comma-separated list of integers.";
         private const string MaxDescription = "Returns the maximum value from an array of integers or a comma-separated list of integers.";
+        private const long GuidLength = 36;
+        private const long UniqueStringHashLength = 13;
 
         public static NamespaceSettings Settings { get; } = new(
             IsSingleton: true,
@@ -49,11 +53,60 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithReturnType(LanguageConstants.Any)
                 .WithGenericDescription("Converts the specified value to the `any` type.")
                 .WithRequiredParameter("value", LanguageConstants.Any, "The value to convert to `any` type")
-                .WithEvaluator((functionCall, _, _, _, _) => functionCall.Arguments.Single().Expression)
+                .WithEvaluator(expression => expression.Parameters[0])
                 .Build();
 
             yield return new FunctionOverloadBuilder("concat")
-                .WithReturnType(LanguageConstants.Array)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("concat", (_, _, _, _, argumentTypes) =>
+                {
+                    if (argumentTypes.All(t => t is TupleType))
+                    {
+                        return new(new TupleType(argumentTypes.OfType<TupleType>().SelectMany(tt => tt.Items).ToImmutableArray(), default));
+                    }
+
+                    BigInteger minLength = 0;
+                    BigInteger? maxLength = null;
+                    var itemTypes = new ITypeReference[argumentTypes.Length];
+
+                    for (int i = 0; i < argumentTypes.Length; i++)
+                    {
+                        if (argumentTypes[i] is not ArrayType arr)
+                        {
+                            return new(LanguageConstants.Array);
+                        }
+
+                        itemTypes[i] = arr.Item;
+
+                        minLength += arr.MinLength ?? 0;
+
+                        if (i == 0)
+                        {
+                            maxLength = arr.MaxLength;
+                        }
+                        else if (maxLength.HasValue && arr.MaxLength.HasValue)
+                        {
+                            maxLength = maxLength.Value + arr.MaxLength.Value;
+                        }
+                        else
+                        {
+                            maxLength = null;
+                        }
+                    }
+
+                    return new(TypeFactory.CreateArrayType(TypeHelper.CreateTypeUnion(itemTypes),
+                        minLength switch
+                        {
+                            var zero when zero <= 0 => null,
+                            _ => (long) BigInteger.Min(minLength, long.MaxValue),
+                        },
+                        maxLength switch
+                        {
+                            BigInteger bi => (long) BigInteger.Min(bi, long.MaxValue),
+                            _ => null,
+                        },
+                        TypeSymbolValidationFlags.Default));
+                }),
+                LanguageConstants.Array)
                 .WithGenericDescription(ConcatDescription)
                 .WithDescription("Combines multiple arrays and returns the concatenated array.")
                 .WithVariableParameter("arg", LanguageConstants.Array, minimumCount: 1, "The array for concatenation")
@@ -80,7 +133,22 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("padLeft")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("padLeft", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(
+                    TryDeriveLiteralReturnType("padLeft", (_, _, _, _, argumentTypes) =>
+                    {
+                        (long? minLength, long? maxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(argumentTypes[0]);
+
+                        if (argumentTypes[1] is not IntegerLiteralType literalLength)
+                        {
+                            return new(TypeFactory.CreateStringType(minLength: minLength, validationFlags: argumentTypes[0].ValidationFlags));
+                        }
+
+                        return new(TypeFactory.CreateStringType(
+                            minLength.HasValue ? Math.Max(minLength.Value, literalLength.Value) : null,
+                            maxLength.HasValue ? Math.Max(maxLength.Value, literalLength.Value) : null,
+                            argumentTypes[0].ValidationFlags));
+                    }),
+                    LanguageConstants.String)
                 .WithGenericDescription("Returns a right-aligned string by adding characters to the left until reaching the total specified length.")
                 .WithRequiredParameter("valueToPad", TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Int), "The value to right-align.")
                 .WithRequiredParameter("totalLength", LanguageConstants.Int, "The total number of characters in the returned string.")
@@ -96,27 +164,44 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("toLower")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("toLower", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("toLower", (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() is StringType @string ? @string : LanguageConstants.String)), LanguageConstants.String)
                 .WithGenericDescription("Converts the specified string to lower case.")
                 .WithRequiredParameter("stringToChange", LanguageConstants.String, "The value to convert to lower case.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("toUpper")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("toUpper", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("toUpper", (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() is StringType @string ? @string : LanguageConstants.String)), LanguageConstants.String)
                 .WithGenericDescription("Converts the specified string to upper case.")
                 .WithRequiredParameter("stringToChange", LanguageConstants.String, "The value to convert to upper case.")
                 .Build();
 
+
+            static int MinLength(ObjectType @object) =>
+                @object.Properties.Where(kvp => kvp.Value.Flags.HasFlag(TypePropertyFlags.Required) && TypeHelper.TryRemoveNullability(kvp.Value.TypeReference.Type) is null).Count();
+
+            static int? MaxLength(ObjectType @object) => @object.AdditionalPropertiesType is null ? @object.Properties.Count : null;
+
             yield return new FunctionOverloadBuilder("length")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("length", LanguageConstants.Int), LanguageConstants.Int)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("length", (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() switch
+                {
+                    StringType @string => TypeFactory.CreateIntegerType(@string.MinLength ?? 0, @string.MaxLength, @string.ValidationFlags),
+                    ObjectType @object => TypeFactory.CreateIntegerType(MinLength(@object), MaxLength(@object), @object.ValidationFlags),
+                    DiscriminatedObjectType discriminatedObject => TypeFactory.CreateIntegerType(
+                        minValue: discriminatedObject.UnionMembersByKey.Values.Min(MinLength),
+                        maxValue: discriminatedObject.UnionMembersByKey.Values
+                            .Aggregate((long?) 0, (acc, memberObject) => acc.HasValue && MaxLength(memberObject) is int maxLength
+                                ? Math.Max(acc.Value, maxLength) : null)),
+                    _ => LanguageConstants.Int,
+                })), LanguageConstants.Int)
                 .WithGenericDescription("Returns the number of characters in a string, elements in an array, or root-level properties in an object.")
                 .WithRequiredParameter("arg", TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Object), "The string to use for getting the number of characters or the object to use for getting the number of root-level properties.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("length")
                 .WithReturnResultBuilder(
-                    (binder, fileResolver, diagnostics, functionCall, argumentTypes) => (argumentTypes.IsEmpty ? null : argumentTypes[0]) switch {
-                        TupleType tupleType => new(new IntegerLiteralType(tupleType.Items.Length)),
+                    (_, _, _, _, argumentTypes) => (argumentTypes.IsEmpty ? null : argumentTypes[0]) switch {
+                        TupleType tupleType => new(TypeFactory.CreateIntegerLiteralType(tupleType.Items.Length)),
+                        ArrayType arrayType => new(TypeFactory.CreateIntegerType(arrayType.MinLength ?? 0, arrayType.MaxLength)),
                         _ => new(LanguageConstants.Int),
                     },
                     LanguageConstants.Int)
@@ -125,16 +210,68 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("split")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("split", new TypedArrayType(LanguageConstants.String, TypeSymbolValidationFlags.Default)), new TypedArrayType(LanguageConstants.String, TypeSymbolValidationFlags.Default))
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("split", new TypedArrayType(LanguageConstants.String, TypeSymbolValidationFlags.Default, minLength: 1)), new TypedArrayType(LanguageConstants.String, TypeSymbolValidationFlags.Default))
                 .WithGenericDescription("Returns an array of strings that contains the substrings of the input string that are delimited by the specified delimiters.")
                 .WithRequiredParameter("inputString", LanguageConstants.String, "The string to split.")
                 .WithRequiredParameter("delimiter", TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Array), "The delimiter to use for splitting the string.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("join")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("join", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("join", (_, _, _, _, argumentTypes) =>
+                {
+                    (long delimiterMinLength, long? delimiterMaxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(argumentTypes[1]);
+
+                    long minLength = 0;
+                    long? maxLength = null;
+                    switch (argumentTypes.FirstOrDefault())
+                    {
+                        case TupleType inputTuple:
+                            maxLength = 0;
+                            foreach (var item in inputTuple.Items)
+                            {
+                                (long itemMinLength, long? itemMaxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(item.Type);
+
+                                minLength += itemMinLength;
+                                if (maxLength.HasValue)
+                                {
+                                    if (itemMaxLength.HasValue)
+                                    {
+                                        maxLength += itemMaxLength.Value;
+                                    }
+                                    else
+                                    {
+                                        maxLength = null;
+                                    }
+                                }
+                            }
+
+                            minLength += Math.Max(inputTuple.Items.Length - 1, 0) * delimiterMinLength;
+                            maxLength = maxLength.HasValue && delimiterMaxLength.HasValue
+                                ? maxLength.Value + (Math.Max(inputTuple.Items.Length - 1, 0) * delimiterMaxLength.Value)
+                                : null;
+                            break;
+
+                        case ArrayType inputArray:
+                            (long elementMinLength, long? elementMaxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(inputArray.Item.Type);
+                            minLength = (inputArray.MinLength ?? 0) * elementMinLength;
+                            minLength += Math.Max((inputArray.MinLength ?? 0) - 1, 0) * delimiterMinLength;
+
+                            if (elementMaxLength.HasValue && delimiterMaxLength.HasValue && inputArray.MaxLength.HasValue)
+                            {
+                                maxLength = elementMaxLength.Value * inputArray.MaxLength.Value;
+                                maxLength += Math.Max(inputArray.MaxLength.Value - 1, 0) * delimiterMaxLength.Value;
+                            }
+                            break;
+                    }
+
+                    return new(TypeFactory.CreateStringType(maxLength: maxLength, minLength: minLength switch
+                    {
+                        <= 0 => null,
+                        _ => minLength,
+                    }));
+                }), LanguageConstants.String)
                 .WithGenericDescription("Joins multiple strings into a single string, separated using a delimiter.")
-                .WithRequiredParameter("inputArray", new TypedArrayType(LanguageConstants.String, TypeSymbolValidationFlags.Default), "An array of strings to join.")
+                .WithRequiredParameter("inputArray", new TypedArrayType(TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Int, LanguageConstants.Bool), TypeSymbolValidationFlags.Default), "An array of strings to join.")
                 .WithRequiredParameter("delimiter", LanguageConstants.String, "The delimiter to use to join the string.")
                 .Build();
 
@@ -151,19 +288,26 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("uniqueString")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("uniqueString", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("uniqueString", TypeFactory.CreateStringType(minLength: UniqueStringHashLength, maxLength: UniqueStringHashLength)),
+                    TypeFactory.CreateStringType(minLength: UniqueStringHashLength, maxLength: UniqueStringHashLength))
                 .WithGenericDescription("Creates a deterministic hash string based on the values provided as parameters. The returned value is 13 characters long.")
                 .WithVariableParameter("arg", LanguageConstants.String, minimumCount: 1, "The value used in the hash function to create a unique string.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("guid")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("guid", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("guid", TypeFactory.CreateStringType(minLength: GuidLength, maxLength: GuidLength)),
+                    TypeFactory.CreateStringType(minLength: GuidLength, maxLength: GuidLength))
                 .WithGenericDescription("Creates a value in the format of a globally unique identifier based on the values provided as parameters.")
                 .WithVariableParameter("arg", LanguageConstants.String, minimumCount: 1, "The value used in the hash function to create the GUID.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("trim")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("trim", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(
+                    TryDeriveLiteralReturnType("trim",
+                        (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() is StringType @string
+                            ? TypeFactory.CreateStringType(minLength: null, @string.MaxLength, @string.ValidationFlags)
+                            : LanguageConstants.String)),
+                    LanguageConstants.String)
                 .WithGenericDescription("Removes all leading and trailing white-space characters from the specified string.")
                 .WithRequiredParameter("stringToTrim", LanguageConstants.String, "The value to trim.")
                 .Build();
@@ -177,7 +321,52 @@ namespace Bicep.Core.Semantics.Namespaces
 
             // TODO: Docs deviation
             yield return new FunctionOverloadBuilder("substring")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("substring", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(
+                    TryDeriveLiteralReturnType("substring", (_, _, _, _, argumentTypes) =>
+                    {
+                        var originalString = argumentTypes[0] as StringType;
+                        var literalStartIndex = argumentTypes[1] as IntegerLiteralType;
+                        var literalLength = argumentTypes.Skip(2).FirstOrDefault() as IntegerLiteralType;
+
+                        if (literalLength is null)
+                        {
+                            long? minLength = literalStartIndex is null ? null : ((originalString?.MinLength ?? 0) - literalStartIndex.Value) switch
+                            {
+                                <= 0 => null,
+                                long otherwise => otherwise,
+                            };
+                            long? maxLength = literalStartIndex is null ? originalString?.MaxLength : originalString?.MaxLength.HasValue == true
+                                ? Math.Max(0, originalString.MaxLength.Value - literalStartIndex.Value)
+                                : null;
+
+                            return new(TypeFactory.CreateStringType(minLength, maxLength, argumentTypes[0].ValidationFlags));
+                        }
+
+                        if (literalStartIndex is null || originalString is null)
+                        {
+                            return new(TypeFactory.CreateStringType(minLength: null,
+                                maxLength: originalString?.MaxLength.HasValue == true
+                                    ? Math.Min(literalLength.Value, originalString.MaxLength.Value)
+                                    : literalLength.Value,
+                                argumentTypes[0].ValidationFlags));
+                        }
+
+                        long derivedMaxLength = originalString.MaxLength.HasValue
+                            ? Math.Min(Math.Max(0, originalString.MaxLength.Value - literalStartIndex.Value), literalLength.Value)
+                            : literalLength.Value;
+                        long? derivedMinLength = ((originalString.MinLength ?? 0) - literalStartIndex.Value) switch
+                        {
+                            <= 0 => null,
+                            long otherwise => otherwise,
+                        };
+                        if (derivedMinLength.HasValue && derivedMinLength.Value > derivedMaxLength)
+                        {
+                            derivedMinLength = derivedMaxLength;
+                        }
+
+                        return new(TypeFactory.CreateStringType(derivedMinLength, derivedMaxLength, originalString.ValidationFlags));
+                    }),
+                    LanguageConstants.String)
                 .WithGenericDescription("Returns a substring that starts at the specified character position and contains the specified number of characters.")
                 .WithRequiredParameter("stringToParse", LanguageConstants.String, "The original string from which the substring is extracted.")
                 .WithRequiredParameter("startIndex", LanguageConstants.Int, "The zero-based starting character position for the substring.")
@@ -185,7 +374,41 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("take")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("take", LanguageConstants.Array), LanguageConstants.Array)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("take", (_, _, _, functionCall, argumentTypes) =>
+                {
+                    (long? originalMinLength, long? originalMaxLength) = argumentTypes[0] switch
+                    {
+                        ArrayType array => (array.MinLength, array.MaxLength),
+                        _ => (null, null),
+                    };
+                    (long minToTake, long maxToTake) = argumentTypes[1] switch
+                    {
+                        IntegerLiteralType integerLiteral => (integerLiteral.Value, integerLiteral.Value),
+                        IntegerType integer => (integer.MinValue ?? long.MinValue, integer.MaxValue ?? long.MaxValue),
+                        _ => (long.MinValue, long.MaxValue),
+                    };
+
+                    return new(argumentTypes[0] switch
+                    {
+                        TupleType tupleType when minToTake == maxToTake && minToTake >= tupleType.Items.Length => tupleType,
+                        TupleType tupleType when minToTake == maxToTake && minToTake <= 0 => new TupleType(ImmutableArray<ITypeReference>.Empty, tupleType.ValidationFlags),
+                        TupleType tupleType when minToTake == maxToTake && minToTake <= int.MaxValue => new TupleType(tupleType.Items.Take((int) minToTake).ToImmutableArray(), tupleType.ValidationFlags),
+                        ArrayType array => TypeFactory.CreateArrayType(array.Item,
+                            !array.MinLength.HasValue ? null : minToTake switch
+                            {
+                                <= 0 => null,
+                                _ => Math.Min(array.MinLength.Value, minToTake),
+                            },
+                            Math.Min(array.MaxLength ?? long.MaxValue, maxToTake) switch
+                            {
+                                long.MaxValue => null,
+                                < 0 => 0,
+                                long otherwise => otherwise,
+                            },
+                            array.ValidationFlags),
+                        _ => TypeFactory.CreateArrayType(null, maxToTake, argumentTypes[0].ValidationFlags),
+                    });
+                }), LanguageConstants.Array)
                 .WithGenericDescription(TakeDescription)
                 .WithDescription("Returns an array with the specified number of elements from the start of the array.")
                 .WithRequiredParameter("originalValue", LanguageConstants.Array, "The array to take the elements from.")
@@ -193,7 +416,30 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("take")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("take", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("take", (_, _, _, functionCall, argumentTypes) =>
+                {
+                    (long? originalMinLength, long? originalMaxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(argumentTypes[0]);
+                    (long minToTake, long maxToTake) = argumentTypes[1] switch
+                    {
+                        IntegerLiteralType integerLiteral => (integerLiteral.Value, integerLiteral.Value),
+                        IntegerType integer => (integer.MinValue ?? long.MinValue, integer.MaxValue ?? long.MaxValue),
+                        _ => (long.MinValue, long.MaxValue),
+                    };
+
+                    return new(TypeFactory.CreateStringType(
+                        !originalMinLength.HasValue ? null : minToTake switch
+                        {
+                            <= 0 => null,
+                            _ => Math.Min(originalMinLength.Value, minToTake),
+                        },
+                        Math.Min(originalMaxLength ?? long.MaxValue, maxToTake) switch
+                        {
+                            long.MaxValue => null,
+                            < 0 => 0,
+                            long otherwise => otherwise,
+                        },
+                        argumentTypes[0].ValidationFlags));
+                }), LanguageConstants.String)
                 .WithGenericDescription(TakeDescription)
                 .WithDescription("Returns a string with the specified number of characters from the start of the string.")
                 .WithRequiredParameter("originalValue", LanguageConstants.String, "The string to take the elements from.")
@@ -201,7 +447,34 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("skip")
-                .WithReturnType(LanguageConstants.Array)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("skip", (_, _, _, functionCall, argumentTypes) =>
+                {
+                    (long minToSkip, long maxToSkip) = argumentTypes[1] switch
+                    {
+                        IntegerLiteralType integerLiteral => (integerLiteral.Value, integerLiteral.Value),
+                        IntegerType integer => (integer.MinValue ?? long.MinValue, integer.MaxValue ?? long.MaxValue),
+                        _ => (long.MinValue, long.MaxValue),
+                    };
+
+                    return new(argumentTypes[0] switch
+                    {
+                        TypeSymbol original when maxToSkip <= 0 => original,
+                        TupleType tupleType when minToSkip == maxToSkip && minToSkip <= int.MaxValue => new TupleType(tupleType.Items.Skip((int) minToSkip).ToImmutableArray(), tupleType.ValidationFlags),
+                        ArrayType array => TypeFactory.CreateArrayType(array.Item,
+                            ((array.MinLength ?? 0) - maxToSkip) switch
+                            {
+                                <= 0 => null,
+                                var otherwise => otherwise,
+                            },
+                            !array.MaxLength.HasValue ? null : (array.MaxLength.Value - Math.Max(0, minToSkip)) switch
+                            {
+                                < 0 => 0,
+                                long otherwise => otherwise,
+                            },
+                            array.ValidationFlags),
+                        _ => TypeFactory.CreateArrayType(validationFlags: argumentTypes[0].ValidationFlags),
+                    });
+                }), LanguageConstants.Array)
                 .WithGenericDescription(SkipDescription)
                 .WithDescription("Returns an array with all the elements after the specified number in the array.")
                 .WithRequiredParameter("originalValue", LanguageConstants.Array, "The array to use for skipping.")
@@ -209,7 +482,34 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("skip")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("skip", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(TryDeriveLiteralReturnType("skip", (_, _, _, functionCall, argumentTypes) =>
+                {
+                    (long? originalMinLength, long? originalMaxLength) = TypeHelper.GetMinAndMaxLengthOfStringified(argumentTypes[0]);
+                    (long minToSkip, long maxToSkip) = argumentTypes[1] switch
+                    {
+                        IntegerLiteralType integerLiteral => (integerLiteral.Value, integerLiteral.Value),
+                        IntegerType integer => (integer.MinValue ?? long.MinValue, integer.MaxValue ?? long.MaxValue),
+                        _ => (long.MinValue, long.MaxValue),
+                    };
+
+                    if (maxToSkip <= 0)
+                    {
+                        return new(argumentTypes[0]);
+                    }
+
+                    return new(TypeFactory.CreateStringType(
+                        ((originalMinLength ?? 0) - maxToSkip) switch
+                        {
+                            <= 0 => null,
+                            var otherwise => otherwise,
+                        },
+                        !originalMaxLength.HasValue ? null : (originalMaxLength.Value - Math.Max(0, minToSkip)) switch
+                        {
+                            < 0 => 0,
+                            long otherwise => otherwise,
+                        },
+                        argumentTypes[0].ValidationFlags));
+                }), LanguageConstants.String)
                 .WithGenericDescription(SkipDescription)
                 .WithDescription("Returns a string with all the characters after the specified number in the string.")
                 .WithRequiredParameter("originalValue", LanguageConstants.String, "The string to use for skipping.")
@@ -279,30 +579,50 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("first")
-                // TODO even with non-literal types, some type arithmetic could be performed
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("first", LanguageConstants.Any), LanguageConstants.Any)
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) =>  new(argumentTypes[0] switch
+                {
+                    TupleType tupleType => tupleType.Items.FirstOrDefault()?.Type ?? LanguageConstants.Null,
+                    ArrayType arrayType when arrayType.MinLength.HasValue && arrayType.MinLength.Value > 0 => arrayType.Item.Type,
+                    ArrayType arrayType => TypeHelper.CreateTypeUnion(LanguageConstants.Null, arrayType.Item.Type),
+                    _ => LanguageConstants.Any
+                }), LanguageConstants.Any)
                 .WithGenericDescription(FirstDescription)
                 .WithDescription("Returns the first element of the array.")
                 .WithRequiredParameter("array", LanguageConstants.Array, "The value to retrieve the first element.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("first")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("first", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(
+                    TryDeriveLiteralReturnType("first",
+                        (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() is StringType @string
+                            ? TypeFactory.CreateStringType(@string.MinLength.HasValue ? Math.Min(@string.MinLength.Value, 1) : null, 1, @string.ValidationFlags)
+                            : TypeFactory.CreateStringType(minLength: null, 1, argumentTypes[0].ValidationFlags))),
+                    LanguageConstants.String)
                 .WithGenericDescription(FirstDescription)
                 .WithDescription("Returns the first character of the string.")
                 .WithRequiredParameter("string", LanguageConstants.String, "The value to retrieve the first character.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("last")
-                // TODO even with non-literal types, some type arithmetic could be performed
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("last", LanguageConstants.Any), LanguageConstants.Any)
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) => new(argumentTypes[0] switch
+                {
+                    TupleType tupleType => tupleType.Items.LastOrDefault()?.Type ?? LanguageConstants.Null,
+                    ArrayType arrayType when arrayType.MinLength.HasValue && arrayType.MinLength.Value > 0 => arrayType.Item.Type,
+                    ArrayType arrayType => TypeHelper.CreateTypeUnion(LanguageConstants.Null, arrayType.Item.Type),
+                    _ => LanguageConstants.Any,
+                }), LanguageConstants.Any)
                 .WithGenericDescription(LastDescription)
                 .WithDescription("Returns the last element of the array.")
                 .WithRequiredParameter("array", LanguageConstants.Array, "The value to retrieve the last element.")
                 .Build();
 
             yield return new FunctionOverloadBuilder("last")
-                .WithReturnResultBuilder(TryDeriveLiteralReturnType("last", LanguageConstants.String), LanguageConstants.String)
+                .WithReturnResultBuilder(
+                    TryDeriveLiteralReturnType("last",
+                        (_, _, _, _, argumentTypes) => new(argumentTypes.FirstOrDefault() is StringType @string
+                            ? TypeFactory.CreateStringType(@string.MinLength.HasValue ? Math.Min(@string.MinLength.Value, 1) : null, 1, @string.ValidationFlags)
+                            : TypeFactory.CreateStringType(minLength: null, 1, argumentTypes[0].ValidationFlags))),
+                    LanguageConstants.String)
                 .WithGenericDescription(LastDescription)
                 .WithDescription("Returns the last character of the string.")
                 .WithRequiredParameter("string", LanguageConstants.String, "The value to retrieve the last character.")
@@ -385,7 +705,48 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("range")
-                .WithReturnType(new TypedArrayType(LanguageConstants.Int, TypeSymbolValidationFlags.Default))
+                .WithReturnResultBuilder(
+                    (_, _, _, _, argumentTypes) =>
+                    {
+                        static TypeSymbol GetRangeReturnElementType(TypeSymbol arg0Type, TypeSymbol arg1Type) => (arg0Type, arg1Type) switch
+                        {
+                            (UnionType start, _) => TypeHelper.CreateTypeUnion(start.Members.Select(m => GetRangeReturnElementType(m.Type, arg1Type))) switch
+                            {
+                                TypeSymbol type when TypeCollapser.TryCollapse(type) is TypeSymbol collapsed => collapsed,
+                                TypeSymbol type => type,
+                            },
+                            (_, UnionType count) => TypeHelper.CreateTypeUnion(count.Members.Select(m => GetRangeReturnElementType(arg0Type, m.Type))) switch
+                            {
+                                TypeSymbol type when TypeCollapser.TryCollapse(type) is TypeSymbol collapsed => collapsed,
+                                TypeSymbol type => type,
+                            },
+
+                            (IntegerLiteralType start, IntegerLiteralType count) => TypeFactory.CreateIntegerType(start.Value, start.Value + count.Value - 1),
+                            (IntegerLiteralType start, IntegerType count) when count.MaxValue.HasValue => TypeFactory.CreateIntegerType(start.Value, start.Value + count.MaxValue.Value - 1),
+                            (IntegerLiteralType start, _) => TypeFactory.CreateIntegerType(start.Value),
+
+                            (IntegerType start, IntegerLiteralType count) when start.MaxValue.HasValue
+                                => TypeFactory.CreateIntegerType(start.MinValue, start.MaxValue.Value + count.Value - 1),
+                            (IntegerType start, IntegerType count) when start.MaxValue.HasValue && count.MaxValue.HasValue
+                                => TypeFactory.CreateIntegerType(start.MinValue, start.MaxValue.Value + count.MaxValue.Value - 1),
+                            (IntegerType start, _) => TypeFactory.CreateIntegerType(start.MinValue),
+
+                            _ => LanguageConstants.Int,
+                        };
+
+                        static (long? minLength, long? maxLength) GetRangeLengthBounds(TypeSymbol countType, bool tryCollapse = true) => countType switch
+                        {
+                            IntegerLiteralType literal => (literal.Value, literal.Value),
+                            IntegerType @int => (@int.MinValue, @int.MaxValue),
+                            TypeSymbol otherwise when tryCollapse && TypeCollapser.TryCollapse(otherwise) is TypeSymbol collapsed => GetRangeLengthBounds(collapsed, tryCollapse: false),
+                            _ => (null, null),
+                        };
+
+                        var elementType = GetRangeReturnElementType(argumentTypes[0], argumentTypes[1]);
+                        var (minLength, maxLength) = GetRangeLengthBounds(argumentTypes[1]);
+                        return new(TypeFactory.CreateArrayType(elementType, minLength, maxLength));
+                    },
+                    new TypedArrayType(LanguageConstants.Int, default))
                 .WithGenericDescription("Creates an array of integers from a starting integer and containing a number of items.")
                 .WithRequiredParameter("startIndex", LanguageConstants.Int, "The first integer in the array. The sum of startIndex and count must be no greater than 2147483647.")
                 .WithRequiredParameter("count", LanguageConstants.Int, "The number of integers in the array. Must be non-negative integer up to 10000.")
@@ -434,19 +795,6 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("valueToConvert", LanguageConstants.Any, "The value to convert to an array.")
                 .Build();
 
-            yield return new FunctionOverloadBuilder("coalesce")
-                .WithReturnType(LanguageConstants.Any)
-                .WithGenericDescription("Returns first non-null value from the parameters. Empty strings, empty arrays, and empty objects are not null.")
-                .WithVariableParameter("arg", LanguageConstants.Any, minimumCount: 1, "The value to coalesce")
-                .Build();
-
-            // TODO: Requires number type
-            //yield return new FunctionOverloadBuilder("float")
-            //    .WithReturnType(LanguageConstants.Number)
-            //    .WithDescription("Converts the value to a floating point number. You only use this function when passing custom parameters to an application, such as a Logic App.")
-            //    .WithRequiredParameter("value", LanguageConstants.Any, "The value to convert to a floating point number.")
-            //    .Build();
-
             yield return new FunctionOverloadBuilder("bool")
                 .WithReturnType(LanguageConstants.Bool)
                 .WithGenericDescription("Converts the parameter to a boolean.")
@@ -488,7 +836,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .Build();
 
             yield return new FunctionOverloadBuilder("newGuid")
-                .WithReturnType(LanguageConstants.String)
+                .WithReturnType(TypeFactory.CreateStringType(minLength: GuidLength, maxLength: GuidLength))
                 .WithGenericDescription("Returns a value in the format of a globally unique identifier. **This function can only be used in the default value for a parameter**.")
                 .WithFlags(FunctionFlags.ParamDefaultsOnly)
                 .Build();
@@ -498,25 +846,23 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("filePath", LanguageConstants.StringFilePath, "The path to the file that will be loaded.")
                 .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
                 .WithReturnResultBuilder(LoadTextContentResultBuilder, LanguageConstants.String)
-                .WithEvaluator(StringLiteralFunctionReturnTypeEvaluator)
-                .WithVariableGenerator(StringLiteralFunctionVariableGenerator)
+                .WithFlags(FunctionFlags.GenerateIntermediateVariableOnIndirectAssignment)
                 .Build();
 
             yield return new FunctionOverloadBuilder("loadFileAsBase64")
                 .WithGenericDescription($"Loads the specified file as base64 string. File loading occurs during compilation, not at runtime. The maximum allowed size is {LanguageConstants.MaxLiteralCharacterLimit / 4 * 3 / 1024} Kb.")
                 .WithRequiredParameter("filePath", LanguageConstants.StringFilePath, "The path to the file that will be loaded.")
                 .WithReturnResultBuilder(LoadContentAsBase64ResultBuilder, LanguageConstants.String)
-                .WithEvaluator(StringLiteralFunctionReturnTypeEvaluator)
-                .WithVariableGenerator(StringLiteralFunctionVariableGenerator)
+                .WithFlags(FunctionFlags.GenerateIntermediateVariableOnIndirectAssignment)
                 .Build();
+
             yield return new FunctionOverloadBuilder("loadJsonContent")
                 .WithGenericDescription($"Loads the specified JSON file as bicep object. File loading occurs during compilation, not at runtime.")
                 .WithRequiredParameter("filePath", LanguageConstants.StringJsonFilePath, "The path to the file that will be loaded.")
                 .WithOptionalParameter("jsonPath", LanguageConstants.String, "JSONPath expression to narrow down the loaded file. If not provided, a root element indicator '$' is used")
                 .WithOptionalParameter("encoding", LanguageConstants.LoadTextContentEncodings, "File encoding. If not provided, UTF-8 will be used.")
                 .WithReturnResultBuilder(LoadJsonContentResultBuilder, LanguageConstants.Any)
-                .WithEvaluator(JsonContentFunctionReturnTypeEvaluator)
-                .WithVariableGenerator(JsonContentFunctionVariableGenerator)
+                .WithFlags(FunctionFlags.GenerateIntermediateVariableAlways)
                 .Build();
 
             yield return new FunctionOverloadBuilder("items")
@@ -536,16 +882,15 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("array", LanguageConstants.Array, "The array to filter.")
                 .WithRequiredParameter("predicate", OneParamLambda(LanguageConstants.Any, LanguageConstants.Bool), "The predicate applied to each input array element. If false, the item will be filtered out of the output array.",
                     calculator: getArgumentType => CalculateLambdaFromArrayParam(getArgumentType, 0, t => OneParamLambda(t, LanguageConstants.Bool)))
-                .WithReturnResultBuilder((binder, fileResolver, diagnostics, arguments, argumentTypes) => {
-                    return new(argumentTypes[0] switch
-                    {
-                        // If a tuple is filtered, each member of the resulting array will be assignable to <input tuple>.Item, but information about specific indices and tuple length is no longer reliable.
-                        // For example, given a symbol `a` of type `[0, 1, 2, 3, 4]`, the expression `filter(a, x => x % 2 == 0)` returns an array in which each member is assignable to `0 | 1 | 2 | 3 | 4`,
-                        // but the returned array (which has a concrete value of `[0, 2, 4]`) will not be assignable to the input tuple type of `[0, 1, 2, 3, 4]`
-                        TupleType tuple => tuple.ToTypedArray(),
-                        var otherwise => otherwise,
-                    });
-                }, LanguageConstants.Array)
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) => new(argumentTypes[0] switch
+                {
+                    // If a tuple is filtered, each member of the resulting array will be assignable to <input tuple>.Item, but information about specific indices and tuple length is no longer reliable.
+                    // For example, given a symbol `a` of type `[0, 1, 2, 3, 4]`, the expression `filter(a, x => x % 2 == 0)` returns an array in which each member is assignable to `0 | 1 | 2 | 3 | 4`,
+                    // but the returned array (which has a concrete value of `[0, 2, 4]`) will not be assignable to the input tuple type of `[0, 1, 2, 3, 4]`
+                    TupleType tuple => tuple.ToTypedArray(minLength: null, maxLength: tuple.MaxLength),
+                    ArrayType arrayType => TypeFactory.CreateArrayType(arrayType.Item, minLength: null, maxLength: arrayType.MaxLength, arrayType.ValidationFlags),
+                    var otherwise => otherwise,
+                }), LanguageConstants.Array)
                 .Build();
 
             yield return new FunctionOverloadBuilder("map")
@@ -565,14 +910,12 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("array", LanguageConstants.Array, "The array to sort.")
                 .WithRequiredParameter("predicate", TwoParamLambda(LanguageConstants.Any, LanguageConstants.Any, LanguageConstants.Bool), "The predicate used to compare two array elements for ordering. If true, the second element will be ordered after the first in the output array.",
                     calculator: getArgumentType => CalculateLambdaFromArrayParam(getArgumentType, 0, t => TwoParamLambda(t, t, LanguageConstants.Bool)))
-                .WithReturnResultBuilder((binder, fileResolver, diagnostics, arguments, argumentTypes) => {
-                    return new(argumentTypes[0] switch
-                    {
-                        // When a tuple is sorted, the resultant array will be of the same length as the input tuple, but the information about which member resides at which index can no longer be relied upon.
-                        TupleType tuple => tuple.ToTypedArray(),
-                        var otherwise => otherwise,
-                    });
-                }, LanguageConstants.Array)
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) => new(argumentTypes[0] switch
+                {
+                    // When a tuple is sorted, the resultant array will be of the same length as the input tuple, but the information about which member resides at which index can no longer be relied upon.
+                    TupleType tuple => tuple.ToTypedArray(),
+                    var otherwise => otherwise,
+                }), LanguageConstants.Array)
                 .Build();
 
             yield return new FunctionOverloadBuilder("reduce")
@@ -582,7 +925,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter("predicate", TwoParamLambda(LanguageConstants.Any, LanguageConstants.Any, LanguageConstants.Any), "The predicate used to aggregate the current value and the next value. ",
                     calculator: getArgumentType => CalculateLambdaFromArrayParam(getArgumentType, 0, t => TwoParamLambda(t, t, LanguageConstants.Any)))
                 .WithReturnType(LanguageConstants.Any)
-                .WithReturnResultBuilder((binder, fileResolver, diagnostics, arguments, argumentTypes) => argumentTypes[2] switch
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) => argumentTypes[2] switch
                 {
                     LambdaType lambdaType => new(lambdaType.ReturnType.Type),
                     _ => new(LanguageConstants.Any),
@@ -597,7 +940,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithOptionalParameter("valuePredicate", OneParamLambda(LanguageConstants.Any, LanguageConstants.Any), "The optional predicate applied to each input array element to return the object value.",
                     calculator: getArgumentType => CalculateLambdaFromArrayParam(getArgumentType, 0, t => OneParamLambda(t, LanguageConstants.Any)))
                 .WithReturnType(LanguageConstants.Any)
-                .WithReturnResultBuilder((binder, fileResolver, diagnostics, arguments, argumentTypes) => {
+                .WithReturnResultBuilder((_, _, _, _, argumentTypes) => {
                     if (argumentTypes.Length == 2 && argumentTypes[0] is ArrayType arrayArgType) {
                         return new(new ObjectType("object", TypeSymbolValidationFlags.Default, ImmutableArray<TypeProperty>.Empty, arrayArgType.Item));
                     }
@@ -635,15 +978,15 @@ namespace Bicep.Core.Semantics.Namespaces
             return true;
         }
 
-        private static FunctionOverload.ResultBuilderDelegate TryDeriveLiteralReturnType(string armFunctionName, TypeSymbol nonLitealReturnType) =>
-            TryDeriveLiteralReturnType(armFunctionName, (_, _, _, _, _) => new(nonLitealReturnType));
+        private static FunctionOverload.ResultBuilderDelegate TryDeriveLiteralReturnType(string armFunctionName, TypeSymbol nonLiteralReturnType) =>
+            TryDeriveLiteralReturnType(armFunctionName, (_, _, _, _, _) => new(nonLiteralReturnType));
 
-        private static FunctionOverload.ResultBuilderDelegate TryDeriveLiteralReturnType(string armFunctionName, FunctionOverload.ResultBuilderDelegate computeNonLiteralType) =>
+        private static FunctionOverload.ResultBuilderDelegate TryDeriveLiteralReturnType(string armFunctionName, FunctionOverload.ResultBuilderDelegate nonLiteralReturnResultBuilder) =>
             (binder, fileResolver, diagnostics, functionCall, argumentTypes) =>
             {
-                var returnType = ArmFunctionReturnTypeEvaluator.TryEvaluate(armFunctionName, out var diagnosticBuilders, argumentTypes) is { } literalReturnType
+                FunctionResult returnType = ArmFunctionReturnTypeEvaluator.TryEvaluate(armFunctionName, out var diagnosticBuilders, argumentTypes) is { } literalReturnType
                     ? new(literalReturnType)
-                    : computeNonLiteralType(binder, fileResolver, diagnostics, functionCall, argumentTypes);
+                    : nonLiteralReturnResultBuilder.Invoke(binder, fileResolver, diagnostics, functionCall, argumentTypes);
 
                 var diagnosticTarget = functionCall.Arguments.Any()
                     ? TextSpan.Between(functionCall.Arguments.First(), functionCall.Arguments.Last())
@@ -680,7 +1023,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 out var fileContent,
                 out var errorDiagnostic,
                 LanguageConstants.MaxLiteralCharacterLimit)
-                ? new(new StringLiteralType(fileContent))
+                ? new(TypeFactory.CreateStringLiteralType(fileContent), new StringLiteralExpression(functionCall, fileContent))
                 : new(ErrorType.Create(errorDiagnostic));
         }
 
@@ -740,7 +1083,8 @@ namespace Bicep.Core.Semantics.Namespaces
                     return new(ErrorType.Create(DiagnosticBuilder.ForPosition(arguments[1]).NoJsonTokenOnPathOrPathInvalid()));
                 }
             }
-            return new(ConvertJsonToBicepType(token), token);
+
+            return new(ConvertJsonToBicepType(token), ConvertJsonToExpression(token));
         }
 
         private static bool TryLoadTextContentFromFile(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, (FunctionArgumentSyntax syntax, TypeSymbol typeSymbol) filePathArgument, (FunctionArgumentSyntax syntax, TypeSymbol typeSymbol)? encodingArgument, [NotNullWhen(true)] out string? fileContent, [NotNullWhen(false)] out ErrorDiagnostic? errorDiagnostic, int maxCharacters = -1)
@@ -805,74 +1149,34 @@ namespace Bicep.Core.Semantics.Namespaces
                 return new(ErrorType.Create(fileReadFailureBuilder.Invoke(DiagnosticBuilder.ForPosition(arguments[0]))));
             }
 
-            return new(new StringLiteralType(binder.FileSymbol.FileUri.MakeRelativeUri(fileUri).ToString(), fileContent));
-        }
-
-        private static SyntaxBase StringLiteralFunctionReturnTypeEvaluator(FunctionCallSyntaxBase functionCall, Symbol symbol, TypeSymbol typeSymbol, FunctionVariable? functionVariable, object? functionValue)
-        {
-            if (functionVariable is not null)
-            {
-                return SyntaxFactory.CreateUnboundVariableAccess(functionVariable.Name);
-            }
-
-            return CreateStringLiteral(typeSymbol);
-        }
-
-        private static SyntaxBase? StringLiteralFunctionVariableGenerator(FunctionCallSyntaxBase functionCall, Symbol symbol, TypeSymbol typeSymbol, bool directVariableAssignment, object? functionValue)
-        {
-            if (directVariableAssignment)
-            {
-                return null;
-            }
-            return CreateStringLiteral(typeSymbol);
-        }
-
-        private static SyntaxBase CreateStringLiteral(TypeSymbol typeSymbol)
-        {
-            if (typeSymbol is not StringLiteralType stringLiteral)
-            {
-                throw new InvalidOperationException($"Expecting function to return {nameof(StringLiteralType)}, but {typeSymbol.GetType().Name} received.");
-            }
-
-            return SyntaxFactory.CreateStringLiteral(stringLiteral.RawStringValue);
-        }
-
-        private static SyntaxBase JsonContentFunctionReturnTypeEvaluator(FunctionCallSyntaxBase functionCall, Symbol symbol, TypeSymbol typeSymbol, FunctionVariable? functionVariable, object? functionValue)
-        {
-            if (functionVariable is null)
-            {
-                // TemplateEmitter when emitting ARM-json code instead function will use createObject functions instead putting raw JSON.
-                // This can be avoided using functionVariables where bicep syntax is processed by Emitter itself, not by ExpressionConverter.
-                throw new InvalidOperationException($"Function Variable must be used");
-            }
-
-            return SyntaxFactory.CreateUnboundVariableAccess(functionVariable.Name);
-        }
-
-        private static SyntaxBase JsonContentFunctionVariableGenerator(FunctionCallSyntaxBase functionCall, Symbol symbol, TypeSymbol typeSymbol, bool directVariableAssignment, object? functionValue)
-        {
-            //converting JSON to bicep syntax and then back to ARM-JSON escapes ARM template expressions (`[variables('')]`, etc.) out of the box
-            return ConvertJsonToBicepSyntax(functionValue as JToken ?? throw new InvalidOperationException($"Expecting function to return {nameof(JToken)}, but {functionValue?.GetType().ToString() ?? "null"} received."));
+            return new(
+                new StringLiteralType(binder.FileSymbol.FileUri.MakeRelativeUri(fileUri).ToString(), fileContent, TypeSymbolValidationFlags.Default),
+                new StringLiteralExpression(functionCall, fileContent));
         }
 
         private static readonly ImmutableHashSet<JTokenType> SupportedJsonTokenTypes = new[] { JTokenType.Object, JTokenType.Array, JTokenType.String, JTokenType.Integer, JTokenType.Float, JTokenType.Boolean, JTokenType.Null }.ToImmutableHashSet();
-        private static SyntaxBase ConvertJsonToBicepSyntax(JToken token) =>
-        token switch
-        {
-            JObject @object => SyntaxFactory.CreateObject(@object.Properties().Where(x => SupportedJsonTokenTypes.Contains(x.Value.Type)).Select(x => SyntaxFactory.CreateObjectProperty(x.Name, ConvertJsonToBicepSyntax(x.Value)))),
-            JArray @array => SyntaxFactory.CreateArray(@array.Where(x => SupportedJsonTokenTypes.Contains(x.Type)).Select(ConvertJsonToBicepSyntax)),
-            JValue value => value.Type switch
-            {
-                JTokenType.String => SyntaxFactory.CreateStringLiteral(value.ToString(CultureInfo.InvariantCulture)),
-                JTokenType.Integer => value.ToObject<long>() < 0 ? SyntaxFactory.CreateNegativeIntegerLiteral((ulong)(0 - value.ToObject<long>())) : SyntaxFactory.CreateIntegerLiteral(value.ToObject<ulong>()),
-                // Floats are currently not supported in Bicep, so fall back to the default behavior of "any"
-                JTokenType.Float => SyntaxFactory.CreateFunctionCall("json", SyntaxFactory.CreateStringLiteral(value.ToObject<double>().ToString(CultureInfo.InvariantCulture))),
-                JTokenType.Boolean => SyntaxFactory.CreateBooleanLiteral(value.ToObject<bool>()),
-                JTokenType.Null => SyntaxFactory.CreateFunctionCall("null"),
-                _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported value token type: {value.Type}"),
-            },
-            _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported token: {token.Type}")
-        };
+        private static Expression ConvertJsonToExpression(JToken token)
+            => token switch {
+                JObject @object => new ObjectExpression(null, @object.Properties()
+                    .Where(x => SupportedJsonTokenTypes.Contains(x.Value.Type))
+                    .Select(x => new ObjectPropertyExpression(null, new StringLiteralExpression(null, x.Name), ConvertJsonToExpression(x.Value)))
+                    .ToImmutableArray()),
+                JArray @array => new ArrayExpression(null, @array
+                    .Where(x => SupportedJsonTokenTypes.Contains(x.Type))
+                    .Select(ConvertJsonToExpression)
+                    .ToImmutableArray()),
+                JValue value => value.Type switch
+                {
+                    JTokenType.String => new StringLiteralExpression(null, value.ToString(CultureInfo.InvariantCulture)),
+                    JTokenType.Integer => new IntegerLiteralExpression(null, value.ToObject<long>()),
+                    // Floats are currently not supported in Bicep, so fall back to the default behavior of "any"
+                    JTokenType.Float => new FunctionCallExpression(null, "json", ImmutableArray.Create<Expression>(new StringLiteralExpression(null, value.ToObject<double>().ToString(CultureInfo.InvariantCulture)))),
+                    JTokenType.Boolean => new BooleanLiteralExpression(null, value.ToObject<bool>()),
+                    JTokenType.Null => new NullLiteralExpression(null),
+                    _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported value token type: {value.Type}"),
+                },
+                _ => throw new InvalidOperationException($"Cannot parse JSON object. Unsupported token: {token.Type}")
+            };
 
         private static TypeSymbol GetItemsReturnType(TypeSymbol keyType, TypeSymbol valueType)
             => new TypedArrayType(
@@ -903,7 +1207,7 @@ namespace Bicep.Core.Semantics.Namespaces
                     continue;
                 }
 
-                keyTypes.Add(new StringLiteralType(property.Name));
+                keyTypes.Add(TypeFactory.CreateStringLiteralType(property.Name));
                 valueTypes.Add(property.TypeReference.Type);
             }
 
@@ -931,7 +1235,7 @@ namespace Bicep.Core.Semantics.Namespaces
                     TypeSymbolValidationFlags.Default),
                 JValue value => value.Type switch
                 {
-                    JTokenType.String => new StringLiteralType(value.ToString(CultureInfo.InvariantCulture)),
+                    JTokenType.String => TypeFactory.CreateStringLiteralType(value.ToString(CultureInfo.InvariantCulture)),
                     JTokenType.Integer => LanguageConstants.Int,
                     // Floats are currently not supported in Bicep, so fall back to the default behavior of "any"
                     JTokenType.Float => LanguageConstants.Any,
@@ -998,11 +1302,13 @@ namespace Bicep.Core.Semantics.Namespaces
 
         private static IEnumerable<Decorator> GetSystemDecorators(IFeatureProvider featureProvider)
         {
-            static DecoratorEvaluator MergeToTargetObject(string propertyName, Func<DecoratorSyntax, SyntaxBase> propertyValueSelector) =>
-                (decoratorSyntax, _, targetObject) =>
-                    targetObject.MergeProperty(propertyName, propertyValueSelector(decoratorSyntax));
+            static DecoratorEvaluator MergeToTargetObject(string propertyName, Func<FunctionCallExpression, Expression> propertyValueSelector) =>
+                (functionCall, _, targetObject) =>
+                    targetObject.MergeProperty(propertyName, propertyValueSelector(functionCall));
 
             static SyntaxBase SingleArgumentSelector(DecoratorSyntax decoratorSyntax) => decoratorSyntax.Arguments.Single().Expression;
+
+            static Expression SingleParameterSelector(FunctionCallExpression functionCall) => functionCall.Parameters.Single();
 
             static long? TryGetIntegerLiteralValue(SyntaxBase syntax) => syntax switch
             {
@@ -1023,9 +1329,15 @@ namespace Bicep.Core.Semantics.Namespaces
                 _ => null,
             };
 
+            static SyntaxBase? UnwrapNullableSyntax(SyntaxBase? maybeNullable) => maybeNullable switch
+            {
+                NullableTypeSyntax nullable => nullable.Base,
+                var otherwise => otherwise,
+            };
+
             static void EmitDiagnosticIfTargetingAlias(string decoratorName, DecoratorSyntax decoratorSyntax, SyntaxBase? decoratorParentTypeSyntax, IBinder binder, IDiagnosticWriter diagnosticWriter)
             {
-                if (decoratorParentTypeSyntax is VariableAccessSyntax variableAccess && binder.GetSymbolInfo(variableAccess) is TypeAliasSymbol)
+                if (UnwrapNullableSyntax(decoratorParentTypeSyntax) is VariableAccessSyntax variableAccess && binder.GetSymbolInfo(variableAccess) is TypeAliasSymbol)
                 {
                     diagnosticWriter.Write(DiagnosticBuilder.ForPosition(decoratorSyntax).DecoratorMayNotTargetTypeAlias(decoratorName));
                 }
@@ -1033,18 +1345,18 @@ namespace Bicep.Core.Semantics.Namespaces
 
             static void EmitDiagnosticIfTargetingLiteral(string decoratorName, DecoratorSyntax decoratorSyntax, SyntaxBase? decoratorParentTypeSyntax, ITypeManager typeManager, IDiagnosticWriter diagnosticWriter)
             {
-                if (IsLiteralSyntax(decoratorParentTypeSyntax, typeManager))
+                if (IsLiteralSyntax(UnwrapNullableSyntax(decoratorParentTypeSyntax), typeManager))
                 {
                     diagnosticWriter.Write(DiagnosticBuilder.ForPosition(decoratorSyntax).DecoratorNotPermittedOnLiteralType(decoratorName));
                 }
             }
 
-            static void ValidateNotTargetingAlias(string decoratorName, DecoratorSyntax decoratorSyntax, TypeSymbol targetType, ITypeManager typeManager, IBinder binder, IDiagnosticWriter diagnosticWriter)
+            static void ValidateNotTargetingAlias(string decoratorName, DecoratorSyntax decoratorSyntax, TypeSymbol targetType, ITypeManager typeManager, IBinder binder, IDiagnosticLookup parsingErrorLookup, IDiagnosticWriter diagnosticWriter)
                 => EmitDiagnosticIfTargetingAlias(decoratorName, decoratorSyntax, GetDeclaredTypeSyntaxOfParent(decoratorSyntax, binder), binder, diagnosticWriter);
 
-            static void ValidateLength(string decoratorName, DecoratorSyntax decoratorSyntax, TypeSymbol targetType, ITypeManager typeManager, IBinder binder, IDiagnosticWriter diagnosticWriter)
+            static void ValidateLength(string decoratorName, DecoratorSyntax decoratorSyntax, TypeSymbol targetType, ITypeManager typeManager, IBinder binder, IDiagnosticLookup parsingErrorLookup, IDiagnosticWriter diagnosticWriter)
             {
-                ValidateNotTargetingAlias(decoratorName, decoratorSyntax, targetType, typeManager, binder, diagnosticWriter);
+                ValidateNotTargetingAlias(decoratorName, decoratorSyntax, targetType, typeManager, binder, parsingErrorLookup, diagnosticWriter);
 
                 if (targetType is UnionType || TypeHelper.IsLiteralType(targetType))
                 {
@@ -1068,12 +1380,12 @@ namespace Bicep.Core.Semantics.Namespaces
                 {
                     if (TypeValidator.AreTypesAssignable(targetType, LanguageConstants.String))
                     {
-                        return targetObject.MergeProperty("type", "securestring");
+                        return targetObject.MergeProperty("type", new StringLiteralExpression(null, "securestring"));
                     }
 
                     if (TypeValidator.AreTypesAssignable(targetType, LanguageConstants.Object))
                     {
-                        return targetObject.MergeProperty("type", "secureObject");
+                        return targetObject.MergeProperty("type", new StringLiteralExpression(null, "secureObject"));
                     }
 
                     return targetObject;
@@ -1084,14 +1396,14 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithDescription("Defines the allowed values of the parameter.")
                 .WithRequiredParameter("values", LanguageConstants.Array, "The allowed values.")
                 .WithFlags(FunctionFlags.ParameterDecorator)
-                .WithValidator((decoratorName, decoratorSyntax, targetType, typeManager, binder, diagnosticWriter) =>
+                .WithValidator((decoratorName, decoratorSyntax, targetType, typeManager, binder, parsingErrorLookup, diagnosticWriter) =>
                 {
                     var parentTypeSyntax = GetDeclaredTypeSyntaxOfParent(decoratorSyntax, binder);
 
                     EmitDiagnosticIfTargetingAlias(decoratorName, decoratorSyntax, parentTypeSyntax, binder, diagnosticWriter);
                     EmitDiagnosticIfTargetingLiteral(decoratorName, decoratorSyntax, parentTypeSyntax, typeManager, diagnosticWriter);
 
-                    if (ReferenceEquals(targetType, LanguageConstants.Array) &&
+                    if (TypeValidator.AreTypesAssignable(targetType, LanguageConstants.Array) &&
                         SingleArgumentSelector(decoratorSyntax) is ArraySyntax allowedValues &&
                         allowedValues.Items.All(item => item.Value is not ArraySyntax))
                     {
@@ -1106,64 +1418,65 @@ namespace Bicep.Core.Semantics.Namespaces
                     TypeValidator.NarrowTypeAndCollectDiagnostics(
                         typeManager,
                         binder,
+                        parsingErrorLookup,
                         diagnosticWriter,
                         SingleArgumentSelector(decoratorSyntax),
                         new TypedArrayType(targetType, TypeSymbolValidationFlags.Default));
                 })
-                .WithEvaluator(MergeToTargetObject("allowedValues", SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject("allowedValues", SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.ParameterMinValuePropertyName)
                 .WithDescription("Defines the minimum value of the parameter.")
                 .WithRequiredParameter("value", LanguageConstants.Int, "The minimum value.")
-                .WithFlags(FunctionFlags.ParameterOrTypeDecorator)
+                .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
                 .WithAttachableType(LanguageConstants.Int)
                 .WithValidator(ValidateNotTargetingAlias)
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMinValuePropertyName, SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMinValuePropertyName, SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.ParameterMaxValuePropertyName)
                 .WithDescription("Defines the maximum value of the parameter.")
                 .WithRequiredParameter("value", LanguageConstants.Int, "The maximum value.")
-                .WithFlags(FunctionFlags.ParameterOrTypeDecorator)
+                .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
                 .WithAttachableType(LanguageConstants.Int)
                 .WithValidator(ValidateNotTargetingAlias)
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMaxValuePropertyName, SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMaxValuePropertyName, SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.ParameterMinLengthPropertyName)
                 .WithDescription("Defines the minimum length of the parameter.")
                 .WithRequiredParameter("length", LanguageConstants.Int, "The minimum length.")
-                .WithFlags(FunctionFlags.ParameterOrTypeDecorator)
+                .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
                 .WithAttachableType(TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Array))
                 .WithValidator(ValidateLength)
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMinLengthPropertyName, SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMinLengthPropertyName, SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.ParameterMaxLengthPropertyName)
                 .WithDescription("Defines the maximum length of the parameter.")
                 .WithRequiredParameter("length", LanguageConstants.Int, "The maximum length.")
-                .WithFlags(FunctionFlags.ParameterOrTypeDecorator)
+                .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
                 .WithAttachableType(TypeHelper.CreateTypeUnion(LanguageConstants.String, LanguageConstants.Array))
                 .WithValidator(ValidateLength)
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMaxLengthPropertyName, SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMaxLengthPropertyName, SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.ParameterMetadataPropertyName)
                 .WithDescription("Defines metadata of the parameter.")
                 .WithRequiredParameter("object", LanguageConstants.Object, "The metadata object.")
                 .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
-                .WithValidator((_, decoratorSyntax, _, typeManager, binder, diagnosticWriter) =>
-                    TypeValidator.NarrowTypeAndCollectDiagnostics(typeManager, binder, diagnosticWriter, SingleArgumentSelector(decoratorSyntax), LanguageConstants.ParameterModifierMetadata))
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMetadataPropertyName, SingleArgumentSelector))
+                .WithValidator((_, decoratorSyntax, _, typeManager, binder, parsingErrorLookup, diagnosticWriter) =>
+                    TypeValidator.NarrowTypeAndCollectDiagnostics(typeManager, binder, parsingErrorLookup, diagnosticWriter, SingleArgumentSelector(decoratorSyntax), LanguageConstants.ParameterModifierMetadata))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.ParameterMetadataPropertyName, SingleParameterSelector))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.MetadataDescriptionPropertyName)
                 .WithDescription("Describes the parameter.")
                 .WithRequiredParameter("text", LanguageConstants.String, "The description.")
                 .WithFlags(FunctionFlags.AnyDecorator)
-                .WithEvaluator(MergeToTargetObject("metadata", decoratorSyntax => SyntaxFactory.CreateObject(
-                    SyntaxFactory.CreateObjectProperty("description", SingleArgumentSelector(decoratorSyntax)).AsEnumerable())))
+                .WithEvaluator(MergeToTargetObject("metadata", functionCall => ExpressionFactory.CreateObject(
+                    ExpressionFactory.CreateObjectProperty("description", SingleParameterSelector(functionCall), functionCall.SourceSyntax).AsEnumerable())))
                 .Build();
 
             yield return new DecoratorBuilder(LanguageConstants.BatchSizePropertyName)
@@ -1171,12 +1484,12 @@ namespace Bicep.Core.Semantics.Namespaces
                 .WithRequiredParameter(LanguageConstants.BatchSizePropertyName, LanguageConstants.Int, "The size of the batch")
                 .WithFlags(FunctionFlags.ResourceOrModuleDecorator)
                 // the decorator is constrained to resources and modules already - checking for array alone is simple and should be sufficient
-                .WithValidator((decoratorName, decoratorSyntax, targetType, typeManager, binder, diagnosticWriter) =>
+                .WithValidator((decoratorName, decoratorSyntax, targetType, typeManager, binder, _, diagnosticWriter) =>
                 {
                     if (!TypeValidator.AreTypesAssignable(targetType, LanguageConstants.Array))
                     {
                         // the resource/module declaration is not a collection
-                        // (the compile-time constnat and resource/module placement is already enforced, so we don't need a deeper type check)
+                        // (the compile-time constant and resource/module placement is already enforced, so we don't need a deeper type check)
                         diagnosticWriter.Write(DiagnosticBuilder.ForPosition(decoratorSyntax).BatchSizeNotAllowed(decoratorName));
                     }
 
@@ -1189,19 +1502,17 @@ namespace Bicep.Core.Semantics.Namespaces
                         diagnosticWriter.Write(DiagnosticBuilder.ForPosition(batchSizeSyntax).BatchSizeTooSmall(batchSize.Value, minimumBatchSize));
                     }
                 })
-                .WithEvaluator(MergeToTargetObject(LanguageConstants.BatchSizePropertyName, SingleArgumentSelector))
+                .WithEvaluator(MergeToTargetObject(LanguageConstants.BatchSizePropertyName, SingleParameterSelector))
                 .Build();
 
             if (featureProvider.UserDefinedTypesEnabled)
             {
                 yield return new DecoratorBuilder(LanguageConstants.ParameterSealedPropertyName)
                     .WithDescription("Marks an object parameter as only permitting properties specifically included in the type definition")
-                    .WithFlags(FunctionFlags.ParameterOrTypeDecorator)
+                    .WithFlags(FunctionFlags.ParameterOutputOrTypeDecorator)
                     .WithAttachableType(LanguageConstants.Object)
                     .WithValidator(ValidateNotTargetingAlias)
-                    .WithEvaluator((_, targetType, targetObject) => targetObject.MergeProperty(LanguageConstants.ParameterSealedPropertyName, SyntaxFactory.CreateBooleanLiteral(true)))
-                    // TODO delete the above line and uncomment the line below when ARM w46 has finished rolling out
-                    // .WithEvaluator((_, targetType, targetObject) => targetObject.MergeProperty("additionalProperties", SyntaxFactory.CreateBooleanLiteral(false)))
+                    .WithEvaluator((_, targetType, targetObject) => targetObject.MergeProperty("additionalProperties", ExpressionFactory.CreateBooleanLiteral(false)))
                     .Build();
             }
         }

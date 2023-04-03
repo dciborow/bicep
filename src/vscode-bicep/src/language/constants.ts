@@ -7,4 +7,5 @@ export const bicepConfigurationPrefix = "bicep";
 
 export const bicepConfigurationKeys = {
   decompileOnPaste: "decompileOnPaste",
+  enableSurveys: "enableSurveys",
 };

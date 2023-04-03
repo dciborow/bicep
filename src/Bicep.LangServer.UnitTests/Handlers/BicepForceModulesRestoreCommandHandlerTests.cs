@@ -41,20 +41,20 @@ namespace Bicep.LangServer.UnitTests.Handlers
         [DataRow("")]
         [DataRow("   ")]
         [DataTestMethod]
-        public void Handle_WithInvalidPath_ShouldThrowArgumentException(string path)
+        public async Task Handle_WithInvalidPath_ShouldThrowArgumentException(string path)
         {
             var compilationManager = StrictMock.Of<ICompilationManager>().Object;
             var handler = CreateHandler(compilationManager);
 
-            Action sut = () => handler.Handle(path, CancellationToken.None);
+            Func<Task> sut = () => handler.Handle(path, CancellationToken.None);
 
-            sut.Should().Throw<ArgumentException>().WithMessage("Invalid input file path");
+            await sut.Should().ThrowAsync<ArgumentException>().WithMessage("Invalid input file path");
         }
 
         [TestMethod]
         public async Task Handle_WithValidPath_WithoutModules_ReturnsBuildSucceededMessage()
         {
-            string testOutputPath = Path.Combine(TestContext.ResultsDirectory, Guid.NewGuid().ToString());
+            string testOutputPath = FileHelper.GetUniqueTestOutputPath(TestContext);
 
             string bicepFileContents = @"
 resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
@@ -75,7 +75,7 @@ resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
         [TestMethod]
         public async Task Handle_WithValidPath_AndThreeLocalModulesInInputFile_ReturnsSummaryMessage()
         {
-            string testOutputPath = Path.Combine(TestContext.ResultsDirectory, Guid.NewGuid().ToString());
+            string testOutputPath = FileHelper.GetUniqueTestOutputPath(TestContext);
 
             string bicepLocalModuleFileContents = @"resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
   name: 'name'
@@ -118,7 +118,7 @@ resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
         [TestMethod]
         public async Task Handle_WithValidPath_AndTwoLocalModules_InInputFile_WhichOneDoNotExist_ReturnsSummaryMessage()
         {
-            string testOutputPath = Path.Combine(TestContext.ResultsDirectory, Guid.NewGuid().ToString());
+            string testOutputPath = FileHelper.GetUniqueTestOutputPath(TestContext);
 
             string bicepLocalModuleFileContents = @"resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' = {
   name: 'name'

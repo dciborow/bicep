@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Bicep.Core.Parsing;
 
 namespace Bicep.Core.Syntax
@@ -138,7 +136,14 @@ namespace Bicep.Core.Syntax
         {
             this.VisitNodes(syntax.LeadingNodes);
             this.Visit(syntax.Key);
-            this.Visit(syntax.OptionalityMarker);
+            this.Visit(syntax.Colon);
+            this.Visit(syntax.Value);
+        }
+
+        public override void VisitObjectTypeAdditionalPropertiesSyntax(ObjectTypeAdditionalPropertiesSyntax syntax)
+        {
+            this.VisitNodes(syntax.LeadingNodes);
+            this.Visit(syntax.Asterisk);
             this.Visit(syntax.Colon);
             this.Visit(syntax.Value);
         }
@@ -185,6 +190,12 @@ namespace Bicep.Core.Syntax
             this.Visit(syntax.Name);
             this.Visit(syntax.Assignment);
             this.Visit(syntax.Value);
+        }
+
+        public override void VisitNullableTypeSyntax(NullableTypeSyntax syntax)
+        {
+            this.Visit(syntax.Base);
+            this.Visit(syntax.NullabilityMarker);
         }
 
         public override void VisitBooleanLiteralSyntax(BooleanLiteralSyntax syntax)
@@ -304,6 +315,7 @@ namespace Bicep.Core.Syntax
         {
             this.Visit(syntax.BaseExpression);
             this.Visit(syntax.OpenSquare);
+            this.Visit(syntax.SafeAccessMarker);
             this.Visit(syntax.IndexExpression);
             this.Visit(syntax.CloseSquare);
         }
@@ -312,6 +324,7 @@ namespace Bicep.Core.Syntax
         {
             this.Visit(syntax.BaseExpression);
             this.Visit(syntax.Dot);
+            this.Visit(syntax.SafeAccessMarker);
             this.Visit(syntax.PropertyName);
         }
 
@@ -410,6 +423,12 @@ namespace Bicep.Core.Syntax
             this.Visit(syntax.VariableSection);
             this.Visit(syntax.Arrow);
             this.Visit(syntax.Body);
+        }
+
+        public override void VisitNonNullAssertionSyntax(NonNullAssertionSyntax syntax)
+        {
+            this.Visit(syntax.BaseExpression);
+            this.Visit(syntax.AssertionOperator);
         }
     }
 }

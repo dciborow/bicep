@@ -43,17 +43,13 @@ module scopedToSymbolicName 'hello.bicep' = [for (name, i) in scripts: {
 //@        "count": "[length(variables('scripts'))]"
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "resourceGroup": "[format('{0}-{1}', parameters('prefix'), variables('groups')[copyIndex()])]",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "scriptName": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -98,8 +94,12 @@ module scopedToSymbolicName 'hello.bicep' = [for (name, i) in scripts: {
   name: '${prefix}-dep-${i}'
 //@      "name": "[format('{0}-dep-{1}', parameters('prefix'), copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     scriptName: 'test-${name}-${i}'
+//@          "scriptName": {
 //@            "value": "[format('test-{0}-{1}', variables('scripts')[copyIndex()], copyIndex())]"
+//@          }
   }
   scope: resourceGroups[i]
 }]
@@ -111,17 +111,13 @@ module scopedToResourceGroupFunction 'hello.bicep' = [for (name, i) in scripts: 
 //@        "count": "[length(variables('scripts'))]"
 //@      },
 //@      "type": "Microsoft.Resources/deployments",
-//@      "apiVersion": "2020-10-01",
+//@      "apiVersion": "2022-09-01",
 //@      "resourceGroup": "[concat(variables('scripts')[copyIndex()], '-extra')]",
 //@      "properties": {
 //@        "expressionEvaluationOptions": {
 //@          "scope": "inner"
 //@        },
 //@        "mode": "Incremental",
-//@        "parameters": {
-//@          "scriptName": {
-//@          }
-//@        },
 //@        "template": {
 //@          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 //@          "contentVersion": "1.0.0.0",
@@ -163,8 +159,12 @@ module scopedToResourceGroupFunction 'hello.bicep' = [for (name, i) in scripts: 
   name: '${prefix}-dep-${i}'
 //@      "name": "[format('{0}-dep-{1}', parameters('prefix'), copyIndex())]",
   params: {
+//@        "parameters": {
+//@        },
     scriptName: 'test-${name}-${i}'
+//@          "scriptName": {
 //@            "value": "[format('test-{0}-{1}', variables('scripts')[copyIndex()], copyIndex())]"
+//@          }
   }
   scope: resourceGroup(concat(name, '-extra'))
 }]

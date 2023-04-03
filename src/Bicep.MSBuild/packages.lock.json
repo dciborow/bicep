@@ -4,9 +4,9 @@
     ".NETStandard,Version=v2.0": {
       "Azure.Deployments.Internal.GenerateNotice": {
         "type": "Direct",
-        "requested": "[0.1.13, )",
-        "resolved": "0.1.13",
-        "contentHash": "l9bZLZxtzNF33jexI8o9IKUoxenIh9rqO96ApaZ0AoXhPe0OL7tJ+fwsNHIOk4f1Ysyq85+A0kbzef2wQLd9Cw=="
+        "requested": "[0.1.31, )",
+        "resolved": "0.1.31",
+        "contentHash": "j/l71hjQxU3v5CqLpvw+ZkfcsQchWVOqWBjH9/LcyPvuiqNVmNNYOoQ17UjAVZA8AeYV1dFVPyR+c/wVaDIFXA=="
       },
       "Microsoft.Build.Framework": {
         "type": "Direct",
@@ -34,9 +34,9 @@
       },
       "Microsoft.CodeAnalysis.BannedApiAnalyzers": {
         "type": "Direct",
-        "requested": "[3.3.3, )",
-        "resolved": "3.3.3",
-        "contentHash": "vvz3XCHVrd/Ks4xPoutLmL/T2+8JcOk/OMs3ngwQqnzokQCGEDsY+WjK/txCsDWU29sX3fGzH/FnYwNV93O1mA=="
+        "requested": "[3.3.4, )",
+        "resolved": "3.3.4",
+        "contentHash": "0k2Jwpc8eq0hjOtX6TxRkHm9clkJ2PAQ3heEHgqIJZcsfdFosC/iyz18nsgTVDDWpID80rC7aiYK7ripx+Qndg=="
       },
       "Microsoft.SourceLink.GitHub": {
         "type": "Direct",

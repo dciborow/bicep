@@ -7,7 +7,10 @@ import { LanguageClient } from "vscode-languageclient/node";
 
 import { createDeploymentGraphMessage, Message } from "./messages";
 import { deploymentGraphRequestType } from "../language";
-import { Disposable, debounce, getLogger } from "../utils";
+import { parseError } from "@microsoft/vscode-azext-utils";
+import { Disposable } from "../utils/disposable";
+import { debounce } from "../utils/time";
+import { getLogger } from "../utils/logger";
 
 export class BicepVisualizerView extends Disposable {
   public static viewType = "bicep.visualizer";
@@ -180,8 +183,15 @@ export class BicepVisualizerView extends Disposable {
       if (visibleEditor.document.uri.fsPath === filePath) {
         vscode.window
           .showTextDocument(visibleEditor.document, visibleEditor.viewColumn)
-          .then((editor) => this.revealEditorRange(editor, range));
-
+          .then(
+            (editor) => this.revealEditorRange(editor, range),
+            (err) =>
+              vscode.window.showErrorMessage(
+                `Could not reveal file range in "${filePath}": ${
+                  parseError(err).message
+                }`
+              )
+          );
         return;
       }
     }
@@ -191,7 +201,10 @@ export class BicepVisualizerView extends Disposable {
       .then(vscode.window.showTextDocument)
       .then(
         (editor) => this.revealEditorRange(editor, range),
-        () => vscode.window.showErrorMessage(`Could not open "${filePath}".`)
+        (err) =>
+          vscode.window.showErrorMessage(
+            `Could not open "${filePath}": ${parseError(err).message}`
+          )
       );
   }
 

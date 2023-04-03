@@ -458,14 +458,14 @@ Hello from Bicep!"));
             result.ExcludingLinterDiagnostics().Should().NotHaveAnyDiagnostics();
             result.Template.Should().DeepEqual(JToken.Parse(@"{
   ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
-  ""languageVersion"": ""1.9-experimental"",
+  ""languageVersion"": ""1.10-experimental"",
   ""contentVersion"": ""1.0.0.0"",
   ""metadata"": {
     ""_EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
     ""_generator"": {
       ""name"": ""bicep"",
       ""version"": ""dev"",
-      ""templateHash"": ""8036895127623403713""
+      ""templateHash"": ""13432420222306620637""
     }
   },
   ""parameters"": {
@@ -486,7 +486,7 @@ Hello from Bicep!"));
     },
     ""website"": {
       ""type"": ""Microsoft.Resources/deployments"",
-      ""apiVersion"": ""2020-10-01"",
+      ""apiVersion"": ""2022-09-01"",
       ""name"": ""website"",
       ""properties"": {
         ""expressionEvaluationOptions"": {
@@ -500,14 +500,14 @@ Hello from Bicep!"));
         },
         ""template"": {
           ""$schema"": ""https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"",
-          ""languageVersion"": ""1.9-experimental"",
+          ""languageVersion"": ""1.10-experimental"",
           ""contentVersion"": ""1.0.0.0"",
           ""metadata"": {
             ""_EXPERIMENTAL_WARNING"": ""Symbolic name support in ARM is experimental, and should be enabled for testing purposes only. Do not enable this setting for any production usage, or you may be unexpectedly broken at any time!"",
             ""_generator"": {
               ""name"": ""bicep"",
               ""version"": ""dev"",
-              ""templateHash"": ""5609881366445430907""
+              ""templateHash"": ""3998586609553744579""
             }
           },
           ""parameters"": {
