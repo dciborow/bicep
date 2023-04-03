@@ -1120,7 +1120,6 @@ namespace Bicep.Core.Semantics.Namespaces
                 return new(ErrorType.Create(errorDiagnostic));
             }
 
-
             var textReader = new StringReader(fileContent);
             var deserializer = new DeserializerBuilder().Build();
             var deserializedYaml = deserializer.Deserialize(textReader);
