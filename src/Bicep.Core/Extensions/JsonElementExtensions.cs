@@ -10,8 +10,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Bicep.Core.Extensions
 {
@@ -32,9 +30,6 @@ namespace Bicep.Core.Extensions
         public static T ToNonNullObject<T>(this JsonElement element, JsonSerializerOptions? options = null)
         {
             options ??= DefaultDeserializeOptions;
-
-            // return new DeserializerBuilder().Build().Deserialize<T>(element) ??
-                // throw new JsonException($"Expected deserialized value of \"{element}\" to be non-null.");
 
             return JsonSerializer.Deserialize<T>(element, options) ??
                 throw new JsonException($"Expected deserialized value of \"{element}\" to be non-null.");
