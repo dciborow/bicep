@@ -1246,6 +1246,13 @@ namespace Bicep.LanguageServer.Completions
                 var nonJsonItems = CreateFileCompletionItems(model.SourceFile.FileUri, context.ReplacementRange, fileCompletionInfo, (file) => !PathHelper.HasExtension(file, "json") && !PathHelper.HasExtension(file, "jsonc"), CompletionPriority.Medium);
                 fileItems = jsonItems.Concat(nonJsonItems);
             }
+            else if (argType.ValidationFlags.HasFlag(TypeSymbolValidationFlags.IsStringYamlFilePath))
+            {
+                // Prioritize .json or .jsonc files higher than other files.
+                var yamlItems = CreateFileCompletionItems(model.SourceFile.FileUri, context.ReplacementRange, fileCompletionInfo, (file) => PathHelper.HasExtension(file, "yaml") || PathHelper.HasExtension(file, "yml"), CompletionPriority.High);
+                var nonYamlItems = CreateFileCompletionItems(model.SourceFile.FileUri, context.ReplacementRange, fileCompletionInfo, (file) => !PathHelper.HasExtension(file, "yaml") && !PathHelper.HasExtension(file, "yml"), CompletionPriority.Medium);
+                fileItems = yamlItems.Concat(nonYamlItems);
+            }
             else
             {
                 fileItems = CreateFileCompletionItems(model.SourceFile.FileUri, context.ReplacementRange, fileCompletionInfo, (_) => true, CompletionPriority.High);
@@ -1888,13 +1895,13 @@ namespace Bicep.LanguageServer.Completions
         }
 
         private static string? TryGetSymbolDocumentationMarkdown(Symbol symbol, SemanticModel model)
-        {   
+        {
             if(symbol is DeclaredSymbol declaredSymbol && declaredSymbol.DeclaringSyntax is DecorableSyntax decorableSyntax)
             {
                 var documentation = SemanticModelHelper.TryGetDescription(model, decorableSyntax);
                 if(declaredSymbol is ParameterSymbol)
                 {
-                    documentation = $"Type: {declaredSymbol.Type}" + (documentation is null ? "" : $"{MarkdownNewLine}{documentation}"); 
+                    documentation = $"Type: {declaredSymbol.Type}" + (documentation is null ? "" : $"{MarkdownNewLine}{documentation}");
                 }
                 return documentation;
             }

@@ -3213,6 +3213,7 @@ var file = " + functionName + @"('|')
                 [InMemoryFileResolver.GetFileUri("/path/to/template5.json")] = new string('x', 2002 - schema.Length) + schema,
                 [InMemoryFileResolver.GetFileUri("/path/to/json1.json")] = "{}",
                 [InMemoryFileResolver.GetFileUri("/path/to/json2.json")] = @"[{ ""name"": ""value"" }]",
+                [InMemoryFileResolver.GetFileUri("/path/to/yaml1.yaml")] = "name: value",
                 [InMemoryFileResolver.GetFileUri("/path/to/module1.txt")] = "param foo string",
                 [InMemoryFileResolver.GetFileUri("/path/to/module2.bicep")] = "param bar bool",
                 [InMemoryFileResolver.GetFileUri("/path/to/module3.bicep")] = "",
@@ -3234,6 +3235,7 @@ var file = " + functionName + @"('|')
                 completionItems.Should().SatisfyRespectively(
                     x => x.Label.Should().Be("json1.json"),
                     x => x.Label.Should().Be("json2.json"),
+                    x => x.Label.Should().Be("yaml1.yaml"),
                     x => x.Label.Should().Be("template2.json"),
                     x => x.Label.Should().Be("template3.jsonc"),
                     x => x.Label.Should().Be("template4.json"),
@@ -3256,7 +3258,8 @@ var file = " + functionName + @"('|')
                     x => x.Label.Should().Be("template2.json"),
                     x => x.Label.Should().Be("template3.jsonc"),
                     x => x.Label.Should().Be("template4.json"),
-                    x => x.Label.Should().Be("template5.json")
+                    x => x.Label.Should().Be("template5.json"),
+                    x => x.Label.Should().Be("yaml1.yaml")
                     );
             }
         }
@@ -3287,6 +3290,7 @@ var file = " + functionName + @"(templ|)
                 [InMemoryFileResolver.GetFileUri("/path/to/template5.json")] = new string('x', 2002 - schema.Length) + schema,
                 [InMemoryFileResolver.GetFileUri("/path/to/json1.json")] = "{}",
                 [InMemoryFileResolver.GetFileUri("/path/to/json2.json")] = @"[{ ""name"": ""value"" }]",
+                [InMemoryFileResolver.GetFileUri("/path/to/yaml1.yaml")] = "name: value",
                 [InMemoryFileResolver.GetFileUri("/path/to/module1.txt")] = "param foo string",
                 [InMemoryFileResolver.GetFileUri("/path/to/module2.bicep")] = "param bar bool",
                 [InMemoryFileResolver.GetFileUri("/path/to/module3.bicep")] = "",
