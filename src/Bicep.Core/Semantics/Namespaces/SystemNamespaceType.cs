@@ -1078,7 +1078,7 @@ namespace Bicep.Core.Semantics.Namespaces
             {
                 try
                 {
-                    token = JsonObjectParser.ExtractTokenFromObject(token, tokenSelectorPath);
+                    token = JsonObjectParser.ExtractTokenFromObjectByPath(token, tokenSelectorPath);
                 }
                 catch (JsonException)
                 {
@@ -1123,7 +1123,7 @@ namespace Bicep.Core.Semantics.Namespaces
             {
                 try
                 {
-                    token = YamlObjectParser.ExtractTokenFromObject(token, tokenSelectorPath);
+                    token = YamlObjectParser.ExtractTokenFromObjectByPath(token, tokenSelectorPath);
                 }
                 catch (JsonException)
                 {
