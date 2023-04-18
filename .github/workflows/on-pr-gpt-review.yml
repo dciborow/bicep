@@ -11,7 +11,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
       - id: review
-        uses: dciborow/action-gpt@0.0.7
+        uses: dciborow/action-gpt@0.0.9
         with:
           GIT_COMMIT_HASH: ${{ github.event.pull_request.head.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -22,5 +22,3 @@ jobs:
           REPOSITORY_NAME: ${{ github.repository }}
           AZURE_OPENAI_API: ${{ secrets.AZURE_OPENAI_API }}
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          PATCH_PR: ${{ github.event.pull_request.number }}
-          PATCH_REPO: ${{ github.repository }}
