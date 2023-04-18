@@ -20,6 +20,8 @@ using Bicep.Core.TypeSystem;
 using Microsoft.WindowsAzure.ResourceStack.Common.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using YamlDotNet.Serialization;
+
 using static Bicep.Core.Semantics.FunctionOverloadBuilder;
 
 namespace Bicep.Core.Semantics.Namespaces
@@ -1027,6 +1029,8 @@ namespace Bicep.Core.Semantics.Namespaces
                 : new(ErrorType.Create(errorDiagnostic));
         }
 
+        private static IDeserializer Deserializer = new DeserializerBuilder().Build();
+
         private static FunctionResult LoadJsonContentResultBuilder(IBinder binder, IFileResolver fileResolver, IDiagnosticWriter diagnostics, FunctionCallSyntaxBase functionCall, ImmutableArray<TypeSymbol> argumentTypes)
         {
             var arguments = functionCall.Arguments.ToImmutableArray();
@@ -1049,7 +1053,7 @@ namespace Bicep.Core.Semantics.Namespaces
                 return new(ErrorType.Create(errorDiagnostic));
             }
 
-            if (fileContent.TryFromJson<JToken>() is not { } token)
+            if (JToken.FromObject(Deserializer.Deserialize<object>(fileContent)) is not { } token)
             {
                 // Instead of catching and returning the JSON parse exception, we simply return a generic error.
                 // This avoids having to deal with localization, and avoids possible confusion regarding line endings in the message.
